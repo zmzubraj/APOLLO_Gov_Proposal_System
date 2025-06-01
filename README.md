@@ -151,10 +151,10 @@ pip install -r requirements.txt
 Create a `.env` file in the project root:
 
 ```env
-SUBSCAN_API_KEY=your_subscan_api_key_here
-# Optional: NEWS_API_KEY=your_news_api_key
-# REDDIT_CLIENT_ID=...
-# REDDIT_CLIENT_SECRET=...
+ SUBSCAN_API_KEY=your_subscan_api_key_here
+ Optional: NEWS_API_KEY=your_news_api_key
+ REDDIT_CLIENT_ID=...
+ REDDIT_CLIENT_SECRET=...
 ```
 
 ---
