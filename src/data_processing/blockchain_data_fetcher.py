@@ -22,7 +22,7 @@ from substrateinterface import SubstrateInterface
 # ────────────────────────────────────────────────────────────────────────────
 LOOKBACK_DAYS = 0.01
 
-DEFAULT_API_KEY = "d90abfa9fe494603860086ea96628b8d"  # ← replace or use env
+DEFAULT_API_KEY = os.getenv("SUBSCAN_API_KEY", "")
 API_KEY = os.getenv("SUBSCAN_API_KEY", DEFAULT_API_KEY)
 
 BASE_URL = "https://polkadot.api.subscan.io/api/scan"

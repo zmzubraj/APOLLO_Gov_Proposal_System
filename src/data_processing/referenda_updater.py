@@ -30,7 +30,7 @@ XLSX_PATH = DATA_DIR / "input" / "PKD Governance Data.xlsx"
 FAIL_CSV = DATA_DIR / "output" / "referenda_failures.csv"
 FAIL_CSV.parent.mkdir(exist_ok=True, parents=True)
 
-API_KEY = os.getenv("SUBSCAN_API_KEY", "") or "d90abfa9fe494603860086ea96628b8d"
+API_KEY = os.getenv("SUBSCAN_API_KEY", "")
 SUBSCAN_URL = "https://polkadot.api.subscan.io/api/scan"
 SUBSCAN_HDRS = {"Content-Type": "application/json", "X-API-Key": API_KEY}
 
