@@ -160,14 +160,8 @@ pip install -r requirements.txt
 
 ### **4. Install & Configure Ollama**
 
-1.  **Download & install Ollama\
-    > **
-
-    -   Follow instructions at
-        > [[ollama.dev]{.underline}](https://ollama.dev/installation)
-        > for your OS.
-
-    -   Ensure the ollama binary is in your PATH.
+1.  **Download & install Ollama
+    > https://ollama.com/download
 
 2. **Verify Ollama Server
 ```bash
@@ -201,10 +195,3 @@ ollama run gemma3:4b
 # You should see a prompt like:
 
 # \>\>\> Send a message (/? for help)
-
-5.  **Update Model Reference in src/llm/ollama_api.py
-** Inside the file, ensure the model name matches your pulled model:
-\
-MODEL_NAME = \"gemma3:4b\" \# or \"deepseek-r1:1.5b\"
-
-6.  If you want to switch models, simply change this constant.
