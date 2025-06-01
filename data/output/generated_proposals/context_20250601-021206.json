@@ -1,0 +1,56 @@
+{
+  "timestamp_utc": "2025-06-01T02:12:06Z",
+  "sentiment": {
+    "sentiment_score": 0.6,
+    "summary": "Discussions revolve around the Polkadot ecosystem, particularly concerning the transition of functionality to Asset Hub, the migration of the Kusamarian's treasury from iBTC to tBTC, and the ongoing governance discussions within Polkadot. There's also significant interest in AssetPortal, staking DOT, and the broader ecosystem's growth and development.",
+    "key_topics": [
+      "AssetHub Migration",
+      "tBTC Adoption",
+      "Polkadot Governance",
+      "AssetPortal",
+      "Staking DOT"
+    ]
+  },
+  "news": "Polkadot is pumping hard today \ud83d\udd25\ud83d\udd25 The new OpenGov referendum looks risky to me. Love the dev updates from parity! ",
+  "chain_kpis": {
+    "daily_tx_count": {
+      "2025-06-01": 326
+    },
+    "daily_total_fees_DOT": {
+      "2025-06-01": 0.0
+    },
+    "avg_tx_per_block": 2.25,
+    "avg_fee_per_tx_DOT": 0.0,
+    "busiest_hour_utc": "2025-06-01 01:00"
+  },
+  "governance_kpis": {
+    "total_referenda": 1593,
+    "executed_pct": 55.4,
+    "rejected_pct": 28.1,
+    "avg_turnout_pct": 2.48,
+    "median_turnout_pct": 2.15,
+    "avg_participants": 290,
+    "avg_duration_days": 19.52,
+    "monthly_counts": {
+      "2024-12": 36,
+      "2025-01": 43,
+      "2025-02": 55,
+      "2025-03": 48,
+      "2025-04": 34,
+      "2025-05": 41
+    },
+    "top_keywords": [
+      "polkadot",
+      "proposal",
+      "vote",
+      "bounty",
+      "nay",
+      "funding",
+      "ecosystem",
+      "retroactive",
+      "please",
+      "tip"
+    ],
+    "insight_summary": "Okay, here\u2019s a summary of the Polkadot governance KPIs, focusing on voter engagement and key trends:\n\nPolkadot\u2019s governance remains active with 1593 total referenda, but voter engagement is a significant concern. Average turnout is extremely low at just 2.48%, and the median is even lower at 2.15%, indicating a substantial portion of the network isn\u2019t participating.  While monthly counts are trending upwards (36-55), the overall volume remains low.  Referenda take an average of 19.52 days to execute.  The top keywords highlight a focus on funding, proposals, and ecosystem development.  Further investigation is needed to understand why participation remains so limited."
+  }
+}

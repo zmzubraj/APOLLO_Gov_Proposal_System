@@ -1,0 +1,9 @@
+ollama pull gemma3:4b
+
+ollama rm deepseek-r1:1.5b
+
+ollama list       
+
+ollama serve
+
+ollama run gemma3:4b

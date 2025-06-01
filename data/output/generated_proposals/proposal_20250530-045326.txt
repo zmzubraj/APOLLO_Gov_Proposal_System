@@ -1,0 +1,10 @@
+**Title:** Enhanced Proposal Visibility & Educational Resources – Addressing Low Turnout
+
+**Rationale:** Recent on-chain activity, particularly heightened discussion around Polkadot staking options and ecosystem support, coupled with observed low voter turnout (2.48% average), indicates a need for proactive measures to improve proposal visibility and user understanding. The community’s focus on staking, Nova Wallet pools, and seeking support resources highlights a desire for clearer information and simplified processes.  This proposal directly addresses these concerns, aligning with historical governance patterns of providing accessible educational materials.
+
+**Action:**
+1.  **Launch a Dedicated Proposal Discovery Portal:** Create a centralized, easily searchable portal (hosted on Polkadot.io) aggregating all active and recently executed proposals, categorized by topic (staking, ecosystem development, etc.) with clear summaries and links to relevant documentation.
+2.  **Develop Short, Accessible Educational Videos:** Produce a series of short (3-5 minute) videos explaining key proposal concepts, the voting process, and the impact of different proposals. These will be promoted through the Polkadot App and social media channels.
+3.  **Community Support Resource Expansion:**  Expand the existing Polkadot support resources, including FAQs and tutorials, and actively promote them alongside proposal information.
+
+**Expected Impact:** Increased proposal visibility and user understanding, leading to higher voter turnout, more informed decision-making, and greater community engagement in Polkadot governance.  A targeted 10-15% increase in proposal participation is anticipated within the next 3 months, based on similar initiatives in the past.

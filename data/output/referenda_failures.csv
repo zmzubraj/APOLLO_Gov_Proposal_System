@@ -1,0 +1,48 @@
+Referendum_ID,error,missing_info,function,time
+1511,incomplete data after fallback,nays_amount,collect_referendum,2025-05-29T04:42:11Z
+1512,incomplete data after fallback,"Title, nays_amount",collect_referendum,2025-05-29T04:42:14Z
+1515,incomplete data after fallback,nays_amount,collect_referendum,2025-05-29T04:42:20Z
+1521,incomplete data after fallback,nays_amount,collect_referendum,2025-05-29T04:42:33Z
+1534,incomplete data after fallback,nays_amount,collect_referendum,2025-05-29T04:43:01Z
+1539,incomplete data after fallback,Title,collect_referendum,2025-05-29T04:43:12Z
+1542,incomplete data after fallback,"End, Title, Duration_days, Voted_percentage, Not_Perticipated_DOT, Eligible_DOT",collect_referendum,2025-05-29T04:43:21Z
+1543,incomplete data after fallback,"End, Title, Duration_days, Voted_percentage, Not_Perticipated_DOT, Eligible_DOT",collect_referendum,2025-05-29T04:43:23Z
+1544,incomplete data after fallback,Title,collect_referendum,2025-05-29T04:43:25Z
+1547,incomplete data after fallback,"End, Duration_days, Voted_percentage, Not_Perticipated_DOT, Eligible_DOT",collect_referendum,2025-05-29T04:43:30Z
+1548,incomplete data after fallback,"End, Duration_days, Voted_percentage, Not_Perticipated_DOT, Eligible_DOT",collect_referendum,2025-05-29T04:43:32Z
+1549,incomplete data after fallback,"End, Duration_days, Voted_percentage, Not_Perticipated_DOT, Eligible_DOT",collect_referendum,2025-05-29T04:43:33Z
+1550,incomplete data after fallback,ayes_amount,collect_referendum,2025-05-29T04:43:36Z
+1551,incomplete data after fallback,nays_amount,collect_referendum,2025-05-29T04:43:38Z
+1553,incomplete data after fallback,Title,collect_referendum,2025-05-29T04:43:42Z
+1554,incomplete data after fallback,nays_amount,collect_referendum,2025-05-29T04:43:44Z
+1555,incomplete data after fallback,"End, Duration_days, Voted_percentage, Not_Perticipated_DOT, Eligible_DOT",collect_referendum,2025-05-29T04:43:46Z
+1557,incomplete data after fallback,"End, Duration_days, Voted_percentage, Not_Perticipated_DOT, Eligible_DOT",collect_referendum,2025-05-29T04:43:49Z
+1558,incomplete data after fallback,"End, Duration_days, Voted_percentage, Not_Perticipated_DOT, Eligible_DOT",collect_referendum,2025-05-29T04:43:51Z
+1559,incomplete data after fallback,"End, Duration_days, Voted_percentage, Not_Perticipated_DOT, Eligible_DOT",collect_referendum,2025-05-29T04:43:52Z
+1560,incomplete data after fallback,"End, Duration_days, Voted_percentage, Not_Perticipated_DOT, Eligible_DOT",collect_referendum,2025-05-29T04:43:54Z
+1562,incomplete data after fallback,"End, Duration_days, Voted_percentage, Not_Perticipated_DOT, Eligible_DOT",collect_referendum,2025-05-29T04:43:58Z
+1563,incomplete data after fallback,"End, Duration_days, Voted_percentage, Not_Perticipated_DOT, Eligible_DOT",collect_referendum,2025-05-29T04:43:59Z
+1564,incomplete data after fallback,"End, Duration_days, Voted_percentage, Not_Perticipated_DOT, Eligible_DOT",collect_referendum,2025-05-29T04:44:01Z
+1565,incomplete data after fallback,"Title, nays_amount",collect_referendum,2025-05-29T04:44:03Z
+1567,incomplete data after fallback,"End, Duration_days, Voted_percentage, Not_Perticipated_DOT, Eligible_DOT",collect_referendum,2025-05-29T04:44:07Z
+1568,incomplete data after fallback,"End, Duration_days, Voted_percentage, Not_Perticipated_DOT, Eligible_DOT",collect_referendum,2025-05-29T04:44:08Z
+1569,incomplete data after fallback,nays_amount,collect_referendum,2025-05-29T04:44:11Z
+1570,incomplete data after fallback,"End, Duration_days, Voted_percentage, Not_Perticipated_DOT, Eligible_DOT",collect_referendum,2025-05-29T04:44:12Z
+1571,incomplete data after fallback,"Title, nays_amount",collect_referendum,2025-05-29T04:44:15Z
+1572,incomplete data after fallback,"End, Duration_days, Voted_percentage, Not_Perticipated_DOT, Eligible_DOT",collect_referendum,2025-05-29T04:44:16Z
+1573,incomplete data after fallback,"End, Duration_days, Voted_percentage, Not_Perticipated_DOT, Eligible_DOT",collect_referendum,2025-05-29T04:44:18Z
+1574,incomplete data after fallback,"End, Duration_days, Voted_percentage, Not_Perticipated_DOT, Eligible_DOT",collect_referendum,2025-05-29T04:44:19Z
+1575,incomplete data after fallback,"End, Duration_days, Voted_percentage, Not_Perticipated_DOT, Eligible_DOT",collect_referendum,2025-05-29T04:44:21Z
+1576,incomplete data after fallback,"End, Duration_days, Voted_percentage, Not_Perticipated_DOT, Eligible_DOT",collect_referendum,2025-05-29T04:44:22Z
+1577,incomplete data after fallback,"End, Duration_days, Voted_percentage, Not_Perticipated_DOT, Eligible_DOT",collect_referendum,2025-05-29T04:44:24Z
+1578,incomplete data after fallback,"End, Duration_days, Voted_percentage, Not_Perticipated_DOT, Eligible_DOT",collect_referendum,2025-05-29T04:44:25Z
+1579,incomplete data after fallback,"End, Title, Duration_days, Voted_percentage, Not_Perticipated_DOT, Eligible_DOT",collect_referendum,2025-05-29T04:44:27Z
+1580,incomplete data after fallback,"End, Title, Duration_days, Voted_percentage, Not_Perticipated_DOT, Eligible_DOT",collect_referendum,2025-05-29T04:44:28Z
+1581,incomplete data after fallback,Title,collect_referendum,2025-05-29T04:44:30Z
+1586,incomplete data after fallback,End,collect_referendum,2025-06-01T02:10:39Z
+1587,incomplete data after fallback,End,collect_referendum,2025-06-01T02:10:42Z
+1588,incomplete data after fallback,"Start, End, Status",collect_referendum,2025-06-01T02:10:44Z
+1589,incomplete data after fallback,"Start, End, Status",collect_referendum,2025-06-01T02:10:47Z
+1590,incomplete data after fallback,"Start, End, Status",collect_referendum,2025-06-01T02:10:50Z
+1591,incomplete data after fallback,"Start, End, Status",collect_referendum,2025-06-01T02:10:52Z
+1592,incomplete data after fallback,"Start, End, Status",collect_referendum,2025-06-01T02:10:55Z

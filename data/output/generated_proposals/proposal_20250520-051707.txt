@@ -1,0 +1,18 @@
+**Title:** Enhanced Security & Community Engagement Framework – Prioritizing Key Management & Proposal Accessibility
+
+**Rationale:** Recent Polkadot core sales and declining governance participation (particularly low turnout – averaging 2.17% across all referenda) necessitate immediate action. The community’s heightened focus on security, particularly regarding self-custody and potential hacks, coupled with the observed low engagement, indicates a critical need to bolster security practices and improve the accessibility and clarity of governance proposals. The recent core sales highlight the importance of robust security measures and a transparent, well-supported ecosystem.
+
+**Action:**
+
+1.  **Initiate a Community-Led Security Audit:** Allocate a small, time-boxed bounty (e.g., 1000 DOT) to incentivize a thorough review of current key management practices across the Polkadot ecosystem, focusing on best practices for self-custody and mitigation of potential vulnerabilities.
+2.  **Proposal Accessibility Enhancement:** Implement a tiered proposal support system:
+    *   **Tier 1 (Basic):** Mandatory standardized template for all proposals, including clear technical documentation and risk assessments.
+    *   **Tier 2 (Premium):** Offer dedicated support from Parity developers to assist with proposal drafting and technical review.
+3.  **Community Education Campaign:** Launch a series of educational resources (videos, FAQs, tutorials) on key management best practices and proposal submission guidelines.
+4.  **Turnout Incentive (Pilot):** Explore a small, targeted incentive program (e.g., DOT rewards) for participating in referenda to drive initial engagement. (To be evaluated for long-term impact).
+
+**Expected Impact:**
+
+*   Increased awareness and adoption of secure key management practices, reducing potential security risks.
+*   Improved clarity and accessibility of governance proposals, leading to higher participation rates and reduced rejection rates.
+*   Strengthened community engagement and a more active, informed Polkadot ecosystem. A targeted increase in turnout (aiming for a 5% increase within 6 months) is a key performance indicator.

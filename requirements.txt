@@ -1,0 +1,12 @@
+ollama
+pandas~=2.0.3
+requests~=2.32.3
+openpyxl
+beautifulsoup4~=4.13.4
+lxml
+requests
+feedparser~=6.0.11
+beautifulsoup4
+substrate-interface
+telethon
+snscrape
