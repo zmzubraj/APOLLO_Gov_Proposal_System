@@ -105,9 +105,7 @@ By layering these modules, APOLLO transforms Polkadot’s raw governance events 
 
 Below are the instructions to configure and run the APOLLO MVP on your local machine or server. These steps assume familiarity with Python 3.9+, Node/Substrate, and basic command-line usage.
 
-### 4.1 Prerequisites
-
-## 📋 Prerequisites
+### 4.1 📋 Prerequisites
 
 1. **Operating System**  
    - Windows 10/11, macOS 12+, or any modern Linux distro
@@ -129,15 +127,15 @@ Below are the instructions to configure and run the APOLLO MVP on your local mac
 
 ---
 
-## 🛠 Installation & Setup
+## 4.2 🛠 Installation & Setup
 
-### 1. Clone the Repository  
+# 4.2.1. Clone the Repository  
 ```bash
 git clone https://github.com/zmzubraj/APOLLO_Gov_Proposal_System.git
 cd apollo-governance
 ```
 
-### **2. Create & Activate a Python Virtual Environment**
+# **4.2.2. Create & Activate a Python Virtual Environment**
 ```bash
 python3 -m venv ./venv
 
@@ -149,7 +147,7 @@ source ./venv/bin/activate
 ```
 
 
-### 3. **Install Python Dependencies**
+# 4.2.3. **Install Python Dependencies**
 ```bash
 pip install --upgrade pip
 pip install -r requirements.txt
@@ -158,21 +156,21 @@ pip install -r requirements.txt
 
 >⚠️ If requirements.txt is missing, install manually:
 
-### **4. Install & Configure Ollama**
+# 4.2.4. **Install & Configure Ollama**
 
-1.  **Download & install Ollama
+a.  **Download & install Ollama
     > https://ollama.com/download
 
-2. **Verify Ollama Server
+b. **Verify Ollama Server
 ```bash
 ** ollama server
 
 ```
 
-2.  This should start a background service listening on
+c.  This should start a background service listening on
     > http://127.0.0.1:11434 (default port).
 
-3.  **Pull a Model
+d.  **Pull a Model
     > **
 
 For example, to use Gemma3:4B:
@@ -185,13 +183,247 @@ Or to use Deepseek r1:1.5B:\
 ollama pull deepseek-r1:1.5b
 
 ```
--   
 
-4. **Test the LLM API
+e. **Test the LLM API
 ** In a new terminal:
 ```bash
 ollama run gemma3:4b
 ```
-# You should see a prompt like:
+**You should see a prompt like:**
+```plaintext
 
-# \>\>\> Send a message (/? for help)
+- \>\>\> Send a message (/? for help)
+```
+f.  **Update Model Reference in src/llm/ollama_api.py
+** Inside the file, ensure the model name matches your pulled model:
+```python
+# src/llm/ollama_api.py
+MODEL_NAME = \"gemma3:4b\" \# or \"deepseek-r1:1.5b\"
+```
+
+### **4.2.5. Environment Configuration**
+
+Create a .env file in the project root (at the same level as src/) and
+add:
+```python
+\# Subscan API Key (for on-chain data)
+
+SUBSCAN_API_KEY=your_subscan_api_key_here
+
+\# (Optional) News / Social API Keys
+
+\# NEWS_API_KEY=your_news_api_key
+
+\# REDDIT_CLIENT_ID=\...
+
+\# REDDIT_CLIENT_SECRET=\...
+```
+
+## 5**▶️ Usage**
+
+### **1. Collect Social & News Sentiment**
+
+python src/analysis/sentiment_analysis.py
+
+-   Scrapes configured social sources (Reddit, X, Telegram) and/or news
+    > feeds.
+
+-   Outputs a JSON summary with sentiment_score, key_topics, etc.
+
+### **2. Fetch On-Chain Governance Data**
+
+python src/data_processing/referenda_updater.py
+
+-   Reads data/input/PKD Governance Data.xlsx (existing knowledge base).
+
+-   Detects the last stored referendum ID, fetches new referenda from
+    > Subscan/Subsquare.
+
+-   Appends missing rows to the Excel file and logs failures in
+    > data/output/referenda_failures.csv.
+
+### **3. Fetch & Aggregate Blockchain Metrics**
+
+python src/data_processing/blockchain_data_fetcher.py
+
+-   Connects to a Substrate node, fetches the last 1 days of block data.
+
+-   Aggregates transactions, fees by UTC date, and saves to
+    > data/output/blocks_last1days.json.
+
+### **4. Generate Governance KPIs & Insights**
+
+python src/analysis/governance_analysis.py
+
+-   Loads the governance Excel data and computes historical KPIs
+    > (turnout rates, durations, top keywords).
+
+-   Optionally writes KPI summaries to CSV or prints key metrics.
+
+### **5. Run APOLLO Main Pipeline**
+
+python src/main.py
+
+-   Orchestrates the entire APOLLO workflow in sequence:
+
+    1.  **Sentiment Analysis** (Step 1)
+
+    2.  **News Fetch & Summaries** (Step 2)
+
+    3.  **On-Chain Referenda Fetch & Cache** (Step 3)
+
+    4.  **Governance KPI Analysis** (Step 4)
+
+    5.  **Context Assembly** (gathers all JSON/data inputs)
+
+    6.  **LLM-Based Proposal Generation
+        > **
+
+        -   Calls src/llm/ollama_api.py with a prompt containing
+            > assembled context.
+
+        -   Receives a generated proposal draft or recommendations.
+
+    7.  **Output
+        > **
+
+        -   Saves the generated proposal to
+            > data/output/generated_proposals/proposal\_{timestamp}.txt
+
+        -   Exports LLM context file to
+            > data/output/generated_proposals/context\_{timestamp}.json
+
+> **Tip:** The first run may take longer (downloading model, building
+> embeddings). Subsequent runs reuse the local vector index and Excel
+> data.
+
+## **6. 📂 Directory Structure**
+
+apollo-governance/
+
+├── .env
+
+├── README.md
+
+├── requirements.txt
+
+├── data/
+
+│ ├── input/
+
+│ │ └── PKD Governance Data.xlsx
+
+│ └── output/
+
+│ ├── referenda_failures.csv
+
+│ ├── blocks_last1days.json
+
+│ ├── generated_proposals/
+
+│ │ ├── proposal_YYYYMMDD_HHMMSS.txt
+
+│ │ └── context_YYYYMMDD_HHMMSS.json
+
+│ └── A_flowchart_diagram_titled\_\"APOLLO:\_Autonomous_Pre.png\"
+
+├── src/
+
+│ ├── main.py
+
+│ ├── utils/
+
+│ │ └── helpers.py
+
+│ ├── llm/
+
+│ │ └── ollama_api.py
+
+│ ├── analysis/
+
+│ │ ├── sentiment_analysis.py
+
+│ │ ├── governance_analysis.py
+
+│ │ └── blockchain_metrics.py
+
+│ └── data_processing/
+
+│ ├── referenda_updater.py
+
+│ ├── blockchain_data_fetcher.py
+
+│ ├── social_media_scraper.py
+
+│ └── news_fetcher.py
+
+└── LICENSE
+
+## **7. 🤝 Contributing**
+
+We welcome community contributions! If you'd like to help:
+
+1.  **Fork** this repository and create a new branch (git checkout -b
+    > feature/my-feature).
+
+2.  **Develop** your feature or improvement (architecture,
+    > documentation, bug fix).
+
+3.  **Write Tests** where applicable, particularly for new Python
+    > modules.
+
+4.  **Submit a Pull Request**. Detail your changes, the motivation, and
+    > any relevant issue numbers.
+
+5.  **Review & Discussion**: We'll respond, request any changes, and
+    > ultimately merge if everything looks good.
+
+6.  **Star & Share**: If APOLLO helps you, please leave a ⭐ and share
+    > with your blockchain/AI network!
+
+### **8. Development Roadmap**
+
+-   **✅ MVP**: Basic pipeline (data ingestion → LLM inference →
+    > on-chain log)
+
+-   **🟧 Improvements**:
+
+    -   Add multi-chain smart-contract adapters (Ethereum, Cosmos).
+
+    -   Enhance agent safety guardrails (LLM hallucination checks,
+        > compliance rules).
+
+    -   Introduce real-time UI/dashboard (Flask or React).
+
+-   **🟩 Future**:
+
+    -   Decentralized hosting of LLM agents (e.g. via IPFS or on-chain
+        > compute oracles).
+
+    -   Zero-knowledge proof of proposal generation steps.
+
+    -   Incentive mechanisms for "agent contributors" (token bounties
+        > for new modules).
+
+## **9. 📄 License**
+
+This project is released under the **MIT License**. See
+[[LICENSE]{.underline}](https://chatgpt.com/c/LICENSE) for details.
+
+## **📬 Contact & Acknowledgments**
+
+-   **Maintainer**: [[Zubaer Mahmood Zubraj\
+    > ]{.underline}](https://github.com/zmzubraj)
+
+-   **Email**: zmzubraj@gmail.com
+
+-   **Acknowledgments**:
+
+    -   Early prototype contributors and community testers
+
+    -   Ollama for open-source LLM hosting
+
+    -   Subscan API team for data access
+
+Thank you for your interest in APOLLO! We look forward to your feedback
+and contributions. 🚀
