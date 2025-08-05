@@ -40,11 +40,20 @@ APOLLO’s modular architecture is deployable on any blockchain supporting on-ch
 ### 📦 Features
 
 - **LLM-Based Analysis:** Uses open-source LLMs (e.g., Gemma3:4B, Deepseek R1:1.5B) via Ollama for summarization, classification, and proposal generation.
-- **Retrieval-Augmented Knowledge Base:** Embeds and indexes historical referenda and discussions for real-time retrieval-augmented generation (RAG).
+- **Retrieval-Augmented Knowledge Base:** Stores historical proposals in `data/input/PKD Governance Data.xlsx` for retrieval-augmented generation (RAG) instead of relying on a vector database.
 - **Predictive Outcome Modeling:** Trains lightweight ML models (e.g., LightGBM) on past votes to predict proposal success and turnout.
 - **Chain-Agnostic Design:** Integrates with Polkadot’s OpenGov pallet; easily adaptable to other platforms.
 - **Modular Pipeline:** Separate modules for data collection, analysis, LLM inference, and on-chain logging.
 - **Audit Trail:** Every output is hashed and stored on-chain or in versioned files for transparency.
+
+> **Current Status:** The Prediction-Analysis agent, on-chain Governor integration, community-platform submission, and knowledge-base feedback loops are not yet implemented in this MVP.
+
+### Roadmap
+
+- Prediction-Analysis agent for outcome forecasting.
+- On-chain Governor integration for autonomous proposal submission.
+- Community-platform submission workflow.
+- Knowledge-base feedback loops for continuous learning.
 
 #### 3.1 Core Capabilities
 
@@ -255,6 +264,11 @@ We welcome contributions! To get started:
 
 ## 8. Development Roadmap
 
+- **Upcoming Components:**
+  - Prediction-Analysis agent for outcome forecasting
+  - On-chain Governor integration for autonomous proposal submission
+  - Community-platform submission workflow
+  - Knowledge-base feedback loops for continuous learning
 - **MVP:** Basic pipeline (data ingestion → LLM inference → on-chain log)
 - **Planned Improvements:**
   - Multi-chain smart contract adapters (Ethereum, Cosmos)
