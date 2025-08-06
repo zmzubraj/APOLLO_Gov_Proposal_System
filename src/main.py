@@ -21,6 +21,9 @@ from analysis.governance_analysis import get_governance_insights
 from data_processing.blockchain_cache import get_recent_blocks_cached
 from llm.ollama_api import generate_completion
 from agents.proposal_submission import submit_proposal
+from execution.discord_bot import post_summary as post_discord
+from execution.telegram_bot import post_summary as post_telegram
+from execution.twitter_bot import post_summary as post_twitter
 
 
 # --- main.py  (top of file) -----------------------------------------------
@@ -42,6 +45,21 @@ def build_prompt(context: dict) -> str:
         "======================\n"
         "Return ONLY the proposal text, no JSON."
     )
+
+
+def broadcast_proposal(text: str) -> None:
+    """Send ``text`` to any configured community platforms."""
+    sent = []
+    if post_discord(text):
+        sent.append("Discord")
+    if post_telegram(text):
+        sent.append("Telegram")
+    if post_twitter(text):
+        sent.append("Twitter")
+    if sent:
+        print("📢 Broadcasted proposal to " + ", ".join(sent))
+    else:
+        print("⚠️ No community platforms configured")
 
 
 def main() -> None:
@@ -91,6 +109,7 @@ def main() -> None:
     )
     timestamp = dt.datetime.utcnow().strftime("%Y%m%d-%H%M%S")
     (OUT_DIR / f"proposal_{timestamp}.txt").write_text(proposal_text)
+    broadcast_proposal(proposal_text)
     submission_id = submit_proposal(proposal_text)
     if submission_id:
         print(f"🔗 Proposal submitted → {submission_id}")
