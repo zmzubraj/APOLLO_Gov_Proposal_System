@@ -41,7 +41,7 @@ APOLLO’s modular architecture is deployable on any blockchain supporting on-ch
 
 - **LLM-Based Analysis:** Uses open-source LLMs (e.g., Gemma3:4B, Deepseek R1:1.5B) via Ollama for summarization, classification, and proposal generation.
 - **Retrieval-Augmented Knowledge Base:** Stores historical proposals in `data/input/PKD Governance Data.xlsx` for retrieval-augmented generation (RAG) instead of relying on a vector database.
-- **Predictive Outcome Modeling:** Trains lightweight ML models (e.g., LightGBM) on past votes to predict proposal success and turnout.
+- **Predictive Outcome Modeling (planned):** Lightweight ML models to forecast proposal success and voter turnout (not yet implemented).
 - **Chain-Agnostic Design:** Integrates with Polkadot’s OpenGov pallet; easily adaptable to other platforms.
 - **Modular Pipeline:** Separate modules for data collection, analysis, LLM inference, and on-chain logging.
 - **Audit Trail:** Every output is hashed and stored on-chain or in versioned files for transparency.
@@ -55,6 +55,30 @@ APOLLO’s modular architecture is deployable on any blockchain supporting on-ch
 - Community-platform submission workflow.
 - Knowledge-base feedback loops for continuous learning.
 
+### Current Implementation Status
+
+**Data Layer**
+
+- Off-chain data scraping via BeautifulSoup — implemented
+- On-chain data collection via web3.py — implemented
+- Knowledge base seeded with `data/input/PKD Governance Data.xlsx` — implemented
+
+**Agents Layer**
+
+- Data-collector, sentiment-analysis, context-generator, proposal-generator, proposal-submission — implemented
+- Prediction-analysis — not yet implemented
+
+**Execution Layer**
+
+- Governor smart contract — not yet implemented
+- Community platforms integration — not yet implemented
+
+**RAG Feedback Loops**
+
+- Context-generator → knowledge base — implemented
+- Proposal-submission → knowledge base — not yet implemented
+- Governor executed results → knowledge base — not yet implemented
+
 #### 3.1 Core Capabilities
 
 - **LLM-Driven Proposal Analysis**
@@ -62,9 +86,9 @@ APOLLO’s modular architecture is deployable on any blockchain supporting on-ch
   2. LLM “Analysis Agent” ingests proposal text and relevant context.
   3. Outputs concise summaries, risk tags, and classifications.
 
-- **Predictive Forecasting**
-  1. “Predictor Agent” combines structured and semantic features.
-  2. Runs ML models to estimate:
+- **Predictive Forecasting** *(planned)*
+  1. “Predictor Agent” will combine structured and semantic features.
+  2. Planned outputs include:
       - **`P_pass`**: Probability of proposal passing.
       - **Turnout Estimate:** Forecasted voter participation.
       - **Sentiment Trend:** Directional bias from recent discussions.
@@ -74,10 +98,10 @@ APOLLO’s modular architecture is deployable on any blockchain supporting on-ch
   2. Uses RAG to reference similar past proposals.
   3. LLM generates draft text and transaction payloads.
 
-- **On-Chain Orchestration & Auditability**
-  1. All agent decisions are recorded on-chain via a specialized pallet.
-  2. Stakeholders can query the registry to verify APOLLO’s reasoning.
-  3. APOLLO can propose or vote automatically if configured.
+- **On-Chain Orchestration & Auditability** *(planned)*
+  1. Agent decisions will be recorded on-chain via a specialized pallet.
+  2. Stakeholders will be able to query the registry to verify APOLLO’s reasoning.
+  3. APOLLO will propose or vote automatically if configured.
 
 #### 3.2 Example: Polkadot Integration
 
@@ -86,7 +110,6 @@ APOLLO’s modular architecture is deployable on any blockchain supporting on-ch
 - **Social & News Analysis:** Scrapes forums/news, applies LLM sentiment analysis.
 - **LLM Interface:** Formats prompts and calls local LLMs for summaries/drafts.
 - **Main Orchestrator:** Coordinates pipelines and outputs generated proposals.
-
 ---
 
 ## 4. Setup Guide
