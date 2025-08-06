@@ -187,7 +187,15 @@ Create a `.env` file in the project root:
  Optional: NEWS_API_KEY=your_news_api_key
  REDDIT_CLIENT_ID=...
  REDDIT_CLIENT_SECRET=...
+ SUBSTRATE_NODE_URL=wss://rpc.polkadot.io
+ SUBSTRATE_PRIVATE_KEY=hex_encoded_sr25519_key
 ```
+
+`SUBSTRATE_NODE_URL` should point to a Substrate RPC endpoint. Common choices
+include `wss://rpc.polkadot.io` for Polkadot mainnet or
+`wss://westend-rpc.polkadot.io` for the Westend testnet. The
+`SUBSTRATE_PRIVATE_KEY` is the signing key used by the execution agent when
+submitting OpenGov transactions and must be funded for deposits.
 
 ---
 
