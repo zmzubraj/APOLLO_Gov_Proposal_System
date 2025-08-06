@@ -9,7 +9,7 @@ $ python src/main.py
 """
 
 from __future__ import annotations
-import json, pathlib, datetime as dt
+import json, pathlib, datetime as dt, os
 from utils.helpers import utc_now_iso
 from data_processing.social_media_scraper import collect_recent_messages
 from analysis.sentiment_analysis import analyse_messages
@@ -20,6 +20,7 @@ from analysis.blockchain_metrics import summarise_blocks, load_blocks_from_file
 from analysis.governance_analysis import get_governance_insights
 from data_processing.blockchain_cache import get_recent_blocks_cached
 from llm.ollama_api import generate_completion
+from agents.proposal_submission import submit_proposal
 
 
 # --- main.py  (top of file) -----------------------------------------------
@@ -90,6 +91,11 @@ def main() -> None:
     )
     timestamp = dt.datetime.utcnow().strftime("%Y%m%d-%H%M%S")
     (OUT_DIR / f"proposal_{timestamp}.txt").write_text(proposal_text)
+    submission_id = submit_proposal(proposal_text)
+    if submission_id:
+        print(f"🔗 Proposal submitted → {submission_id}")
+    else:
+        print("⚠️ Submission failed")
 
     duration = (dt.datetime.utcnow() - start).total_seconds()
     print(f"\n✅ Proposal saved → {OUT_DIR/'proposal_latest.txt'}   "
