@@ -61,3 +61,13 @@ def validate_governance_kpis(d: Dict[str, Any]) -> bool:
     _require_keys(d, expected, "governance_kpis")
     return True
 
+
+def validate_predictions(d: Dict[str, Any]) -> bool:
+    """Ensure forecasting output contains probabilities in [0,1]."""
+    _require_keys(d, {"approval_probability", "turnout"}, "predictions")
+    if not (0 <= d["approval_probability"] <= 1):
+        raise ValueError("approval_probability outside [0,1]")
+    if not (0 <= d["turnout"] <= 1):
+        raise ValueError("turnout outside [0,1]")
+    return True
+

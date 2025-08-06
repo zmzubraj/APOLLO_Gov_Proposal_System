@@ -1,10 +1,14 @@
-"""
-pytest smoke tests – run `pytest -q`
+"""pytest smoke tests – run `pytest -q`.
+
 They skip external API calls by mocking the modules,
 so the tests are fast and deterministic.
 """
 
-from src.utils import validators as v
+import pathlib, sys
+
+sys.path.append(str(pathlib.Path(__file__).resolve().parents[1] / "src"))
+
+from utils import validators as v
 
 
 def test_validators_pass_on_dummy():
@@ -32,7 +36,9 @@ def test_validators_pass_on_dummy():
         "monthly_counts": {},
         "top_keywords": [],
     }
+    preds = {"approval_probability": 0.6, "turnout": 0.4}
     assert v.validate_sentiment(sent)
     assert v.validate_news(news)
     assert v.validate_chain_kpis(chain)
     assert v.validate_governance_kpis(gov)
+    assert v.validate_predictions(preds)

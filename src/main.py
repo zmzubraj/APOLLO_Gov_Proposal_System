@@ -18,6 +18,7 @@ from data_processing.referenda_updater import update_referenda
 # from data_processing.blockchain_data_fetcher import fetch_recent_blocks
 from analysis.blockchain_metrics import summarise_blocks, load_blocks_from_file
 from analysis.governance_analysis import get_governance_insights
+from analysis.prediction_analysis import forecast_outcome
 from data_processing.blockchain_cache import get_recent_blocks_cached
 from llm.ollama_api import generate_completion
 
@@ -34,8 +35,9 @@ def build_prompt(context: dict) -> str:
         "You are an autonomous Polkadot governance agent. "
         "Draft a concise OpenGov proposal that (1) addresses current community "
         "sentiment and risks, (2) references recent on-chain activity, "
-        "(3) aligns with historical governance patterns, and "
-        "(4) is formatted for the 'Root' track including Title, Rationale, Action, "
+        "(3) aligns with historical governance patterns, (4) accounts for the "
+        "predicted approval probability and expected turnout, and (5) is "
+        "formatted for the 'Root' track including Title, Rationale, Action, "
         "and Expected Impact sections.\n\n"
         f"=== CONTEXT (JSON) ===\n{json.dumps(context, indent=2)}\n"
         "======================\n"
@@ -77,6 +79,9 @@ def main() -> None:
         "chain_kpis": chain_kpis,
         "governance_kpis": gov_kpis,
     }
+
+    # Forecast likely outcome using historical data
+    context["predictions"] = forecast_outcome(context)
     timestamp = dt.datetime.utcnow().strftime("%Y%m%d-%H%M%S")
     (OUT_DIR / f"context_{timestamp}.json").write_text(json.dumps(context, indent=2))
 
