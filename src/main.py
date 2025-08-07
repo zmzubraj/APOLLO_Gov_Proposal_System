@@ -20,7 +20,7 @@ from data_processing.blockchain_cache import get_recent_blocks_cached
 from analysis.blockchain_metrics import summarise_blocks
 from analysis.governance_analysis import get_governance_insights
 from analysis.prediction_analysis import forecast_outcomes
-from llm.ollama_api import generate_completion
+from agents import proposal_generator
 from agents.proposal_submission import submit_proposal
 from agents.context_generator import build_context
 from execution.discord_bot import post_summary as post_discord
@@ -38,21 +38,6 @@ from data_processing.proposal_store import (
 PROJECT_ROOT = pathlib.Path(__file__).resolve().parents[1]  # src/..
 OUT_DIR = PROJECT_ROOT / "data" / "output" / "generated_proposals"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
-
-
-def build_prompt(context: dict) -> str:
-    """Compose a single prompt for the LLM with all context JSON."""
-    return (
-        "You are an autonomous Polkadot governance agent. "
-        "Draft a concise OpenGov proposal that (1) addresses current community "
-        "sentiment and risks, (2) references recent on-chain activity, "
-        "(3) aligns with historical governance patterns, and "
-        "(4) is formatted for the 'Root' track including Title, Rationale, Action, "
-        "and Expected Impact sections.\n\n"
-        f"=== CONTEXT (JSON) ===\n{json.dumps(context, indent=2)}\n"
-        "======================\n"
-        "Return ONLY the proposal text, no JSON."
-    )
 
 
 def broadcast_proposal(text: str) -> None:
@@ -101,13 +86,7 @@ def main() -> None:
     record_context(context)
 
     print("🔄 Asking LLM to draft proposal …")
-    proposal_text = generate_completion(
-        prompt=build_prompt(context),
-        system="You are Polkadot-Gov-Agent v1.",
-        model="gemma3:4b",
-        temperature=0.3,
-        max_tokens=2048,
-    )
+    proposal_text = proposal_generator.draft(context)
     timestamp = dt.datetime.utcnow().strftime("%Y%m%d-%H%M%S")
     (OUT_DIR / f"proposal_{timestamp}.txt").write_text(proposal_text)
     broadcast_proposal(proposal_text)

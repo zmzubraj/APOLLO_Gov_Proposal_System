@@ -68,7 +68,7 @@ def test_main_submits(monkeypatch, capsys):
     monkeypatch.setattr(main, "get_recent_blocks_cached", lambda: [])
     monkeypatch.setattr(main, "summarise_blocks", lambda blocks: {})
     monkeypatch.setattr(main, "get_governance_insights", lambda as_narrative=True: {})
-    monkeypatch.setattr(main, "generate_completion", lambda **kwargs: "proposal text")
+    monkeypatch.setattr(main.proposal_generator, "draft", lambda context: "proposal text")
     monkeypatch.setattr(main, "record_context", lambda ctx: None)
 
     def fake_submit(text, credentials=None):
