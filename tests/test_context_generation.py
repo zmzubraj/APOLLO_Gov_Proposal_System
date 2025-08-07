@@ -1,5 +1,5 @@
 import json
-import json
+
 from src.agents.context_generator import build_context
 from src.data_processing import proposal_store
 from src.utils import validators as v
@@ -29,10 +29,12 @@ def _dummy_components():
     return sentiment, news, chain, gov
 
 
-def test_build_context_structure():
+def test_build_context_structure_dedup_and_summary():
     sentiment, news, chain, gov = _dummy_components()
-    snippets = ["previous proposal"]
-    ctx = build_context(sentiment, news, chain, gov, snippets)
+    snippets = ["previous proposal", "previous proposal"]
+    ctx = build_context(
+        sentiment, news, chain, gov, snippets, summarise_snippets=True
+    )
     assert set(ctx.keys()) == {
         "timestamp_utc",
         "sentiment",
@@ -40,18 +42,33 @@ def test_build_context_structure():
         "chain_kpis",
         "governance_kpis",
         "kb_snippets",
+        "kb_summary",
     }
-    assert ctx["kb_snippets"] == snippets
+    assert ctx["kb_snippets"] == ["previous proposal"]
+    assert ctx["kb_summary"].startswith("previous proposal")
     assert v.validate_sentiment(ctx["sentiment"])
     assert v.validate_news(ctx["news"])
     assert v.validate_chain_kpis(ctx["chain_kpis"])
     assert v.validate_governance_kpis(ctx["governance_kpis"])
 
 
+def test_search_proposals_by_keyword(monkeypatch):
+    import pandas as pd
+
+    df = pd.DataFrame(
+        {"proposal_text": ["Increase staking rewards", "Governance overhaul", "Staking improvements"]}
+    )
+    monkeypatch.setattr(proposal_store, "load_proposals", lambda: df)
+    res = proposal_store.search_proposals("staking", limit=5)
+    assert res == ["Increase staking rewards", "Staking improvements"]
+
+
 def test_record_context_persist(tmp_path, monkeypatch):
     sentiment, news, chain, gov = _dummy_components()
     snippets = ["snippet"]
-    ctx = build_context(sentiment, news, chain, gov, snippets)
+    ctx = build_context(
+        sentiment, news, chain, gov, snippets, summarise_snippets=True
+    )
     monkeypatch.setattr(proposal_store, "XLSX_PATH", tmp_path / "gov.xlsx")
     proposal_store.record_context(ctx)
     from openpyxl import load_workbook
@@ -67,3 +84,4 @@ def test_record_context_persist(tmp_path, monkeypatch):
     assert stored["chain_kpis"] == chain
     assert stored["governance_kpis"] == gov
     assert stored["kb_snippets"] == snippets
+    assert stored["kb_summary"].startswith("snippet")
