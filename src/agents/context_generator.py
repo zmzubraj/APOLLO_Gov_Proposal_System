@@ -11,6 +11,7 @@ def build_context(
     news: Dict[str, Any],
     chain_kpis: Dict[str, Any],
     gov_kpis: Dict[str, Any],
+    kb_snippets: list[str] | None = None,
 ) -> Dict[str, Any]:
     """Consolidate disparate inputs into a single context dictionary."""
     return {
@@ -19,4 +20,5 @@ def build_context(
         "news": news,
         "chain_kpis": chain_kpis,
         "governance_kpis": gov_kpis,
+        "kb_snippets": kb_snippets or [],
     }

@@ -1,4 +1,5 @@
 import json
+import json
 from src.agents.context_generator import build_context
 from src.data_processing import proposal_store
 from src.utils import validators as v
@@ -30,14 +31,17 @@ def _dummy_components():
 
 def test_build_context_structure():
     sentiment, news, chain, gov = _dummy_components()
-    ctx = build_context(sentiment, news, chain, gov)
+    snippets = ["previous proposal"]
+    ctx = build_context(sentiment, news, chain, gov, snippets)
     assert set(ctx.keys()) == {
         "timestamp_utc",
         "sentiment",
         "news",
         "chain_kpis",
         "governance_kpis",
+        "kb_snippets",
     }
+    assert ctx["kb_snippets"] == snippets
     assert v.validate_sentiment(ctx["sentiment"])
     assert v.validate_news(ctx["news"])
     assert v.validate_chain_kpis(ctx["chain_kpis"])
@@ -46,7 +50,8 @@ def test_build_context_structure():
 
 def test_record_context_persist(tmp_path, monkeypatch):
     sentiment, news, chain, gov = _dummy_components()
-    ctx = build_context(sentiment, news, chain, gov)
+    snippets = ["snippet"]
+    ctx = build_context(sentiment, news, chain, gov, snippets)
     monkeypatch.setattr(proposal_store, "XLSX_PATH", tmp_path / "gov.xlsx")
     proposal_store.record_context(ctx)
     from openpyxl import load_workbook
@@ -61,3 +66,4 @@ def test_record_context_persist(tmp_path, monkeypatch):
     assert stored["news"] == news
     assert stored["chain_kpis"] == chain
     assert stored["governance_kpis"] == gov
+    assert stored["kb_snippets"] == snippets
