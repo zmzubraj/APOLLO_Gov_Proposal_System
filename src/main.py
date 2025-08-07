@@ -10,15 +10,16 @@ $ python src/main.py
 
 from __future__ import annotations
 import json, pathlib, datetime as dt, os
+from agents.data_collector import DataCollector
 from data_processing.social_media_scraper import collect_recent_messages
 from analysis.sentiment_analysis import analyse_messages
 from data_processing.news_fetcher import fetch_and_summarise_news
 from data_processing.referenda_updater import update_referenda
 # from data_processing.blockchain_data_fetcher import fetch_recent_blocks
-from analysis.blockchain_metrics import summarise_blocks, load_blocks_from_file
+from data_processing.blockchain_cache import get_recent_blocks_cached
+from analysis.blockchain_metrics import summarise_blocks
 from analysis.governance_analysis import get_governance_insights
 from analysis.prediction_analysis import forecast_outcomes
-from data_processing.blockchain_cache import get_recent_blocks_cached
 from llm.ollama_api import generate_completion
 from agents.proposal_submission import submit_proposal
 from agents.context_generator import build_context
@@ -71,23 +72,19 @@ def broadcast_proposal(text: str) -> None:
 
 def main() -> None:
     start = dt.datetime.utcnow()
-    print("🔄 Collecting social sentiment …")
-    msgs = collect_recent_messages()
-    # msgs = "Polkadot is pumping hard today 🔥🔥 The new OpenGov referendum looks risky to me. Love the dev updates " \
-    #        "from parity! "
+    data = DataCollector.collect(
+        collect_recent_messages,
+        fetch_and_summarise_news,
+        get_recent_blocks_cached,
+    )
+
+    msgs = data["messages"]
     sentiment = analyse_messages(msgs)
     # sentiment = []
 
-    print("🔄 Fetching news …")
-    news = fetch_and_summarise_news()
-    news = "Polkadot is pumping hard today 🔥🔥 The new OpenGov referendum looks risky to me. Love the dev updates " \
-           "from parity! "
+    news = data["news"]
 
-    print("🔄 Fetching on-chain data …")
-    default_json = pathlib.Path(__file__).resolve().parents[1] / "data" / "output" / "blocks_last3days.json"
-
-    # blocks = load_blocks_from_file(default_json)
-    blocks = get_recent_blocks_cached()
+    blocks = data["blocks"]
     chain_kpis = summarise_blocks(blocks)
     # chain_kpis = []
 
