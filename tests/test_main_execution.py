@@ -26,7 +26,14 @@ def test_main_records_final_status(monkeypatch, tmp_path):
     monkeypatch.setattr(main, "summarise_blocks", lambda blocks: {})
     monkeypatch.setattr(main, "update_referenda", lambda max_new: None)
     monkeypatch.setattr(main, "get_governance_insights", lambda as_narrative=True: {})
-    monkeypatch.setattr(main, "build_context", lambda *args: {})
+    captured_kb = {}
+
+    def fake_build_context(sentiment, news, chain, gov, kb_snippets=None):
+        captured_kb["snippets"] = kb_snippets
+        return {}
+
+    monkeypatch.setattr(main, "build_context", fake_build_context)
+    monkeypatch.setattr(main, "search_proposals", lambda q, limit: ["snippet1"])
     monkeypatch.setattr(main, "forecast_outcomes", lambda context: {})
     monkeypatch.setattr(main.proposal_generator, "draft", lambda context: "Proposal")
     monkeypatch.setattr(main, "broadcast_proposal", lambda text: None)
@@ -54,3 +61,4 @@ def test_main_records_final_status(monkeypatch, tmp_path):
         "outcome": "Approved",
         "submission_id": "0xsub",
     }
+    assert captured_kb["snippets"] == ["snippet1"]

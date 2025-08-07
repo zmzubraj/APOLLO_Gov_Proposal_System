@@ -97,3 +97,22 @@ def load_execution_results():
         return pd.read_excel(XLSX_PATH, sheet_name="ExecutionResults")
     except Exception:
         return pd.DataFrame()
+
+
+def search_proposals(query: str, limit: int) -> list[str]:
+    """Return up to ``limit`` proposal texts containing ``query``.
+
+    Performs a case-insensitive search over the stored proposals using
+    pandas' string matching and returns a list of matching snippets.
+    """
+    import pandas as pd
+
+    if not query:
+        return []
+
+    df = load_proposals()
+    if df.empty or "proposal_text" not in df.columns:
+        return []
+
+    mask = df["proposal_text"].astype(str).str.contains(query, case=False, na=False)
+    return df.loc[mask, "proposal_text"].head(limit).tolist()
