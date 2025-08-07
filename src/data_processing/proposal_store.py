@@ -4,7 +4,7 @@ from __future__ import annotations
 import pathlib
 from typing import Dict, Any
 
-from utils.helpers import utc_now_iso
+from src.utils.helpers import utc_now_iso
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 DATA_DIR = ROOT / "data"

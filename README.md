@@ -40,7 +40,7 @@ APOLLO’s modular architecture is deployable on any blockchain supporting on-ch
 ### 📦 Features
 
 - **LLM-Based Analysis:** Uses open-source LLMs (e.g., Gemma3:4B, Deepseek R1:1.5B) via Ollama for summarization, classification, and proposal generation.
- - **Retrieval-Augmented Knowledge Base:** Stores historical proposals in the Excel workbook [`data/input/PKD Governance Data.xlsx`](data/input/PKD%20Governance%20Data.xlsx) for retrieval-augmented generation (RAG).
+- **Retrieval-Augmented Knowledge Base:** Stores historical proposals in an Excel workbook (`data/input/PKD Governance Data.xlsx`, generated at runtime) for retrieval-augmented generation (RAG).
 - **Predictive Outcome Modeling (planned):** Lightweight ML models to forecast proposal success and voter turnout (not yet implemented).
 - **Chain-Agnostic Design:** Integrates with Polkadot’s OpenGov pallet; easily adaptable to other platforms.
 - **Modular Pipeline:** Separate modules for data collection, analysis, LLM inference, and on-chain logging.
@@ -61,7 +61,7 @@ APOLLO’s modular architecture is deployable on any blockchain supporting on-ch
 
 - Off-chain data scraping via BeautifulSoup — implemented
 - On-chain data collection via web3.py — implemented
-- Knowledge base seeded with `data/input/PKD Governance Data.xlsx` — implemented
+- Knowledge base auto-generates `data/input/PKD Governance Data.xlsx` on demand — implemented
 
 **Agents Layer**
 
@@ -250,7 +250,7 @@ apollo-governance/
 ├── LICENSE
 ├── data/
 │   ├── input/
-│   │   └── PKD Governance Data.xlsx
+│   │   └── (generated) PKD Governance Data.xlsx
 │   ├── output/
 │   │   ├── referenda_failures.csv
 │   │   ├── blocks_last1days.json
