@@ -96,3 +96,24 @@ def test_parse_receipt():
         "is_success": True,
         "error_message": None,
     }
+
+
+def test_await_execution(monkeypatch):
+    """Polling stops when a final status is observed."""
+
+    statuses = iter(["Deciding", "Approved"])
+
+    def fake_query(node_url, idx):
+        return next(statuses)
+
+    class FakeSubstrate:
+        def get_block_hash(self):
+            return "0xdead"
+
+    monkeypatch.setattr(gi, "connect", lambda url: FakeSubstrate())
+    monkeypatch.setattr(gi, "query_proposal_status", fake_query)
+    monkeypatch.setattr(gi, "time", SimpleNamespace(sleep=lambda s: None))
+
+    block_hash, outcome = gi.await_execution("ws://node", 1, "0xsub", poll_interval=0, max_attempts=5)
+    assert block_hash == "0xdead"
+    assert outcome == "Approved"

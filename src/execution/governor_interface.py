@@ -1,6 +1,13 @@
-"""Polkadot OpenGov interaction utilities."""
+"""Utilities for interacting with the Polkadot OpenGov governor.
+
+This module wraps a handful of helper functions used by the execution
+layer of the agent.  They establish Substrate connections, submit and
+query proposals and, newly, provide ``await_execution`` which polls the
+chain for the final outcome of a referendum.
+"""
 from __future__ import annotations
 
+import time
 from typing import Any, Dict, Optional
 
 
@@ -87,4 +94,45 @@ def parse_receipt(receipt: Any) -> Dict[str, Any]:
         "is_success": getattr(receipt, "is_success", False),
         "error_message": getattr(receipt, "error_message", None),
     }
+
+
+def await_execution(
+    node_url: str,
+    referendum_index: int,
+    submission_id: str,
+    poll_interval: float = 6.0,
+    max_attempts: int = 60,
+) -> tuple[str, str]:
+    """Poll for the final referendum outcome.
+
+    Parameters
+    ----------
+    node_url:
+        Endpoint of the Substrate node.
+    referendum_index:
+        Index of the referendum to poll.
+    submission_id:
+        Identifier returned when the proposal was submitted.  Currently
+        unused but retained for logging/compatibility.
+    poll_interval:
+        Seconds to wait between polls.
+    max_attempts:
+        Maximum number of polling attempts before timing out.
+
+    Returns
+    -------
+    tuple[str, str]
+        ``(block_hash, outcome)`` where ``outcome`` is the final status
+        such as ``"Approved"`` or ``"Rejected"``.  If the outcome could
+        not be determined a ``("", "timeout")`` tuple is returned.
+    """
+
+    substrate = connect(node_url)
+    for _ in range(max_attempts):
+        status = query_proposal_status(node_url, referendum_index)
+        if status and status not in {"Ongoing", "Deciding"}:
+            block_hash = substrate.get_block_hash() or ""
+            return block_hash, status
+        time.sleep(poll_interval)
+    return "", "timeout"
 
