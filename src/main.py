@@ -9,7 +9,7 @@ $ python src/main.py
 """
 
 from __future__ import annotations
-import json, pathlib, datetime as dt
+import json, pathlib, datetime as dt, os
 from data_processing.social_media_scraper import collect_recent_messages
 from analysis.sentiment_analysis import analyse_messages
 from data_processing.news_fetcher import fetch_and_summarise_news
@@ -25,6 +25,7 @@ from agents.context_generator import build_context
 from execution.discord_bot import post_summary as post_discord
 from execution.telegram_bot import post_summary as post_telegram
 from execution.twitter_bot import post_summary as post_twitter
+from execution.governor_interface import await_execution
 from data_processing.proposal_store import (
     record_proposal,
     record_execution_result,
@@ -117,10 +118,18 @@ def main() -> None:
     record_proposal(proposal_text, submission_id)
     if submission_id:
         print(f"🔗 Proposal submitted → {submission_id}")
+        try:
+            block_hash, outcome = await_execution(
+                os.getenv("SUBSTRATE_NODE_URL", ""),
+                int(os.getenv("REFERENDUM_INDEX", "0")),
+                submission_id,
+            )
+        except Exception:
+            block_hash, outcome = submission_id, "pending"
         record_execution_result(
-            status="submitted",
-            block_hash=submission_id,
-            outcome="pending",
+            status=outcome,
+            block_hash=block_hash,
+            outcome=outcome,
             submission_id=submission_id,
         )
     else:
