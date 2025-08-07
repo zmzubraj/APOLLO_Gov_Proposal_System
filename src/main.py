@@ -9,8 +9,7 @@ $ python src/main.py
 """
 
 from __future__ import annotations
-import json, pathlib, datetime as dt, os
-from utils.helpers import utc_now_iso
+import json, pathlib, datetime as dt
 from data_processing.social_media_scraper import collect_recent_messages
 from analysis.sentiment_analysis import analyse_messages
 from data_processing.news_fetcher import fetch_and_summarise_news
@@ -21,12 +20,14 @@ from analysis.governance_analysis import get_governance_insights
 from data_processing.blockchain_cache import get_recent_blocks_cached
 from llm.ollama_api import generate_completion
 from agents.proposal_submission import submit_proposal
+from agents.context_generator import build_context
 from execution.discord_bot import post_summary as post_discord
 from execution.telegram_bot import post_summary as post_telegram
 from execution.twitter_bot import post_summary as post_twitter
 from data_processing.proposal_store import (
     record_proposal,
     record_execution_result,
+    record_context,
 )
 
 
@@ -92,16 +93,11 @@ def main() -> None:
     update_referenda(max_new=500)  # refresh knowledge-base quickly
     gov_kpis = get_governance_insights(as_narrative=True)
 
-    # Bundle context
-    context = {
-        "timestamp_utc": utc_now_iso(),
-        "sentiment": sentiment,
-        "news": news,
-        "chain_kpis": chain_kpis,
-        "governance_kpis": gov_kpis,
-    }
+    # Bundle context via agent
+    context = build_context(sentiment, news, chain_kpis, gov_kpis)
     timestamp = dt.datetime.utcnow().strftime("%Y%m%d-%H%M%S")
     (OUT_DIR / f"context_{timestamp}.json").write_text(json.dumps(context, indent=2))
+    record_context(context)
 
     print("🔄 Asking LLM to draft proposal …")
     proposal_text = generate_completion(
