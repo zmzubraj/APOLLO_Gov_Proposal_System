@@ -24,6 +24,10 @@ from agents.proposal_submission import submit_proposal
 from execution.discord_bot import post_summary as post_discord
 from execution.telegram_bot import post_summary as post_telegram
 from execution.twitter_bot import post_summary as post_twitter
+from data_processing.proposal_store import (
+    record_proposal,
+    record_execution_result,
+)
 
 
 # --- main.py  (top of file) -----------------------------------------------
@@ -111,10 +115,23 @@ def main() -> None:
     (OUT_DIR / f"proposal_{timestamp}.txt").write_text(proposal_text)
     broadcast_proposal(proposal_text)
     submission_id = submit_proposal(proposal_text)
+    record_proposal(proposal_text, submission_id)
     if submission_id:
         print(f"🔗 Proposal submitted → {submission_id}")
+        record_execution_result(
+            status="submitted",
+            block_hash=submission_id,
+            outcome="pending",
+            submission_id=submission_id,
+        )
     else:
         print("⚠️ Submission failed")
+        record_execution_result(
+            status="failed",
+            block_hash="",
+            outcome="error",
+            submission_id=None,
+        )
 
     duration = (dt.datetime.utcnow() - start).total_seconds()
     print(f"\n✅ Proposal saved → {OUT_DIR/'proposal_latest.txt'}   "
