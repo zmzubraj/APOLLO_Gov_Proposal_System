@@ -17,6 +17,7 @@ from data_processing.referenda_updater import update_referenda
 # from data_processing.blockchain_data_fetcher import fetch_recent_blocks
 from analysis.blockchain_metrics import summarise_blocks, load_blocks_from_file
 from analysis.governance_analysis import get_governance_insights
+from analysis.prediction_analysis import forecast_outcomes
 from data_processing.blockchain_cache import get_recent_blocks_cached
 from llm.ollama_api import generate_completion
 from agents.proposal_submission import submit_proposal
@@ -95,6 +96,8 @@ def main() -> None:
 
     # Bundle context via agent
     context = build_context(sentiment, news, chain_kpis, gov_kpis)
+    forecast = forecast_outcomes(context)
+    context["forecast"] = forecast
     timestamp = dt.datetime.utcnow().strftime("%Y%m%d-%H%M%S")
     (OUT_DIR / f"context_{timestamp}.json").write_text(json.dumps(context, indent=2))
     record_context(context)
