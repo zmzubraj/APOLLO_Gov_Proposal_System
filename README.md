@@ -40,20 +40,20 @@ APOLLO’s modular architecture is deployable on any blockchain supporting on-ch
 ### 📦 Features
 
 - **LLM-Based Analysis:** Uses open-source LLMs (e.g., Gemma3:4B, Deepseek R1:1.5B) via Ollama for summarization, classification, and proposal generation.
-- **Retrieval-Augmented Knowledge Base:** Stores historical proposals in `data/input/PKD Governance Data.xlsx` for retrieval-augmented generation (RAG) instead of relying on a vector database.
+ - **Retrieval-Augmented Knowledge Base:** Stores historical proposals in the Excel workbook [`data/input/PKD Governance Data.xlsx`](data/input/PKD%20Governance%20Data.xlsx) for retrieval-augmented generation (RAG).
 - **Predictive Outcome Modeling (planned):** Lightweight ML models to forecast proposal success and voter turnout (not yet implemented).
 - **Chain-Agnostic Design:** Integrates with Polkadot’s OpenGov pallet; easily adaptable to other platforms.
 - **Modular Pipeline:** Separate modules for data collection, analysis, LLM inference, and on-chain logging.
 - **Audit Trail:** Every output is hashed and stored on-chain or in versioned files for transparency.
 
-> **Current Status:** The Prediction-Analysis agent, on-chain Governor integration, community-platform submission, and knowledge-base feedback loops are not yet implemented in this MVP.
+> **Current Status:** The context-generation agent, prediction-analysis agent, on-chain Governor integration, community-platform submission, and knowledge-base feedback loops are not yet implemented in this MVP.
 
 ### Roadmap
 
-- Prediction-Analysis agent for outcome forecasting.
-- On-chain Governor integration for autonomous proposal submission.
-- Community-platform submission workflow.
-- Knowledge-base feedback loops for continuous learning.
+- Complete context-generation module for richer governance context.
+- Develop prediction-analysis agent for outcome forecasting.
+- Integrate with on-chain Governor for autonomous proposal submission.
+- Establish RAG feedback loop to continuously update the knowledge base.
 
 ### Current Implementation Status
 
@@ -65,8 +65,8 @@ APOLLO’s modular architecture is deployable on any blockchain supporting on-ch
 
 **Agents Layer**
 
-- Data-collector, sentiment-analysis, context-generator, proposal-generator, proposal-submission — implemented
-- Prediction-analysis — not yet implemented
+ - Data-collector, sentiment-analysis, proposal-generator, proposal-submission — implemented
+ - Context-generator, prediction-analysis — not yet implemented
 
 **Execution Layer**
 
@@ -75,9 +75,9 @@ APOLLO’s modular architecture is deployable on any blockchain supporting on-ch
 
 **RAG Feedback Loops**
 
-- Context-generator → knowledge base — implemented
-- Proposal-submission → knowledge base — not yet implemented
-- Governor executed results → knowledge base — not yet implemented
+ - Context-generator → knowledge base — not yet implemented
+ - Proposal-submission → knowledge base — not yet implemented
+ - Governor executed results → knowledge base — not yet implemented
 
 #### 3.1 Core Capabilities
 
@@ -295,11 +295,12 @@ We welcome contributions! To get started:
 
 ## 8. Development Roadmap
 
-- **Upcoming Components:**
-  - Prediction-Analysis agent for outcome forecasting
-  - On-chain Governor integration for autonomous proposal submission
-  - Community-platform submission workflow
-  - Knowledge-base feedback loops for continuous learning
+ - **Upcoming Components:**
+   - Context-generation agent for building governance context
+   - Prediction-Analysis agent for outcome forecasting
+   - On-chain Governor integration for autonomous proposal submission
+   - Community-platform submission workflow
+   - RAG feedback loop for continuous learning
 - **MVP:** Basic pipeline (data ingestion → LLM inference → on-chain log)
 - **Planned Improvements:**
   - Multi-chain smart contract adapters (Ethereum, Cosmos)
