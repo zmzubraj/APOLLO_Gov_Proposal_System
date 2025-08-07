@@ -1,3 +1,4 @@
  # runtime cache
 data/output/blocks_last3days.json
-data/input/PKD Governance Data.xlsx
+data/input/*.xlsx
+!data/input/.gitkeep
