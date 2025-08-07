@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import pathlib
 from typing import Dict, Any
+import json
 
 from src.utils.helpers import utc_now_iso
 
@@ -31,7 +32,7 @@ def _append_row(sheet: str, row: Dict[str, Any]) -> None:
         ws.append(list(row.keys()))
     elif ws.max_row == 0:
         ws.append(list(row.keys()))
-    ws.append([row.get(col, "") for col in ws[1]])
+    ws.append([row.get(col.value, "") for col in ws[1]])
     wb.save(XLSX_PATH)
 
 
@@ -60,6 +61,15 @@ def record_execution_result(
         "outcome": outcome,
     }
     _append_row("ExecutionResults", row)
+
+
+def record_context(context_dict: Dict[str, Any]) -> None:
+    """Record consolidated context blob for auditing."""
+    row = {
+        "timestamp": utc_now_iso(),
+        "context_json": json.dumps(context_dict),
+    }
+    _append_row("Context", row)
 
 
 # Reading helpers -----------------------------------------------------------
