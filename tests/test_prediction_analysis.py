@@ -1,5 +1,5 @@
 import pandas as pd
-from src.analysis.prediction_analysis import forecast_outcomes
+from src.agents.outcome_forecaster import forecast_outcomes
 from src.data_processing import data_loader
 
 

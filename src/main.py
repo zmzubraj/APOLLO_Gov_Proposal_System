@@ -12,14 +12,14 @@ from __future__ import annotations
 import json, pathlib, datetime as dt, os
 from agents.data_collector import DataCollector
 from data_processing.social_media_scraper import collect_recent_messages
-from analysis.sentiment_analysis import analyse_messages
+from agents.sentiment_analyser import analyse_messages
 from data_processing.news_fetcher import fetch_and_summarise_news
 from data_processing.referenda_updater import update_referenda
 # from data_processing.blockchain_data_fetcher import fetch_recent_blocks
 from data_processing.blockchain_cache import get_recent_blocks_cached
 from analysis.blockchain_metrics import summarise_blocks
 from analysis.governance_analysis import get_governance_insights
-from analysis.prediction_analysis import forecast_outcomes
+from agents.outcome_forecaster import forecast_outcomes
 from agents import proposal_generator
 from agents.proposal_submission import submit_proposal
 from agents.context_generator import build_context
