@@ -33,7 +33,6 @@ def test_main_records_final_status(monkeypatch, tmp_path):
         return {}
 
     monkeypatch.setattr(main, "build_context", fake_build_context)
-    monkeypatch.setattr(main, "search_proposals", lambda q, limit: ["snippet1"])
     monkeypatch.setattr(main, "forecast_outcomes", lambda context: {})
     monkeypatch.setattr(main.proposal_generator, "draft", lambda context: "Proposal")
     monkeypatch.setattr(main, "broadcast_proposal", lambda text: None)
@@ -61,4 +60,4 @@ def test_main_records_final_status(monkeypatch, tmp_path):
         "outcome": "Approved",
         "submission_id": "0xsub",
     }
-    assert captured_kb["snippets"] == ["snippet1"]
+    assert captured_kb["snippets"] == []
