@@ -41,6 +41,22 @@ def load_first_sheet() -> pd.DataFrame:
     return df
 
 
+def load_proposals() -> pd.DataFrame:
+    """Return the ``Proposals`` worksheet as a DataFrame (empty if missing)."""
+    try:
+        return load_governance_data(sheet_name="Proposals")
+    except Exception:
+        return pd.DataFrame()
+
+
+def load_execution_results() -> pd.DataFrame:
+    """Return the ``ExecutionResults`` worksheet as a DataFrame (empty if missing)."""
+    try:
+        return load_governance_data(sheet_name="ExecutionResults")
+    except Exception:
+        return pd.DataFrame()
+
+
 # Quick test
 if __name__ == "__main__":
     dfs = load_governance_data()  # Load all sheets by default
