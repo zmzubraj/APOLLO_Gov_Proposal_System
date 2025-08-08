@@ -71,7 +71,7 @@ APOLLO’s modular architecture is deployable on any blockchain supporting on-ch
 **Execution Layer**
 
 - Governor smart contract — not yet implemented
-- Community platforms integration — not yet implemented
+- Community platform connectors — post proposal summaries to Discord, Telegram, and Twitter
 
 **RAG Feedback Loops**
 
@@ -189,13 +189,20 @@ Create a `.env` file in the project root:
  REDDIT_CLIENT_SECRET=...
  SUBSTRATE_NODE_URL=wss://rpc.polkadot.io
  SUBSTRATE_PRIVATE_KEY=hex_encoded_sr25519_key
+ # Community platform credentials
+ DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
+ TELEGRAM_BOT_TOKEN=your_telegram_bot_token
+ TELEGRAM_CHAT_ID=your_chat_id
+ TWITTER_BEARER=your_twitter_api_bearer_token
 ```
 
 `SUBSTRATE_NODE_URL` should point to a Substrate RPC endpoint. Common choices
 include `wss://rpc.polkadot.io` for Polkadot mainnet or
 `wss://westend-rpc.polkadot.io` for the Westend testnet. The
 `SUBSTRATE_PRIVATE_KEY` is the signing key used by the execution agent when
-submitting OpenGov transactions and must be funded for deposits.
+submitting OpenGov transactions and must be funded for deposits. The Discord,
+Telegram, and Twitter variables enable posting proposal summaries to those
+platforms via the execution layer connectors.
 
 ---
 
@@ -237,6 +244,19 @@ python src/main.py
 - Orchestrates the full workflow: sentiment analysis, data fetch, KPI analysis, LLM-based proposal generation, and output.
 
 > **Tip:** The first run may take longer due to model downloads and embedding builds. Subsequent runs are faster.
+
+### 6. Post Summaries to Community Platforms
+
+```python
+from src.execution.discord_bot import post_summary as discord_post
+from src.execution.telegram_bot import post_summary as telegram_post
+from src.execution.twitter_bot import post_summary as twitter_post
+
+discord_post("Example proposal summary")
+telegram_post("Example proposal summary")
+twitter_post("Example proposal summary")
+```
+- Sends a text summary to Discord, Telegram, and Twitter using the configured credentials.
 
 ---
 
