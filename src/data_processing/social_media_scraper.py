@@ -9,10 +9,16 @@ back to an empty list for that source so the pipeline can still run.
 """
 
 from __future__ import annotations
+
+import datetime as dt
+import html
+import os
+import re
+import time
 from typing import List
-import os, re, datetime as dt, requests, json
+
+import requests
 from bs4 import BeautifulSoup
-import requests, datetime as dt, time, html
 
 # -----------------------------------------------------------------------------
 # Utility
