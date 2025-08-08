@@ -52,11 +52,24 @@ def test_main_records_final_status(monkeypatch, tmp_path):
     )
     monkeypatch.setattr(main, "record_proposal", lambda text, sid: None)
     monkeypatch.setattr(main, "await_execution", lambda node_url, idx, sid: ("0xblock", "Approved"))
+    monkeypatch.setattr(
+        main,
+        "execute_proposal",
+        lambda url, pk: {"extrinsic_hash": "0xexec", "block_hash": "0xexecblock"},
+    )
 
     recorded = {}
 
-    def fake_record_execution_result(status, block_hash, outcome, submission_id=None):
-        recorded.update(status=status, block_hash=block_hash, outcome=outcome, submission_id=submission_id)
+    def fake_record_execution_result(
+        status, block_hash, outcome, submission_id=None, extrinsic_hash=None
+    ):
+        recorded.update(
+            status=status,
+            block_hash=block_hash,
+            outcome=outcome,
+            submission_id=submission_id,
+            extrinsic_hash=extrinsic_hash,
+        )
 
     monkeypatch.setattr(main, "record_execution_result", fake_record_execution_result)
 
@@ -68,9 +81,10 @@ def test_main_records_final_status(monkeypatch, tmp_path):
     main.main()
 
     assert recorded == {
-        "status": "Approved",
-        "block_hash": "0xblock",
+        "status": "Executed",
+        "block_hash": "0xexecblock",
         "outcome": "Approved",
         "submission_id": "0xsub",
+        "extrinsic_hash": "0xexec",
     }
     assert captured_kb["query"] == ""

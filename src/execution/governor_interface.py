@@ -214,3 +214,37 @@ def await_execution(
         time.sleep(poll_interval)
     return "", "timeout"
 
+
+def execute_proposal(
+    node_url: str,
+    private_key: str,
+    remark: str = "Executed by APOLLO",
+) -> Dict[str, Any]:
+    """Dispatch a demo remark extrinsic after a proposal is approved.
+
+    Parameters
+    ----------
+    node_url:
+        Endpoint of the Substrate node.
+    private_key:
+        Private key used to sign the extrinsic.
+    remark:
+        Text included in the ``system.remark`` call.
+
+    Returns
+    -------
+    Dict[str, Any]
+        Parsed receipt information describing the extrinsic execution.
+    """
+
+    substrate = connect(node_url)
+    keypair = _create_keypair(private_key)
+    call = substrate.compose_call(
+        call_module="System",
+        call_function="remark",
+        call_params={"remark": remark.encode("utf-8")},
+    )
+    extrinsic = substrate.create_signed_extrinsic(call=call, keypair=keypair)
+    receipt = substrate.submit_extrinsic(extrinsic, wait_for_inclusion=True)
+    return parse_receipt(receipt)
+
