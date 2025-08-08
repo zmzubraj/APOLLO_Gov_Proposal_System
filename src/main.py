@@ -34,7 +34,7 @@ from data_processing.proposal_store import (
     record_proposal,
     record_execution_result,
     record_context,
-    search_proposals,
+    retrieve_recent,
 )
 
 
@@ -81,11 +81,9 @@ def main() -> None:
     update_referenda(max_new=500)  # refresh knowledge-base quickly
     gov_kpis = get_governance_insights(as_narrative=True)
 
-    # Retrieve relevant knowledge-base snippets from prior proposals
+    # Retrieve relevant knowledge-base snippets from prior runs
     keywords = gov_kpis.get("top_keywords", []) if isinstance(gov_kpis, dict) else []
-    kb_snippets: list[str] = []
-    for kw in keywords[:3]:  # limit to top 3 keywords
-        kb_snippets.extend(search_proposals(kw, limit=3))
+    kb_snippets = retrieve_recent(keywords[:3])
 
     # Bundle context via agent
     context = build_context(sentiment, news, chain_kpis, gov_kpis, kb_snippets)

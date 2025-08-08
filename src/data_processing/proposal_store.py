@@ -99,6 +99,55 @@ def load_execution_results():
         return pd.DataFrame()
 
 
+def load_contexts():
+    """Read the ``Context`` sheet as a DataFrame (empty if unavailable)."""
+    import pandas as pd
+
+    if not XLSX_PATH.exists():
+        return pd.DataFrame()
+    try:
+        return pd.read_excel(XLSX_PATH, sheet_name="Context")
+    except Exception:
+        return pd.DataFrame()
+
+
+def retrieve_recent(topics: list[str], limit_per_topic: int = 3) -> list[str]:
+    """Return recent proposal/context snippets mentioning any of ``topics``.
+
+    Searches both the ``Proposals`` and ``Context`` sheets for entries
+    containing any of the provided topics (case-insensitive) and returns the
+    most recent snippets. Results are limited to ``limit_per_topic`` per topic
+    and returned in no particular order.
+    """
+
+    if not topics:
+        return []
+
+    proposals = load_proposals()
+    contexts = load_contexts()
+    snippets: list[str] = []
+
+    for topic in topics:
+        if not isinstance(topic, str) or not topic:
+            continue
+        if not proposals.empty and "proposal_text" in proposals.columns:
+            mask = proposals["proposal_text"].astype(str).str.contains(topic, case=False, na=False)
+            snippets.extend(
+                proposals.loc[mask]
+                .sort_values("timestamp", ascending=False)
+                .head(limit_per_topic)["proposal_text"].astype(str).tolist()
+            )
+        if not contexts.empty and "context_json" in contexts.columns:
+            mask = contexts["context_json"].astype(str).str.contains(topic, case=False, na=False)
+            snippets.extend(
+                contexts.loc[mask]
+                .sort_values("timestamp", ascending=False)
+                .head(limit_per_topic)["context_json"].astype(str).tolist()
+            )
+
+    return snippets
+
+
 def search_proposals(query: str, limit: int) -> list[str]:
     """Return up to ``limit`` proposal texts containing ``query``.
 
