@@ -33,8 +33,6 @@ from execution.governor_interface import (
 from data_processing.proposal_store import (
     record_proposal,
     record_execution_result,
-    record_context,
-    retrieve_recent,
 )
 
 
@@ -81,17 +79,21 @@ def main() -> None:
     update_referenda(max_new=500)  # refresh knowledge-base quickly
     gov_kpis = get_governance_insights(as_narrative=True)
 
-    # Retrieve relevant knowledge-base snippets from prior runs
+    # Bundle context via agent including semantic KB retrieval
     keywords = gov_kpis.get("top_keywords", []) if isinstance(gov_kpis, dict) else []
-    kb_snippets = retrieve_recent(keywords[:3])
-
-    # Bundle context via agent
-    context = build_context(sentiment, news, chain_kpis, gov_kpis, kb_snippets)
+    query = " ".join(keywords[:3])
+    context = build_context(
+        sentiment,
+        news,
+        chain_kpis,
+        gov_kpis,
+        kb_query=query,
+        summarise_snippets=True,
+    )
     forecast = forecast_outcomes(context)
     context["forecast"] = forecast
     timestamp = dt.datetime.utcnow().strftime("%Y%m%d-%H%M%S")
     (OUT_DIR / f"context_{timestamp}.json").write_text(json.dumps(context, indent=2))
-    record_context(context)
 
     print("🔄 Asking LLM to draft proposal …")
     proposal_text = proposal_generator.draft(context)

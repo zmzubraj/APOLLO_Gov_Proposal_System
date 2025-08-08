@@ -5,8 +5,9 @@ so the tests are fast and deterministic.
 """
 
 from src.utils import validators as v
-from src.data_processing import proposal_store
+from data_processing import proposal_store
 from src.agents.context_generator import build_context
+from llm import ollama_api
 
 
 def test_validators_pass_on_dummy():
@@ -50,9 +51,12 @@ def test_stored_proposals_influence_context(tmp_path, monkeypatch):
     proposal_store.record_proposal("Increase staking rewards", submission_id=None)
     proposal_store.record_context({"note": "staking yields high"})
 
-    # Retrieval for a new run should surface past snippets
-    snippets = proposal_store.retrieve_recent(["staking"])
-    assert any("Increase staking rewards" in s for s in snippets)
+    # Patch embeddings so "staking" aligns with the stored proposal
+    def fake_embed(text: str):
+        return [1, 0] if "staking" in text.lower() else [0, 1]
 
-    ctx = build_context({}, {}, {}, {"top_keywords": ["staking"]}, kb_snippets=snippets)
+    monkeypatch.setattr(ollama_api, "embed_text", fake_embed)
+    monkeypatch.setattr(proposal_store, "record_context", lambda _c: None)
+
+    ctx = build_context({}, {}, {}, {}, kb_query="staking")
     assert any("Increase staking rewards" in s for s in ctx["kb_snippets"])

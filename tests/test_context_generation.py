@@ -1,8 +1,9 @@
 import json
 
 from src.agents.context_generator import build_context
-from src.data_processing import proposal_store
+from data_processing import proposal_store
 from src.utils import validators as v
+from llm import ollama_api
 
 
 def _dummy_components():
@@ -29,9 +30,11 @@ def _dummy_components():
     return sentiment, news, chain, gov
 
 
-def test_build_context_structure_dedup_and_summary():
+def test_build_context_structure_dedup_and_summary(monkeypatch):
     sentiment, news, chain, gov = _dummy_components()
     snippets = ["previous proposal", "previous proposal"]
+    monkeypatch.setattr(ollama_api, "generate_completion", lambda _p, **_: "summary")
+    monkeypatch.setattr(proposal_store, "record_context", lambda _c: None)
     ctx = build_context(
         sentiment, news, chain, gov, snippets, summarise_snippets=True
     )
@@ -45,7 +48,7 @@ def test_build_context_structure_dedup_and_summary():
         "kb_summary",
     }
     assert ctx["kb_snippets"] == ["previous proposal"]
-    assert ctx["kb_summary"].startswith("previous proposal")
+    assert ctx["kb_summary"] == "summary"
     assert v.validate_sentiment(ctx["sentiment"])
     assert v.validate_news(ctx["news"])
     assert v.validate_chain_kpis(ctx["chain_kpis"])
@@ -66,11 +69,11 @@ def test_search_proposals_by_keyword(monkeypatch):
 def test_record_context_persist(tmp_path, monkeypatch):
     sentiment, news, chain, gov = _dummy_components()
     snippets = ["snippet"]
+    monkeypatch.setattr(ollama_api, "generate_completion", lambda _p, **_: "summary")
+    monkeypatch.setattr(proposal_store, "XLSX_PATH", tmp_path / "gov.xlsx")
     ctx = build_context(
         sentiment, news, chain, gov, snippets, summarise_snippets=True
     )
-    monkeypatch.setattr(proposal_store, "XLSX_PATH", tmp_path / "gov.xlsx")
-    proposal_store.record_context(ctx)
     from openpyxl import load_workbook
 
     wb = load_workbook(proposal_store.XLSX_PATH)
@@ -84,4 +87,4 @@ def test_record_context_persist(tmp_path, monkeypatch):
     assert stored["chain_kpis"] == chain
     assert stored["governance_kpis"] == gov
     assert stored["kb_snippets"] == snippets
-    assert stored["kb_summary"].startswith("snippet")
+    assert stored["kb_summary"] == "summary"
