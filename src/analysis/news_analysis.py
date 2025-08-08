@@ -8,10 +8,13 @@ then summarise with the selected LLM.
 from __future__ import annotations
 from typing import List, Dict, Any
 import datetime as dt
+import logging
 import feedparser
 from bs4 import BeautifulSoup
 from src.llm.ollama_api import generate_completion
 from src.analysis.sentiment_analysis import _extract_json
+
+logger = logging.getLogger(__name__)
 
 RSS_FEEDS = [
     "https://cointelegraph.com/rss/tag/polkadot",           # Cointelegraph Polkadot
@@ -88,7 +91,7 @@ def summarise_news(items: List[Dict[str, Any]]) -> Dict[str, Any]:
         model="gemma3:4b",
     )
 
-    print("Response summery: \n", raw)
+    logger.debug("Response summary: %s", raw)
 
     # reuse extractor from sentiment module
     parsed = _extract_json(raw)
