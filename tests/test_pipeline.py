@@ -5,6 +5,8 @@ so the tests are fast and deterministic.
 """
 
 from src.utils import validators as v
+from src.data_processing import proposal_store
+from src.agents.context_generator import build_context
 
 
 def test_validators_pass_on_dummy():
@@ -36,3 +38,21 @@ def test_validators_pass_on_dummy():
     assert v.validate_news(news)
     assert v.validate_chain_kpis(chain)
     assert v.validate_governance_kpis(gov)
+
+
+def test_stored_proposals_influence_context(tmp_path, monkeypatch):
+    """Proposals saved to the store should surface in later contexts."""
+
+    tmp_xlsx = tmp_path / "test_store.xlsx"
+    monkeypatch.setattr(proposal_store, "XLSX_PATH", tmp_xlsx)
+
+    # Simulate a previous run recording proposal and context
+    proposal_store.record_proposal("Increase staking rewards", submission_id=None)
+    proposal_store.record_context({"note": "staking yields high"})
+
+    # Retrieval for a new run should surface past snippets
+    snippets = proposal_store.retrieve_recent(["staking"])
+    assert any("Increase staking rewards" in s for s in snippets)
+
+    ctx = build_context({}, {}, {}, {"top_keywords": ["staking"]}, kb_snippets=snippets)
+    assert any("Increase staking rewards" in s for s in ctx["kb_snippets"])
