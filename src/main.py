@@ -174,8 +174,10 @@ def main() -> None:
         )
 
     duration = (dt.datetime.utcnow() - start).total_seconds()
-    print(f"\n✅ Proposal saved → {OUT_DIR/'proposal_latest.txt'}   "
-          f"(pipeline took {duration:.1f}s)\n")
+    print(
+        f"\n✅ Proposal saved → {OUT_DIR / f'proposal_{timestamp}.txt'}   "
+        f"(pipeline took {duration:.1f}s)\n"
+    )
     print("----------\n" + proposal_text + "\n----------")
 
 
