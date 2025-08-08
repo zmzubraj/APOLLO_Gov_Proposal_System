@@ -61,7 +61,12 @@ def test_main_records_final_status(monkeypatch, tmp_path):
     recorded = {}
 
     def fake_record_execution_result(
-        status, block_hash, outcome, submission_id=None, extrinsic_hash=None
+        status,
+        block_hash,
+        outcome,
+        submission_id=None,
+        extrinsic_hash=None,
+        referendum_index=None,
     ):
         recorded.update(
             status=status,
@@ -69,6 +74,7 @@ def test_main_records_final_status(monkeypatch, tmp_path):
             outcome=outcome,
             submission_id=submission_id,
             extrinsic_hash=extrinsic_hash,
+            referendum_index=referendum_index,
         )
 
     monkeypatch.setattr(main, "record_execution_result", fake_record_execution_result)
@@ -86,5 +92,6 @@ def test_main_records_final_status(monkeypatch, tmp_path):
         "outcome": "Approved",
         "submission_id": "0xsub",
         "extrinsic_hash": "0xexec",
+        "referendum_index": 1,
     }
     assert captured_kb["query"] == ""

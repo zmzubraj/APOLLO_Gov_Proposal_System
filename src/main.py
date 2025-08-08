@@ -143,6 +143,7 @@ def main() -> None:
                     outcome=outcome,
                     submission_id=submission_id,
                     extrinsic_hash=exec_receipt.get("extrinsic_hash", ""),
+                    referendum_index=referendum_index,
                 )
             except Exception:
                 record_execution_result(
@@ -151,6 +152,7 @@ def main() -> None:
                     outcome=outcome,
                     submission_id=submission_id,
                     extrinsic_hash="",
+                    referendum_index=referendum_index,
                 )
         else:
             record_execution_result(
@@ -159,6 +161,7 @@ def main() -> None:
                 outcome=outcome,
                 submission_id=submission_id,
                 extrinsic_hash="",
+                referendum_index=referendum_index,
             )
     else:
         print("⚠️ Submission failed")

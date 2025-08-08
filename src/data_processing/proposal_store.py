@@ -52,8 +52,14 @@ def record_execution_result(
     outcome: str,
     submission_id: str | None = None,
     extrinsic_hash: str | None = None,
+    referendum_index: int | None = None,
 ) -> None:
-    """Append governor execution details to the ``ExecutionResults`` sheet."""
+    """Append governor execution details to the ``ExecutionResults`` sheet.
+
+    If ``referendum_index`` is provided, the latest referendum data is
+    fetched and stored in the ``Referenda`` sheet via
+    :func:`referenda_updater.append_referendum`.
+    """
     row = {
         "timestamp": utc_now_iso(),
         "submission_id": submission_id or "",
@@ -63,6 +69,14 @@ def record_execution_result(
         "extrinsic_hash": extrinsic_hash or "",
     }
     _append_row("ExecutionResults", row)
+
+    if referendum_index is not None:
+        try:
+            from src.data_processing import referenda_updater
+
+            referenda_updater.append_referendum(referendum_index)
+        except Exception:
+            pass
 
 
 def record_context(context_dict: Dict[str, Any]) -> None:

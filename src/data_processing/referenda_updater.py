@@ -311,5 +311,56 @@ def update_referenda(max_new: int = 500, max_gaps: int = 5) -> None:
         print(f"⚠ Logged {len(failures)} failures → {FAIL_CSV}")
 
 
+# ───────────────────── Single append/reconcile helpers ──────────────────
+
+def append_referendum(idx: int) -> None:
+    """Fetch ``idx`` and append or update its row in the Referenda sheet."""
+
+    df = (
+        pd.read_excel(XLSX_PATH, sheet_name="Referenda")
+        if XLSX_PATH.exists()
+        else pd.DataFrame(columns=COLS)
+    )
+    try:
+        row = collect_referendum(idx)
+    except Exception:
+        return
+
+    row_df = pd.DataFrame([row], columns=COLS)
+    if not df.empty and "Referendum_ID" in df.columns and idx in df["Referendum_ID"].values:
+        df.loc[df["Referendum_ID"] == idx, :] = row_df.values
+    else:
+        df = pd.concat([df, row_df], ignore_index=True)
+
+    with pd.ExcelWriter(
+        XLSX_PATH, engine="openpyxl", mode="a", if_sheet_exists="replace"
+    ) as writer:
+        df.to_excel(writer, sheet_name="Referenda", index=False)
+
+
+def reconcile_referenda(ids: list[int] | None = None) -> None:
+    """Refresh stored rows from on-chain data."""
+
+    if not XLSX_PATH.exists():
+        return
+    df = pd.read_excel(XLSX_PATH, sheet_name="Referenda")
+    if df.empty or "Referendum_ID" not in df.columns:
+        return
+
+    refresh_ids = ids or df["Referendum_ID"].dropna().astype(int).tolist()
+    for rid in refresh_ids:
+        try:
+            row = collect_referendum(rid)
+            row_df = pd.DataFrame([row], columns=df.columns)
+            df.loc[df["Referendum_ID"] == rid, :] = row_df.values
+        except Exception:
+            continue
+
+    with pd.ExcelWriter(
+        XLSX_PATH, engine="openpyxl", mode="a", if_sheet_exists="replace"
+    ) as writer:
+        df.to_excel(writer, sheet_name="Referenda", index=False)
+
+
 if __name__ == "__main__":
     update_referenda()
