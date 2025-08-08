@@ -34,3 +34,49 @@ def test_twitter_payload():
             json={"text": "tweet"},
             headers={"Authorization": "Bearer tok"},
         )
+
+
+def test_discord_poll_messages():
+    with patch("src.execution.discord_bot.requests.get") as get:
+        get.return_value.ok = True
+        get.return_value.json.return_value = [{"content": "msg"}]
+        msgs = discord_bot.poll_messages("123", token="tok")
+        assert msgs == ["msg"]
+        get.assert_called_once_with(
+            "https://discord.com/api/v10/channels/123/messages",
+            headers={"Authorization": "Bot tok"},
+            params={"limit": 50},
+            timeout=10,
+        )
+
+
+def test_telegram_poll_messages():
+    with patch("src.execution.telegram_bot.requests.get") as get:
+        get.return_value.ok = True
+        get.return_value.json.return_value = {
+            "result": [
+                {"message": {"chat": {"id": "c"}, "text": "hi"}},
+                {"message": {"chat": {"id": "other"}, "text": "skip"}},
+            ]
+        }
+        msgs = telegram_bot.poll_messages(token="TOKEN", chat_id="c")
+        assert msgs == ["hi"]
+        get.assert_called_once_with(
+            "https://api.telegram.org/botTOKEN/getUpdates",
+            params={"limit": 50},
+            timeout=10,
+        )
+
+
+def test_twitter_poll_messages():
+    with patch("src.execution.twitter_bot.requests.get") as get:
+        get.return_value.ok = True
+        get.return_value.json.return_value = {"data": [{"text": "tw"}]}
+        msgs = twitter_bot.poll_messages("dot", bearer_token="tok")
+        assert msgs == ["tw"]
+        get.assert_called_once_with(
+            "https://api.twitter.com/2/tweets/search/recent",
+            headers={"Authorization": "Bearer tok"},
+            params={"query": "dot", "max_results": 10},
+            timeout=10,
+        )
