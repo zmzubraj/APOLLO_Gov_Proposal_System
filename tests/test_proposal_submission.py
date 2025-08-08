@@ -71,10 +71,21 @@ def test_main_submits(monkeypatch, capsys):
     monkeypatch.setattr(main.proposal_generator, "draft", lambda context: "proposal text")
     monkeypatch.setattr(main, "record_context", lambda ctx: None)
 
-    def fake_submit(text, credentials=None):
-        assert text == "proposal text"
-        return "abc123"
+    monkeypatch.setattr(
+        main,
+        "submit_preimage",
+        lambda url, pk, data: {"preimage_hash": "0xhash", "extrinsic_hash": "0xpre"},
+    )
+
+    def fake_submit(url, pk, hash_, track):
+        assert hash_ == "0xhash"
+        return {"extrinsic_hash": "abc123", "referendum_index": 7, "is_success": True}
+
     monkeypatch.setattr(main, "submit_proposal", fake_submit)
+
+    monkeypatch.setenv("SUBSTRATE_NODE_URL", "ws://node")
+    monkeypatch.setenv("SUBSTRATE_PRIVATE_KEY", "priv")
+    monkeypatch.setenv("GOVERNANCE_TRACK", "root")
 
     main.main()
     out = capsys.readouterr().out

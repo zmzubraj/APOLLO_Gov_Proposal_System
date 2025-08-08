@@ -117,3 +117,84 @@ def test_await_execution(monkeypatch):
     block_hash, outcome = gi.await_execution("ws://node", 1, "0xsub", poll_interval=0, max_attempts=5)
     assert block_hash == "0xdead"
     assert outcome == "Approved"
+
+
+def test_integration_success_and_failure(monkeypatch):
+    """Full flow: preimage then proposal; success and failure cases."""
+
+    class FakeSubstrate:
+        def __init__(self, success=True):
+            self.success = success
+
+        def get_constant(self, module, name):
+            assert module == "Referenda" and name == "Tracks"
+            return {1: {"name": "root", "decision_deposit": 10}}
+
+        def compose_call(self, call_module, call_function, call_params):
+            if call_module == "Preimage":
+                assert call_function == "note_preimage"
+                assert call_params["bytes"] == b"data"
+                return "call_pre"
+            if call_module == "Referenda":
+                assert call_function == "submit"
+                assert call_params == {
+                    "proposal": "0xhash",
+                    "track": 1,
+                    "value": 10,
+                }
+                return "call_prop"
+
+        def create_signed_extrinsic(self, call, keypair):
+            return f"xt_{call}"
+
+        def submit_extrinsic(self, extrinsic, wait_for_inclusion):
+            if extrinsic == "xt_call_pre":
+                return SimpleNamespace(
+                    extrinsic_hash="0xpre",
+                    block_hash="0xb",
+                    is_success=True,
+                    error_message=None,
+                    triggered_events=[
+                        SimpleNamespace(
+                            event_module="Preimage",
+                            event_name="Noted",
+                            params=[{"value": "0xhash"}],
+                        )
+                    ],
+                )
+            else:
+                return SimpleNamespace(
+                    extrinsic_hash="0xprop",
+                    block_hash="0xc",
+                    is_success=self.success,
+                    error_message=None if self.success else "fail",
+                    triggered_events=(
+                        [
+                            SimpleNamespace(
+                                event_module="Referenda",
+                                event_name="Submitted",
+                                params=[{"value": 5}],
+                            )
+                        ]
+                        if self.success
+                        else []
+                    ),
+                )
+
+    # Successful path
+    fake = FakeSubstrate(success=True)
+    monkeypatch.setattr(gi, "connect", lambda url: fake)
+    monkeypatch.setattr(gi, "_create_keypair", lambda pk: "kp")
+    pre = gi.submit_preimage("ws://node", "priv", b"data")
+    assert pre["preimage_hash"] == "0xhash"
+    prop = gi.submit_proposal("ws://node", "priv", pre["preimage_hash"], "root")
+    assert prop["referendum_index"] == 5
+    assert prop["is_success"] is True
+
+    # Failing proposal submission
+    fake_fail = FakeSubstrate(success=False)
+    monkeypatch.setattr(gi, "connect", lambda url: fake_fail)
+    pre = gi.submit_preimage("ws://node", "priv", b"data")
+    prop = gi.submit_proposal("ws://node", "priv", pre["preimage_hash"], "root")
+    assert prop["is_success"] is False
+    assert prop.get("referendum_index") is None
