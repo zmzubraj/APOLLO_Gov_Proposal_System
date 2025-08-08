@@ -1,4 +1,3 @@
- 
 import pandas as pd
 from data_processing import proposal_store
 
@@ -14,3 +13,4 @@ def test_search_proposals_returns_matches(monkeypatch):
 
     results = proposal_store.search_proposals("governance", limit=5)
     assert results == ["Improve governance transparency"]
+
