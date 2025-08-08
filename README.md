@@ -122,6 +122,7 @@ Follow these steps to configure and run the APOLLO MVP. Requires Python 3.9+, Su
 - **Python:** 3.9 or 3.10, with `pip`
 - **Ollama:** ≥ 0.1.0, with a supported LLM image (e.g., `gemma3:4b`)
 - **Substrate Node:** For live on-chain data (optional)
+- **Ethereum Node:** For interacting with EVM chains via Web3 (optional)
 - **API Keys:** `SUBSCAN_API_KEY` for on-chain metrics; social/news API keys as needed
 
 ---
@@ -147,12 +148,14 @@ python3 -m venv ./venv
 source ./venv/bin/activate
 ```
 
-#### 3. Install Python Dependencies
+#### 3. Install Python Dependencies (includes Web3 for EVM chains)
 
 ```bash
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
+
+These commands install core libraries, including Web3 and Ethereum tooling.
 
 *If `requirements.txt` is missing, install dependencies manually.*
 
