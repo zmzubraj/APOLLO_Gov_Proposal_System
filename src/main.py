@@ -21,12 +21,15 @@ from analysis.blockchain_metrics import summarise_blocks
 from analysis.governance_analysis import get_governance_insights
 from agents.outcome_forecaster import forecast_outcomes
 from agents import proposal_generator
-from agents.proposal_submission import submit_proposal
 from agents.context_generator import build_context
 from execution.discord_bot import post_summary as post_discord
 from execution.telegram_bot import post_summary as post_telegram
 from execution.twitter_bot import post_summary as post_twitter
-from execution.governor_interface import await_execution
+from execution.governor_interface import (
+    await_execution,
+    submit_preimage,
+    submit_proposal,
+)
 from data_processing.proposal_store import (
     record_proposal,
     record_execution_result,
@@ -97,14 +100,35 @@ def main() -> None:
     timestamp = dt.datetime.utcnow().strftime("%Y%m%d-%H%M%S")
     (OUT_DIR / f"proposal_{timestamp}.txt").write_text(proposal_text)
     broadcast_proposal(proposal_text)
-    submission_id = submit_proposal(proposal_text)
+
+    node_url = os.getenv("SUBSTRATE_NODE_URL", "")
+    private_key = os.getenv("SUBSTRATE_PRIVATE_KEY", "")
+    track = os.getenv("GOVERNANCE_TRACK", "root")
+    referendum_index = 0
+    submission_id = None
+
+    if node_url and private_key:
+        try:
+            preimage_receipt = submit_preimage(
+                node_url, private_key, proposal_text.encode("utf-8")
+            )
+            preimage_hash = preimage_receipt.get("preimage_hash")
+            proposal_receipt = submit_proposal(
+                node_url, private_key, preimage_hash, track
+            )
+            submission_id = proposal_receipt.get("extrinsic_hash")
+            referendum_index = int(proposal_receipt.get("referendum_index", 0) or 0)
+        except Exception:
+            submission_id = None
+            referendum_index = 0
+
     record_proposal(proposal_text, submission_id)
     if submission_id:
         print(f"🔗 Proposal submitted → {submission_id}")
         try:
             block_hash, outcome = await_execution(
-                os.getenv("SUBSTRATE_NODE_URL", ""),
-                int(os.getenv("REFERENDUM_INDEX", "0")),
+                node_url,
+                referendum_index,
                 submission_id,
             )
         except Exception:

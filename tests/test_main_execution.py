@@ -36,7 +36,20 @@ def test_main_records_final_status(monkeypatch, tmp_path):
     monkeypatch.setattr(main, "forecast_outcomes", lambda context: {})
     monkeypatch.setattr(main.proposal_generator, "draft", lambda context: "Proposal")
     monkeypatch.setattr(main, "broadcast_proposal", lambda text: None)
-    monkeypatch.setattr(main, "submit_proposal", lambda text: "0xsub")
+    monkeypatch.setattr(
+        main,
+        "submit_preimage",
+        lambda url, pk, data: {"preimage_hash": "0xhash", "extrinsic_hash": "0xpre"},
+    )
+    monkeypatch.setattr(
+        main,
+        "submit_proposal",
+        lambda url, pk, hash_, track: {
+            "extrinsic_hash": "0xsub",
+            "referendum_index": 1,
+            "is_success": True,
+        },
+    )
     monkeypatch.setattr(main, "record_proposal", lambda text, sid: None)
     monkeypatch.setattr(main, "record_context", lambda context: None)
     monkeypatch.setattr(main, "await_execution", lambda node_url, idx, sid: ("0xblock", "Approved"))
@@ -50,7 +63,8 @@ def test_main_records_final_status(monkeypatch, tmp_path):
 
     monkeypatch.setattr(main, "OUT_DIR", tmp_path)
     monkeypatch.setenv("SUBSTRATE_NODE_URL", "ws://node")
-    monkeypatch.setenv("REFERENDUM_INDEX", "1")
+    monkeypatch.setenv("SUBSTRATE_PRIVATE_KEY", "priv")
+    monkeypatch.setenv("GOVERNANCE_TRACK", "root")
 
     main.main()
 
