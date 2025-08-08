@@ -28,8 +28,8 @@ def test_main_records_final_status(monkeypatch, tmp_path):
     monkeypatch.setattr(main, "get_governance_insights", lambda as_narrative=True: {})
     captured_kb = {}
 
-    def fake_build_context(sentiment, news, chain, gov, kb_snippets=None):
-        captured_kb["snippets"] = kb_snippets
+    def fake_build_context(sentiment, news, chain, gov, kb_snippets=None, kb_query=None, **_):
+        captured_kb["query"] = kb_query
         return {}
 
     monkeypatch.setattr(main, "build_context", fake_build_context)
@@ -51,7 +51,6 @@ def test_main_records_final_status(monkeypatch, tmp_path):
         },
     )
     monkeypatch.setattr(main, "record_proposal", lambda text, sid: None)
-    monkeypatch.setattr(main, "record_context", lambda context: None)
     monkeypatch.setattr(main, "await_execution", lambda node_url, idx, sid: ("0xblock", "Approved"))
 
     recorded = {}
@@ -74,4 +73,4 @@ def test_main_records_final_status(monkeypatch, tmp_path):
         "outcome": "Approved",
         "submission_id": "0xsub",
     }
-    assert captured_kb["snippets"] == []
+    assert captured_kb["query"] == ""

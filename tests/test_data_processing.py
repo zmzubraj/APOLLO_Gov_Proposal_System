@@ -1,6 +1,6 @@
  
 import pandas as pd
-from src.data_processing import proposal_store
+from data_processing import proposal_store
 
 
 def test_search_proposals_returns_matches(monkeypatch):

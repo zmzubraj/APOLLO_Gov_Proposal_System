@@ -69,7 +69,8 @@ def test_main_submits(monkeypatch, capsys):
     monkeypatch.setattr(main, "summarise_blocks", lambda blocks: {})
     monkeypatch.setattr(main, "get_governance_insights", lambda as_narrative=True: {})
     monkeypatch.setattr(main.proposal_generator, "draft", lambda context: "proposal text")
-    monkeypatch.setattr(main, "record_context", lambda ctx: None)
+    monkeypatch.setattr(main, "build_context", lambda *a, **k: {})
+    monkeypatch.setattr(main, "forecast_outcomes", lambda ctx: {})
 
     monkeypatch.setattr(
         main,
