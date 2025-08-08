@@ -51,6 +51,7 @@ def record_execution_result(
     block_hash: str,
     outcome: str,
     submission_id: str | None = None,
+    extrinsic_hash: str | None = None,
 ) -> None:
     """Append governor execution details to the ``ExecutionResults`` sheet."""
     row = {
@@ -59,6 +60,7 @@ def record_execution_result(
         "status": status,
         "block_hash": block_hash,
         "outcome": outcome,
+        "extrinsic_hash": extrinsic_hash or "",
     }
     _append_row("ExecutionResults", row)
 

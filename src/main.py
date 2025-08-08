@@ -27,6 +27,7 @@ from execution.telegram_bot import post_summary as post_telegram
 from execution.twitter_bot import post_summary as post_twitter
 from execution.governor_interface import (
     await_execution,
+    execute_proposal,
     submit_preimage,
     submit_proposal,
 )
@@ -133,12 +134,32 @@ def main() -> None:
             )
         except Exception:
             block_hash, outcome = submission_id, "pending"
-        record_execution_result(
-            status=outcome,
-            block_hash=block_hash,
-            outcome=outcome,
-            submission_id=submission_id,
-        )
+        if outcome == "Approved":
+            try:
+                exec_receipt = execute_proposal(node_url, private_key)
+                record_execution_result(
+                    status="Executed",
+                    block_hash=exec_receipt.get("block_hash", ""),
+                    outcome=outcome,
+                    submission_id=submission_id,
+                    extrinsic_hash=exec_receipt.get("extrinsic_hash", ""),
+                )
+            except Exception:
+                record_execution_result(
+                    status="execution_failed",
+                    block_hash="",
+                    outcome=outcome,
+                    submission_id=submission_id,
+                    extrinsic_hash="",
+                )
+        else:
+            record_execution_result(
+                status=outcome,
+                block_hash=block_hash,
+                outcome=outcome,
+                submission_id=submission_id,
+                extrinsic_hash="",
+            )
     else:
         print("⚠️ Submission failed")
         record_execution_result(
@@ -146,6 +167,7 @@ def main() -> None:
             block_hash="",
             outcome="error",
             submission_id=None,
+            extrinsic_hash="",
         )
 
     duration = (dt.datetime.utcnow() - start).total_seconds()
