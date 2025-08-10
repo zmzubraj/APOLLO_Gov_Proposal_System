@@ -1,0 +1,74 @@
+{
+  "timestamp_utc": "2025-08-09T18:33:21Z",
+  "sentiment": {
+    "sentiment_score": 0.35,
+    "summary": "This conversation centers around Polkadot's development and ecosystem, with discussions regarding its future roadmap, technological advancements (like Polkadot 2.0 and JAM), and ongoing community concerns. Key topics include potential pivots back to Polkadot parachains, technological improvements, security issues (address poisoning), and community support for resolving technical problems. There's also a significant focus on community safety and scam awareness.",
+    "key_topics": [
+      "Polkadot 2.0 & JAM",
+      "Parachain Pivots",
+      "Security Concerns (Address Poisoning)",
+      "Community Support & Scam Awareness",
+      "Technological Improvements (Transaction Speed, Fees)"
+    ]
+  },
+  "news": {
+    "digest": [
+      "Pendle TVL $8.3B",
+      "Hayes Bought ETH",
+      "Commodity Crypto",
+      "Trump's World Liberty",
+      "ETH Jumps",
+      "DOGE Rally",
+      "Ripple Settlement",
+      "Harvard Bitcoin",
+      "Sui Expansion"
+    ]
+  },
+  "chain_kpis": {
+    "daily_tx_count": {
+      "2025-08-09": 380
+    },
+    "daily_total_fees_DOT": {
+      "2025-08-09": 0.0
+    },
+    "avg_tx_per_block": 2.64,
+    "avg_fee_per_tx_DOT": 0.0,
+    "busiest_hour_utc": "2025-08-09 18:00"
+  },
+  "governance_kpis": {
+    "total_referenda": 1593,
+    "executed_pct": 55.4,
+    "rejected_pct": 28.1,
+    "avg_turnout_pct": 2.48,
+    "median_turnout_pct": 2.15,
+    "avg_participants": 290,
+    "avg_duration_days": 19.52,
+    "monthly_counts": {
+      "2024-12": 36,
+      "2025-01": 43,
+      "2025-02": 55,
+      "2025-03": 48,
+      "2025-04": 34,
+      "2025-05": 41
+    },
+    "top_keywords": [
+      "polkadot",
+      "proposal",
+      "vote",
+      "bounty",
+      "nay",
+      "funding",
+      "ecosystem",
+      "retroactive",
+      "please",
+      "tip"
+    ],
+    "insight_summary": "Okay, here\u2019s a summary of the Polkadot governance KPIs, focusing on voter engagement and key trends:\n\nPolkadot\u2019s governance remains active with 1593 proposals submitted, but voter engagement is a significant concern.  Only 2.48% of the total electorate participates in each referendum, with a median turnout of just 2.15%.  The number of proposals submitted is increasing (55 in February 2025), but monthly participation remains relatively low and volatile (ranging from 34 to 43).  Average proposal duration is 19.52 days.  Top keywords highlight ongoing discussions around funding, ecosystem development, and proposal voting.  The low turnout suggests a need to improve accessibility and awareness within the Polkadot community"
+  },
+  "kb_snippets": [],
+  "kb_summary": "",
+  "forecast": {
+    "approval_prob": 0.5366568914956011,
+    "turnout_estimate": 0.024608915936443754
+  }
+}

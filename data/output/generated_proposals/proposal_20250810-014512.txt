@@ -1,0 +1,18 @@
+**Root Track Proposal: Enhanced Community Support & Security Awareness**
+
+**Title:** Strengthening Polkadot’s Foundation: Prioritizing Community Support and Security
+
+**Rationale:** Recent community sentiment, as evidenced by ongoing discussions regarding transaction failures, security concerns, and a low voter turnout, highlights a critical need for increased support and proactive security measures within the Polkadot ecosystem. The recent news cycle, including fluctuations in Bitcoin and Ethereum, alongside concerns about scams, underscores the importance of bolstering community confidence and mitigating potential risks.  Low voter turnout (averaging 1.99% across 1000 open referenda) indicates a disconnect between proposals and active participation, suggesting a need for more accessible support and education.
+
+**Action:** I propose the allocation of 10,000 DOT to establish a centralized “Polkadot Support Hub.” This hub will provide:
+
+1.  **Dedicated Technical Support Channel:** A staffed Discord channel offering immediate assistance with technical issues, smart contract debugging, and general Polkadot troubleshooting.
+2.  **Security Awareness Campaign:**  A series of educational materials (videos, FAQs, tutorials) addressing common scams, best practices for securing wallets, and understanding smart contract risks.  This will be disseminated through existing community channels.
+3.  **Small Grants for Security Audits:**  Offering micro-grants (up to 5,000 DOT) to independent auditors for reviewing critical Polkadot projects and smart contracts.
+
+**Expected Impact:**
+
+*   **Increased Community Confidence:** Addressing immediate technical issues and proactively educating the community about security risks will foster greater trust in the Polkadot ecosystem.
+*   **Reduced Transaction Failures:**  Improved technical support will directly contribute to fewer failed transactions.
+*   **Higher Voter Turnout:**  Increased community confidence and engagement, driven by accessible support, is expected to positively impact future referendum turnout.  A successful support hub could also incentivize greater participation.
+*   **Enhanced Ecosystem Security:**  Audits funded through this proposal will identify and mitigate potential vulnerabilities, strengthening the overall security posture of Polkadot.

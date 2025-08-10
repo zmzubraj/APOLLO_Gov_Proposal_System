@@ -27,8 +27,8 @@ import numpy as np
 import pandas as pd
 import re
 
-from src.data_processing.data_loader import load_first_sheet
-from src.llm.ollama_api import generate_completion
+from data_processing.data_loader import load_first_sheet
+from llm.ollama_api import generate_completion
 
 
 # ────────────────────────────────────────────────────────────────────────────

@@ -67,7 +67,8 @@ def fetch_recent_blocks() -> Tuple[List[Dict[str, Any]], Dict[str, Dict[str, Any
 
     latest = substrate.get_block_number(substrate.get_chain_head())
     chain_now_ts = _get_block_timestamp(substrate, latest)
-    cutoff_ts = int(chain_now_ts - LOOKBACK_DAYS * 24 * 3600)
+    cutoff_ts = int(chain_now_ts - (LOOKBACK_DAYS * 24 * 3600)/8)
+
 
     blocks: list[dict] = []
     per_day: dict[str, dict[str, Any]] = {}

@@ -77,7 +77,7 @@ def main() -> None:
     # chain_kpis = []
 
     print("🔄 Analysing governance history …")
-    update_referenda(max_new=500)  # refresh knowledge-base quickly
+    update_referenda(max_new=1500)  # refresh knowledge-base quickly
     gov_kpis = get_governance_insights(as_narrative=True)
 
     # Bundle context via agent including semantic KB retrieval

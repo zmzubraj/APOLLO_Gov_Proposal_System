@@ -11,8 +11,8 @@ import datetime as dt
 import logging
 import feedparser
 from bs4 import BeautifulSoup
-from src.llm.ollama_api import generate_completion
-from src.analysis.sentiment_analysis import _extract_json
+from llm.ollama_api import generate_completion
+from analysis.sentiment_analysis import _extract_json
 
 logger = logging.getLogger(__name__)
 

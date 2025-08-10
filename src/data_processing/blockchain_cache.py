@@ -21,7 +21,7 @@ from typing import List, Dict, Any
 
 from substrateinterface import SubstrateInterface
 
-from src.data_processing.blockchain_data_fetcher import fetch_recent_blocks
+from data_processing.blockchain_data_fetcher import fetch_recent_blocks
 
 # ---------------------------------------------------------------------------
 PROJECT_ROOT = pathlib.Path(__file__).resolve().parents[2]  # data_processing/..

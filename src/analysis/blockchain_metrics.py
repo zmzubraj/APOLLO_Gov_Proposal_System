@@ -21,7 +21,7 @@ import pathlib
 from collections import defaultdict, Counter
 from typing import List, Dict, Any
 
-from src.utils.helpers import abbrev_number
+from utils.helpers import abbrev_number
 
 
 # ---------------------------------------------------------------------------

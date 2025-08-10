@@ -14,8 +14,8 @@ from typing import List, Dict, Any
 import datetime as dt
 import feedparser, requests
 from bs4 import BeautifulSoup
-from src.llm.ollama_api import generate_completion
-from src.utils.helpers import extract_json_safe
+from llm.ollama_api import generate_completion
+from utils.helpers import extract_json_safe
 
 # ---------------------------------------------------------------------------
 RSS_FEEDS = [

@@ -1,0 +1,75 @@
+{
+  "timestamp_utc": "2025-08-10T01:43:05Z",
+  "sentiment": {
+    "sentiment_score": 0.3,
+    "summary": "This conversation centers around Polkadot\u2019s ongoing development and future, with discussions regarding its potential pivot back to Polkadot, governance, and technological advancements like Polkadot 2.0 and multisharing. Concerns about transaction failures, security, and potential scams are also prominent, alongside excitement about upcoming events and technological improvements. The community is actively seeking information and support regarding technical issues and security best practices.",
+    "key_topics": [
+      "Polkadot 2.0 & Technological Advancements",
+      "Governance & Allegality",
+      "Transaction Failures & Security",
+      "Community Support & Scam Awareness",
+      "Future Roadmap & Potential Pivots"
+    ]
+  },
+  "news": {
+    "digest": [
+      "Bitcoin Trails Gold in 2025",
+      "XRP Signals Caution",
+      "Pendle TVL Hits Record",
+      "Hayes Bought ETH Back",
+      "Commodities Hit Record",
+      "Trump Firm Seeks Crypto",
+      "ETH Jumps",
+      "DOGE Hits",
+      "XRP Drops",
+      "Harvard ETF Stake"
+    ]
+  },
+  "chain_kpis": {
+    "daily_tx_count": {
+      "2025-08-10": 51
+    },
+    "daily_total_fees_DOT": {
+      "2025-08-10": 0.0
+    },
+    "avg_tx_per_block": 2.68,
+    "avg_fee_per_tx_DOT": 0.0,
+    "busiest_hour_utc": "2025-08-10 01:00"
+  },
+  "governance_kpis": {
+    "total_referenda": 1000,
+    "executed_pct": 60.0,
+    "rejected_pct": 27.1,
+    "avg_turnout_pct": 2.49,
+    "median_turnout_pct": 1.99,
+    "avg_participants": 292,
+    "avg_duration_days": 20.33,
+    "monthly_counts": {
+      "2024-02": 82,
+      "2024-03": 94,
+      "2024-04": 98,
+      "2024-05": 93,
+      "2024-06": 107,
+      "2024-07": 70
+    },
+    "top_keywords": [
+      "polkadot",
+      "proposal",
+      "vote",
+      "nay",
+      "bounty",
+      "funding",
+      "ecosystem",
+      "retroactive",
+      "dot",
+      "please"
+    ],
+    "insight_summary": "Okay, here\u2019s a summary of the Polkadot governance KPIs, focusing on voter engagement and key trends:\n\nCurrently, there are 1000 open referenda, with 60% successfully executed and 27.1% rejected. Voter turnout remains exceptionally low, averaging just 2.49% and a median of 1.99%, indicating a significant disconnect between proposals and participation.  Average participation is 292 individuals per referendum, taking an average of 20.33 days to resolve. Monthly counts show a fluctuating trend, with a recent uptick (July 2024 at 107) following a period of lower activity.  The top keywords highlight recurring themes of \u2018polkadot\u2019, \u2018proposal\u2019, and \u2018vote"
+  },
+  "kb_snippets": [],
+  "kb_summary": "",
+  "forecast": {
+    "approval_prob": 0.6,
+    "turnout_estimate": 0.024873547
+  }
+}

@@ -2,3 +2,4 @@
 data/output/blocks_last3days.json
 data/input/*.xlsx
 !data/input/.gitkeep
+.env

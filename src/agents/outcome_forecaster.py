@@ -5,7 +5,7 @@ from typing import Dict
 
 import pandas as pd
 
-from src.data_processing.data_loader import load_governance_data
+from data_processing.data_loader import load_governance_data
 
 
 def forecast_outcomes(context: Dict) -> Dict[str, float]:

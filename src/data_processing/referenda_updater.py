@@ -20,8 +20,8 @@ import pandas as pd
 from bs4 import BeautifulSoup
 from substrateinterface import SubstrateInterface
 
-from src.data_processing.data_loader import load_first_sheet
-from src.utils.helpers import extract_json_safe, utc_now_iso
+from data_processing.data_loader import load_first_sheet
+from utils.helpers import extract_json_safe, utc_now_iso
 
 # ─────────────── Paths & Constants ────────────────────────────────────
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -237,7 +237,7 @@ def update_referenda(max_new: int = 500, max_gaps: int = 5) -> None:
         try:
             row = collect_referendum(next_id)
             df = pd.concat([df, pd.DataFrame([row])], ignore_index=True)
-            # print(f"✅ {next_id}")
+            print(f"✅ {next_id}")
             gap_streak = 0
 
         except IncompleteDataError as inc:
