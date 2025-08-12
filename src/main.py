@@ -10,6 +10,7 @@ $ python src/main.py
 
 from __future__ import annotations
 import json, pathlib, datetime as dt, os, time
+from typing import Any
 import pandas as pd
 from agents.data_collector import DataCollector
 from data_processing.social_media_scraper import collect_recent_messages
@@ -69,6 +70,7 @@ def broadcast_proposal(text: str) -> None:
 
 def main() -> None:
     start = dt.datetime.utcnow()
+    stats: dict[str, Any] = {}
     phase_times: dict[str, float] = {}
 
     # ------------------------------ Ingestion ------------------------------
@@ -77,14 +79,11 @@ def main() -> None:
         collect_recent_messages,
         fetch_and_summarise_news,
         get_recent_blocks_cached,
+        stats=stats,
     )
     phase_times["ingestion_s"] = time.perf_counter() - t0
 
-    # Display summary of collected data sources
-    print_data_sources_table(data["stats"]["data_sources"])
-
     msgs_by_source = data["messages"]
-    stats = data["stats"]
     stats.setdefault("sentiment_batches", [])
 
     # ----------------------- Analysis + Prediction ------------------------
@@ -141,8 +140,6 @@ def main() -> None:
         kb_query=query,
         summarise_snippets=True,
     )
-    # Display sentiment analysis and embedding stats
-    print_sentiment_embedding_table(stats.get("sentiment_batches", []))
     forecast = forecast_outcomes(context)
     context["forecast"] = forecast
     try:
@@ -164,7 +161,6 @@ def main() -> None:
         stats["prediction_eval"] = eval_res.get("prediction_eval", [])
     except Exception:
         stats["prediction_eval"] = []
-    print_prediction_accuracy_table(stats.get("prediction_eval", []))
     timestamp = dt.datetime.utcnow().strftime("%Y%m%d-%H%M%S")
     (OUT_DIR / f"context_{timestamp}.json").write_text(json.dumps(context, indent=2))
     phase_times["analysis_prediction_s"] = time.perf_counter() - t1
@@ -274,16 +270,17 @@ def main() -> None:
     except Exception:
         pass
 
-    # Display timing benchmarks for this run
-    print_timing_benchmarks_table(stats.get("timings", {}))
-
     duration = (dt.datetime.utcnow() - start).total_seconds()
     print(
         f"\n✅ Proposal saved → {OUT_DIR / f'proposal_{timestamp}.txt'}   "
         f"(pipeline took {duration:.1f}s)\n"
     )
     print("----------\n" + proposal_text + "\n----------")
-
+    # Display summary tables (Tables 2-5)
+    print_data_sources_table(stats.get("data_sources", {}))
+    print_sentiment_embedding_table(stats.get("sentiment_batches", []))
+    print_prediction_accuracy_table(stats.get("prediction_eval", []))
+    print_timing_benchmarks_table(stats.get("timings", {}))
 
 if __name__ == "__main__":
     main()
