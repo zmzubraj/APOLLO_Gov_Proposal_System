@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import pathlib
-from typing import Dict, Any
+from typing import Dict, Any, TYPE_CHECKING
 import json
 
 from utils.helpers import utc_now_iso
@@ -12,19 +12,44 @@ DATA_DIR = ROOT / "data"
 XLSX_PATH = DATA_DIR / "input" / "PKD Governance Data.xlsx"
 
 
-def _append_row(sheet: str, row: Dict[str, Any]) -> None:
-    """Append a dictionary ``row`` to ``sheet`` creating workbook/sheet if needed."""
+if TYPE_CHECKING:
+    from openpyxl import Workbook  # type: ignore
+
+
+def ensure_workbook() -> "Workbook | None":
+    """Create the governance workbook with required sheets if needed.
+
+    Returns the loaded/created workbook or ``None`` if ``openpyxl`` is
+    unavailable. When a new workbook is created, the default "Sheet" is
+    removed and the sheets "Referenda", "Proposals", and
+    "ExecutionResults" are ensured to exist.
+    """
+
     try:
         from openpyxl import load_workbook, Workbook  # type: ignore
     except Exception:
-        # Openpyxl (or its deps) not available – skip persistence silently
-        return
+        return None
 
     XLSX_PATH.parent.mkdir(parents=True, exist_ok=True)
-    if XLSX_PATH.exists():
-        wb = load_workbook(XLSX_PATH)
-    else:
-        wb = Workbook()
+    wb = load_workbook(XLSX_PATH) if XLSX_PATH.exists() else Workbook()
+
+    if "Sheet" in wb.sheetnames:
+        wb.remove(wb["Sheet"])
+
+    for name in ("Referenda", "Proposals", "ExecutionResults"):
+        if name not in wb.sheetnames:
+            wb.create_sheet(name)
+
+    wb.save(XLSX_PATH)
+    return wb
+
+
+def _append_row(sheet: str, row: Dict[str, Any]) -> None:
+    """Append a dictionary ``row`` to ``sheet`` creating workbook/sheet if needed."""
+    wb = ensure_workbook()
+    if wb is None:
+        # ``openpyxl`` (or its deps) not available – skip persistence silently
+        return
     ws = wb[sheet] if sheet in wb.sheetnames else wb.create_sheet(sheet)
     # Write header if sheet empty
     if ws.max_row == 1 and all(cell.value is None for cell in ws[1]):
