@@ -40,7 +40,7 @@ APOLLO’s modular architecture is deployable on any blockchain supporting on-ch
 ### 📦 Features
 
 - **LLM-Based Analysis:** Uses open-source LLMs (e.g., Gemma3:4B, Deepseek R1:1.5B) via Ollama for summarization, classification, and proposal generation.
-- **Retrieval-Augmented Knowledge Base:** Stores historical proposals in an Excel workbook (`data/input/PKD Governance Data.xlsx`, generated at runtime) for retrieval-augmented generation (RAG).
+- **Retrieval-Augmented Knowledge Base:** Stores governance data in an Excel workbook (`data/input/PKD Governance Data.xlsx`, auto-generated if missing) for retrieval-augmented generation (RAG). See [docs/workbook_structure.md](docs/workbook_structure.md) for worksheet details.
 - **Predictive Outcome Modeling (planned):** Lightweight ML models to forecast proposal success and voter turnout (not yet implemented).
 - **Chain-Agnostic Design:** Integrates with Polkadot’s OpenGov pallet; easily adaptable to other platforms.
 - **Modular Pipeline:** Separate modules for data collection, analysis, LLM inference, and on-chain logging.
