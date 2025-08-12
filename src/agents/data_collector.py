@@ -6,7 +6,10 @@ from typing import Any, Dict, Callable
 
 from data_processing.social_media_scraper import collect_recent_messages
 from data_processing.news_fetcher import fetch_and_summarise_news
-from data_processing.blockchain_cache import get_recent_blocks_cached
+from data_processing.blockchain_cache import (
+    get_recent_blocks_cached,
+    SUBSTRATE_RPC,
+)
 from data_processing.evm_data_fetcher import fetch_evm_blocks
 
 
@@ -45,6 +48,7 @@ class DataCollector:
             "chat": "realtime",
             "forum": "daily",
             "news": "hourly",
+            "chain": "≈6s",
         }
         platform_map = {
             "chat": "X (@PolkadotNetwork), Reddit (r/Polkadot)",
@@ -74,6 +78,25 @@ class DataCollector:
 
         print("🔄 Fetching on-chain data …")
         blocks = block_fn()
+
+        # On-chain source statistics
+        block_count = len(blocks)
+        avg_extrinsics = (
+            sum(
+                b.get("extrinsics_count", len(b.get("extrinsics", [])))
+                for b in blocks
+            )
+            / block_count
+            if block_count
+            else 0.0
+        )
+        rpc_url = os.getenv("SUBSTRATE_RPC", SUBSTRATE_RPC)
+        stats["data_sources"]["chain"] = {
+            "count": block_count,
+            "avg_word_length": avg_extrinsics,
+            "update_frequency": update_freq.get("chain", "unknown"),
+            "platform": rpc_url,
+        }
 
         result = {
             "messages": messages,
