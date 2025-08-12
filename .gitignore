@@ -1,7 +1,8 @@
 # Python cache
 __pycache__/
 data/input/*.xlsx
-data/output/*.xlsx
+data/output/referenda_failures.csv
 data/output/*.json
+data/output/generated_proposals
 !data/input/.gitkeep
 .env
