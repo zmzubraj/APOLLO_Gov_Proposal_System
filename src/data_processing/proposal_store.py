@@ -23,8 +23,8 @@ def ensure_workbook() -> "Workbook":
     Returns the loaded/created workbook.  If ``openpyxl`` is unavailable,
     an informative :class:`ImportError` is raised after emitting a warning.
     When a new workbook is created, the default "Sheet" is removed and the
-    sheets "Referenda", "Proposals", and "ExecutionResults" are ensured to
-    exist.
+    workbook is saved containing exactly the sheets
+    "Referenda", "Proposals", "Context", and "ExecutionResults".
     """
 
     try:
@@ -42,9 +42,17 @@ def ensure_workbook() -> "Workbook":
     if "Sheet" in wb.sheetnames:
         wb.remove(wb["Sheet"])
 
-    for name in ("Referenda", "Proposals", "ExecutionResults"):
+    required = ["Referenda", "Proposals", "Context", "ExecutionResults"]
+
+    for name in required:
         if name not in wb.sheetnames:
             wb.create_sheet(name)
+
+    # Ensure only required sheets remain and are ordered as specified
+    for sheet in list(wb.sheetnames):
+        if sheet not in required:
+            wb.remove(wb[sheet])
+    wb._sheets = [wb[name] for name in required]
 
     wb.save(XLSX_PATH)
     return wb
