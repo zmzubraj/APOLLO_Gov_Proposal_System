@@ -33,7 +33,11 @@ def load_governance_data(sheet_name=None):
         except Exception as e:
             print(f"❌ Failed to create workbook: {e}")
         if sheet_name is None:
-            return {s: pd.DataFrame() for s in ("Referenda", "Proposals", "ExecutionResults")}
+            return {
+                s: pd.DataFrame()
+                for s in ("Referenda", "Proposals", "ExecutionResults", "Context")
+            }
+        # Requested sheet (including "Context") should yield an empty DataFrame
         return pd.DataFrame()
     except Exception as e:
         print(f"❌ Error loading data: {e}")
