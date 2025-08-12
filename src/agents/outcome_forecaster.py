@@ -5,7 +5,10 @@ from typing import Dict
 
 import pandas as pd
 
-from data_processing.data_loader import load_governance_data
+try:  # Prefer absolute import so tests can patch via ``src.data_processing``
+    from src.data_processing.data_loader import load_governance_data
+except Exception:  # pragma: no cover
+    from data_processing.data_loader import load_governance_data
 
 
 def forecast_outcomes(context: Dict) -> Dict[str, float]:
