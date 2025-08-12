@@ -7,7 +7,14 @@ from llm import ollama_api
 
 
 def _dummy_components():
-    sentiment = {"sentiment_score": 0, "summary": "ok", "key_topics": []}
+    sentiment = {
+        "sentiment_score": 0,
+        "summary": "ok",
+        "key_topics": [],
+        "sentiment": "Mixed",
+        "confidence": 0.0,
+        "message_size_kb": 0.0,
+    }
     news = {"digest": [], "risks": ""}
     chain = {
         "daily_tx_count": {},
@@ -46,6 +53,7 @@ def test_build_context_structure_dedup_and_summary(monkeypatch):
         "governance_kpis",
         "kb_snippets",
         "kb_summary",
+        "kb_embedded",
     }
     assert ctx["kb_snippets"] == ["previous proposal"]
     assert ctx["kb_summary"] == "summary"

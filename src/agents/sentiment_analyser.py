@@ -44,8 +44,14 @@ SYSTEM_PROMPT = textwrap.dedent(
 
 
 def analyse_messages(messages: Iterable[str]) -> Dict[str, Any]:
-    """Run LLM sentiment analysis over ``messages``."""
+    """Run LLM sentiment analysis over ``messages``.
+
+    Besides the LLM's raw ``sentiment_score`` this helper now also returns a
+    human readable sentiment label, a confidence score (absolute sentiment
+    magnitude) and the raw message size in kilobytes.
+    """
     raw_text = "\n".join(messages).strip()[:8000]
+    msg_size_kb = len(raw_text.encode("utf-8")) / 1024 if raw_text else 0.0
 
     try:
         response = generate_completion(
@@ -60,11 +66,23 @@ def analyse_messages(messages: Iterable[str]) -> Dict[str, Any]:
             raise ValueError("No JSON returned")
         for k in ("sentiment_score", "summary", "key_topics"):
             result.setdefault(k, "")
-        return result
+        score = float(result.get("sentiment_score") or 0.0)
     except Exception:
         score = simple_polarity(raw_text)
-        return {
+        result = {
             "sentiment_score": score,
             "summary": "LLM fallback – basic polarity calculated.",
             "key_topics": [],
         }
+
+    label = "Positive" if score > 0.2 else "Negative" if score < -0.2 else "Mixed"
+    confidence = abs(score)
+
+    result.update(
+        {
+            "sentiment": label,
+            "confidence": confidence,
+            "message_size_kb": msg_size_kb,
+        }
+    )
+    return result

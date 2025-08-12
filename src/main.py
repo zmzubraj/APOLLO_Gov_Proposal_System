@@ -23,6 +23,7 @@ from analysis.governance_analysis import get_governance_insights
 from agents.outcome_forecaster import forecast_outcomes
 from agents import proposal_generator
 from agents.context_generator import build_context
+from llm import ollama_api
 from execution.discord_bot import post_summary as post_discord
 from execution.telegram_bot import post_summary as post_telegram
 from execution.twitter_bot import post_summary as post_twitter
@@ -71,9 +72,35 @@ def main() -> None:
     print_data_sources_table(data["stats"]["data_sources"])
 
     msgs_by_source = data["messages"]
-    # Flatten all message lists for sentiment analysis
-    all_msgs = [m for msgs in msgs_by_source.values() for m in msgs]
-    sentiment = analyse_messages(all_msgs)
+    stats = data["stats"]
+    stats.setdefault("sentiment_batches", [])
+
+    batch_id = 1
+    all_msgs: list[str] = []
+    for source, msgs in msgs_by_source.items():
+        all_msgs.extend(msgs)
+        res = analyse_messages(msgs)
+        raw_text = "\n".join(msgs).strip()
+        ctx_size = res.get("message_size_kb", len(raw_text.encode("utf-8")) / 1024 if raw_text else 0.0)
+        try:
+            ollama_api.embed_text(raw_text)
+            embedded = True
+        except Exception:
+            embedded = False
+        stats["sentiment_batches"].append(
+            {
+                "batch_id": batch_id,
+                "source": source,
+                "ctx_size_kb": ctx_size,
+                "sentiment": res.get("sentiment", ""),
+                "confidence": res.get("confidence", 0.0),
+                "embedded": embedded,
+            }
+        )
+        batch_id += 1
+
+    # Flatten all message lists for overall sentiment analysis
+    sentiment = analyse_messages(all_msgs) if all_msgs else {}
     # sentiment = []
 
     news = data["news"]

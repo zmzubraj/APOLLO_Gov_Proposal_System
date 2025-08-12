@@ -33,10 +33,15 @@ def _cosine_similarity(a: List[float], b: List[float]) -> float:
     return dot / (norm_a * norm_b)
 
 
-def _fetch_semantic_snippets(query: str, limit: int = 5) -> list[str]:
-    """Retrieve snippets most similar to ``query`` using embeddings."""
+def _fetch_semantic_snippets(query: str, limit: int = 5) -> Tuple[list[str], bool]:
+    """Retrieve snippets most similar to ``query`` using embeddings.
+
+    Returns a tuple of (snippets, embedded) where ``embedded`` indicates
+    whether the embedding lookups succeeded for both the query and at least one
+    candidate snippet.
+    """
     if not query:
-        return []
+        return [], False
 
     proposals = proposal_store.load_proposals()
     contexts = proposal_store.load_contexts()
@@ -52,24 +57,29 @@ def _fetch_semantic_snippets(query: str, limit: int = 5) -> list[str]:
         )
 
     if not candidates:
-        return []
+        return [], False
 
     try:
         query_vec = ollama_api.embed_text(query)
     except Exception:
-        return []
+        return [], False
 
     scored: List[Tuple[float, str]] = []
+    embedded_snippet = False
     for text in candidates:
         try:
             vec = ollama_api.embed_text(text)
+            embedded_snippet = True
         except Exception:
             continue
         score = _cosine_similarity(query_vec, vec)
         scored.append((score, text))
 
+    if not embedded_snippet:
+        return [], False
+
     scored.sort(key=lambda t: t[0], reverse=True)
-    return [text for _, text in scored[:limit]]
+    return [text for _, text in scored[:limit]], True
 
 
 def _summarise(snippets: list[str]) -> str:
@@ -95,8 +105,11 @@ def build_context(
     """Consolidate disparate inputs into a single context dictionary."""
 
     snippets = kb_snippets or []
+    embedded = False
     if not snippets and kb_query:
-        snippets = _fetch_semantic_snippets(kb_query)
+        snippets, embedded = _fetch_semantic_snippets(kb_query)
+    elif snippets:
+        embedded = True
 
     if dedup_snippets:
         snippets = _dedup(snippets)
@@ -110,6 +123,7 @@ def build_context(
         "governance_kpis": gov_kpis,
         "kb_snippets": snippets,
         "kb_summary": summary,
+        "kb_embedded": embedded,
     }
 
     # Persist for audit trail

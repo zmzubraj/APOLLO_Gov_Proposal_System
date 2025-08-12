@@ -15,6 +15,9 @@ def test_validators_pass_on_dummy():
         "sentiment_score": 0.1,
         "summary": "ok",
         "key_topics": [],
+        "sentiment": "Positive",
+        "confidence": 0.1,
+        "message_size_kb": 0.5,
     }
     news = {"digest": [], "risks": ""}
     chain = {
