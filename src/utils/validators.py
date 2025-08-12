@@ -18,9 +18,23 @@ def _require_keys(obj: Dict[str, Any], keys: set[str], label: str):
 
 # ────────────────────────────────────────────────────────────────────────────
 def validate_sentiment(d: Dict[str, Any]) -> bool:
-    _require_keys(d, {"sentiment_score", "summary", "key_topics"}, "sentiment")
+    required = {
+        "sentiment_score",
+        "summary",
+        "key_topics",
+        "sentiment",
+        "confidence",
+        "message_size_kb",
+    }
+    _require_keys(d, required, "sentiment")
     if not (-1 <= d["sentiment_score"] <= 1):
         raise ValueError("sentiment_score outside [-1,1]")
+    if d["sentiment"] not in {"Positive", "Negative", "Mixed"}:
+        raise ValueError("sentiment must be Positive/Negative/Mixed")
+    if not (0 <= d["confidence"] <= 1):
+        raise ValueError("confidence outside [0,1]")
+    if d["message_size_kb"] < 0:
+        raise ValueError("message_size_kb must be non-negative")
     return True
 
 
