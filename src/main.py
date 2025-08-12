@@ -19,6 +19,7 @@ from reporting.summary_tables import (
     print_sentiment_embedding_table,
     print_prediction_accuracy_table,
     print_timing_benchmarks_table,
+    evaluate_historical_predictions,
 )
 from agents.sentiment_analyser import analyse_messages
 from data_processing.news_fetcher import fetch_and_summarise_news
@@ -159,6 +160,8 @@ def main() -> None:
         stats["prediction_eval"] = eval_res.get("prediction_eval", [])
     except Exception:
         stats["prediction_eval"] = []
+    if not stats["prediction_eval"]:
+        stats["prediction_eval"] = evaluate_historical_predictions()
     timestamp = dt.datetime.now(dt.UTC).strftime("%Y%m%d-%H%M%S")
     (OUT_DIR / f"context_{timestamp}.json").write_text(json.dumps(context, indent=2))
     phase_times["analysis_prediction_s"] = time.perf_counter() - t1
@@ -277,7 +280,7 @@ def main() -> None:
     # Display summary tables (Tables 2-5)
     print_data_sources_table(stats.get("data_sources", {}))
     print_sentiment_embedding_table(stats.get("sentiment_batches", []))
-    print_prediction_accuracy_table(stats.get("prediction_eval", []))
+    print_prediction_accuracy_table(stats["prediction_eval"])
     print_timing_benchmarks_table(stats.get("timings", {}))
 
 if __name__ == "__main__":
