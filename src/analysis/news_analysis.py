@@ -28,15 +28,15 @@ LOOKBACK_DAYS = 25          # only keep recent items
 def _fetch_rss_items() -> List[Dict[str, Any]]:
     """Collect items from RSS feeds and filter by recency."""
     items: list[dict] = []
-    cutoff = dt.datetime.utcnow() - dt.timedelta(days=LOOKBACK_DAYS)
+    cutoff = dt.datetime.now(dt.UTC) - dt.timedelta(days=LOOKBACK_DAYS)
 
     for url in RSS_FEEDS:
         feed = feedparser.parse(url)
         for entry in feed.entries:
             published = (
-                dt.datetime(*entry.published_parsed[:6])
+                dt.datetime(*entry.published_parsed[:6], tzinfo=dt.UTC)
                 if "published_parsed" in entry
-                else dt.datetime.utcnow()
+                else dt.datetime.now(dt.UTC)
             )
             if published < cutoff:
                 continue

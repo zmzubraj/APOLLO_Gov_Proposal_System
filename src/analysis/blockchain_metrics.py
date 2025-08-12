@@ -44,7 +44,7 @@ def summarise_blocks(blocks: List[Dict[str, Any]]) -> Dict[str, Any]:
     total_tx, total_fee, n_blocks = 0, 0.0, 0
 
     for blk in blocks:
-        ts = dt.datetime.utcfromtimestamp(blk["block_timestamp"])
+        ts = dt.datetime.fromtimestamp(blk["block_timestamp"], dt.UTC)
         day = ts.strftime("%Y-%m-%d")
         hour_key = ts.strftime("%Y-%m-%d %H:00")
 

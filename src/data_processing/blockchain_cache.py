@@ -48,8 +48,10 @@ def _cache_latest_timestamp(blocks: List[Dict[str, Any]]) -> int:
 
 
 def _is_too_old(blocks: List[Dict[str, Any]]) -> bool:
-    age_days = (dt.datetime.utcnow() -
-                dt.datetime.utcfromtimestamp(_cache_latest_timestamp(blocks))).days
+    age_days = (
+        dt.datetime.now(dt.UTC)
+        - dt.datetime.fromtimestamp(_cache_latest_timestamp(blocks), dt.UTC)
+    ).days
     return age_days > MAX_AGE_DAYS
 
 

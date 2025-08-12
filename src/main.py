@@ -69,7 +69,7 @@ def broadcast_proposal(text: str) -> None:
 
 
 def main() -> None:
-    start = dt.datetime.utcnow()
+    start = dt.datetime.now(dt.UTC)
     stats: dict[str, Any] = {}
     phase_times: dict[str, float] = {}
 
@@ -152,7 +152,7 @@ def main() -> None:
                     if forecast.get("approval_prob", 0.0) >= 0.5
                     else "Rejected",
                     "confidence": forecast.get("approval_prob", 0.0),
-                    "prediction_time": dt.datetime.utcnow().isoformat(),
+                    "prediction_time": dt.datetime.now(dt.UTC).isoformat(),
                     "margin_of_error": forecast.get("turnout_estimate", 0.0),
                 }
             ]
@@ -161,7 +161,7 @@ def main() -> None:
         stats["prediction_eval"] = eval_res.get("prediction_eval", [])
     except Exception:
         stats["prediction_eval"] = []
-    timestamp = dt.datetime.utcnow().strftime("%Y%m%d-%H%M%S")
+    timestamp = dt.datetime.now(dt.UTC).strftime("%Y%m%d-%H%M%S")
     (OUT_DIR / f"context_{timestamp}.json").write_text(json.dumps(context, indent=2))
     phase_times["analysis_prediction_s"] = time.perf_counter() - t1
 
@@ -169,7 +169,7 @@ def main() -> None:
     t2 = time.perf_counter()
     print("🔄 Asking LLM to draft proposal …")
     proposal_text = proposal_generator.draft(context)
-    timestamp = dt.datetime.utcnow().strftime("%Y%m%d-%H%M%S")
+    timestamp = dt.datetime.now(dt.UTC).strftime("%Y%m%d-%H%M%S")
     (OUT_DIR / f"proposal_{timestamp}.txt").write_text(proposal_text)
     broadcast_proposal(proposal_text)
 
@@ -270,7 +270,7 @@ def main() -> None:
     except Exception:
         pass
 
-    duration = (dt.datetime.utcnow() - start).total_seconds()
+    duration = (dt.datetime.now(dt.UTC) - start).total_seconds()
     print(
         f"\n✅ Proposal saved → {OUT_DIR / f'proposal_{timestamp}.txt'}   "
         f"(pipeline took {duration:.1f}s)\n"

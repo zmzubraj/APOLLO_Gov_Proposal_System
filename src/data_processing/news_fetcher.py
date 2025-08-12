@@ -38,14 +38,14 @@ def _parse_entry(entry) -> Dict[str, Any]:
     return {
         "title": entry.title,
         "summary": BeautifulSoup(getattr(entry, "summary", ""), "html.parser").get_text()[:280],
-        "published": dt.datetime(*entry.published_parsed[:6])
+        "published": dt.datetime(*entry.published_parsed[:6], tzinfo=dt.UTC)
         if getattr(entry, "published_parsed", None)
-        else dt.datetime.utcnow(),
+        else dt.datetime.now(dt.UTC),
     }
 
 
 def _collect_recent_items() -> List[Dict[str, Any]]:
-    cutoff = dt.datetime.utcnow() - dt.timedelta(days=LOOKBACK_DAYS)
+    cutoff = dt.datetime.now(dt.UTC) - dt.timedelta(days=LOOKBACK_DAYS)
     items: list[dict] = []
     for url in RSS_FEEDS:
         for e in feedparser.parse(url).entries:

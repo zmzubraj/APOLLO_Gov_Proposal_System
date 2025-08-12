@@ -74,7 +74,10 @@ def fetch_recent_blocks() -> Tuple[List[Dict[str, Any]], Dict[str, Dict[str, Any
     per_day: dict[str, dict[str, Any]] = {}
     n_calls = 0
 
-    print(f"Starting from block {latest} - Time: {dt.datetime.utcfromtimestamp(chain_now_ts)}, looking back to UTC {dt.datetime.utcfromtimestamp(cutoff_ts)}")
+    print(
+        f"Starting from block {latest} - Time: {dt.datetime.fromtimestamp(chain_now_ts, dt.UTC)}, "
+        f"looking back to UTC {dt.datetime.fromtimestamp(cutoff_ts, dt.UTC)}"
+    )
     for num in range(latest, 0, -1):
         ts = _get_block_timestamp(substrate, num)
         if ts < cutoff_ts:
@@ -98,7 +101,7 @@ def fetch_recent_blocks() -> Tuple[List[Dict[str, Any]], Dict[str, Dict[str, Any
         blocks.append(data)
 
         # Aggregate
-        day = dt.datetime.utcfromtimestamp(ts).strftime("%Y-%m-%d")
+        day = dt.datetime.fromtimestamp(ts, dt.UTC).strftime("%Y-%m-%d")
         per_day.setdefault(day, {"txs": 0, "fee": 0.0})
         per_day[day]["txs"] += data.get("extrinsics_count", 0)
         per_day[day]["fee"] += float(data.get("total_fee", 0)) / 10**10  # plancks→DOT

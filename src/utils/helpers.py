@@ -49,12 +49,12 @@ def extract_json_safe(text: str) -> Optional[Dict[str, Any]]:
 # ────────────────────────────────────────────────────────────────────────────
 def utc_now_iso() -> str:
     """UTC timestamp like 2025-05-17T13:55:02Z."""
-    return dt.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+    return dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def days_ago_iso(days: int) -> str:
     """ISO date N days ago (UTC)."""
-    return (dt.datetime.utcnow() - dt.timedelta(days=days)).strftime("%Y-%m-%d")
+    return (dt.datetime.now(dt.UTC) - dt.timedelta(days=days)).strftime("%Y-%m-%d")
 
 
 # ────────────────────────────────────────────────────────────────────────────
