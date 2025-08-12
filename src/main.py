@@ -12,7 +12,10 @@ from __future__ import annotations
 import json, pathlib, datetime as dt, os
 from agents.data_collector import DataCollector
 from data_processing.social_media_scraper import collect_recent_messages
-from reporting.summary_tables import print_data_sources_table
+from reporting.summary_tables import (
+    print_data_sources_table,
+    print_sentiment_embedding_table,
+)
 from agents.sentiment_analyser import analyse_messages
 from data_processing.news_fetcher import fetch_and_summarise_news
 from data_processing.referenda_updater import update_referenda
@@ -124,6 +127,8 @@ def main() -> None:
         kb_query=query,
         summarise_snippets=True,
     )
+    # Display sentiment analysis and embedding stats
+    print_sentiment_embedding_table(stats.get("sentiment_batches", []))
     forecast = forecast_outcomes(context)
     context["forecast"] = forecast
     timestamp = dt.datetime.utcnow().strftime("%Y%m%d-%H%M%S")
