@@ -9,7 +9,7 @@ $ python src/main.py
 """
 
 from __future__ import annotations
-import json, pathlib, datetime as dt, os
+import json, pathlib, datetime as dt, os, time
 import pandas as pd
 from agents.data_collector import DataCollector
 from data_processing.social_media_scraper import collect_recent_messages
@@ -68,11 +68,16 @@ def broadcast_proposal(text: str) -> None:
 
 def main() -> None:
     start = dt.datetime.utcnow()
+    phase_times: dict[str, float] = {}
+
+    # ------------------------------ Ingestion ------------------------------
+    t0 = time.perf_counter()
     data = DataCollector.collect(
         collect_recent_messages,
         fetch_and_summarise_news,
         get_recent_blocks_cached,
     )
+    phase_times["ingestion_s"] = time.perf_counter() - t0
 
     # Display summary of collected data sources
     print_data_sources_table(data["stats"]["data_sources"])
@@ -81,13 +86,18 @@ def main() -> None:
     stats = data["stats"]
     stats.setdefault("sentiment_batches", [])
 
+    # ----------------------- Analysis + Prediction ------------------------
+    t1 = time.perf_counter()
     batch_id = 1
     all_msgs: list[str] = []
     for source, msgs in msgs_by_source.items():
         all_msgs.extend(msgs)
         res = analyse_messages(msgs)
         raw_text = "\n".join(msgs).strip()
-        ctx_size = res.get("message_size_kb", len(raw_text.encode("utf-8")) / 1024 if raw_text else 0.0)
+        ctx_size = res.get(
+            "message_size_kb",
+            len(raw_text.encode("utf-8")) / 1024 if raw_text else 0.0,
+        )
         try:
             ollama_api.embed_text(raw_text)
             embedded = True
@@ -156,7 +166,10 @@ def main() -> None:
     print_prediction_accuracy_table(stats.get("prediction_eval", []))
     timestamp = dt.datetime.utcnow().strftime("%Y%m%d-%H%M%S")
     (OUT_DIR / f"context_{timestamp}.json").write_text(json.dumps(context, indent=2))
+    phase_times["analysis_prediction_s"] = time.perf_counter() - t1
 
+    # -------------------------- Draft + Sign ------------------------------
+    t2 = time.perf_counter()
     print("🔄 Asking LLM to draft proposal …")
     proposal_text = proposal_generator.draft(context)
     timestamp = dt.datetime.utcnow().strftime("%Y%m%d-%H%M%S")
@@ -233,6 +246,32 @@ def main() -> None:
             submission_id=None,
             extrinsic_hash="",
         )
+
+    phase_times["draft_sign_s"] = time.perf_counter() - t2
+
+    proposals_processed = max(1, len(stats.get("prediction_eval", [])))
+    if proposals_processed < 5:
+        scenario = "light"
+    elif proposals_processed < 20:
+        scenario = "medium"
+    else:
+        scenario = "high"
+    stats["timings"] = {
+        scenario: {
+            "proposals": proposals_processed,
+            **phase_times,
+        }
+    }
+    timings_path = PROJECT_ROOT / "data" / "output" / "timings.json"
+    try:
+        timings_path.parent.mkdir(parents=True, exist_ok=True)
+        existing = (
+            json.loads(timings_path.read_text()) if timings_path.exists() else {}
+        )
+        existing.setdefault(scenario, []).append(stats["timings"][scenario])
+        timings_path.write_text(json.dumps(existing, indent=2))
+    except Exception:
+        pass
 
     duration = (dt.datetime.utcnow() - start).total_seconds()
     print(
