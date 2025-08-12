@@ -66,8 +66,6 @@ def broadcast_proposal(text: str) -> None:
         print("📢 Broadcasted proposal to " + ", ".join(sent))
     else:
         print("⚠️ No community platforms configured")
-
-
 def main() -> None:
     start = dt.datetime.now(dt.UTC)
     stats: dict[str, Any] = {}
