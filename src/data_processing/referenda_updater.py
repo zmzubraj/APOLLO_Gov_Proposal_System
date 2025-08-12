@@ -21,6 +21,7 @@ from bs4 import BeautifulSoup
 from substrateinterface import SubstrateInterface
 
 from data_processing.data_loader import load_first_sheet
+from data_processing.proposal_store import ensure_workbook
 from utils.helpers import extract_json_safe, utc_now_iso
 
 # ─────────────── Paths & Constants ────────────────────────────────────
@@ -302,14 +303,12 @@ def update_referenda(max_new: int = 500, max_gaps: int = 5) -> None:
 
     # persist results
     print(f"Stopped after {attempted} attempts (gaps {gap_streak}/{max_gaps}).")
-    XLSX_PATH.parent.mkdir(parents=True, exist_ok=True)
-    if XLSX_PATH.exists():
-        with pd.ExcelWriter(
-            XLSX_PATH, engine="openpyxl", mode="a", if_sheet_exists="replace"
-        ) as writer:
-            df.to_excel(writer, sheet_name="Referenda", index=False)
-    else:
-        df.to_excel(XLSX_PATH, sheet_name="Referenda", index=False)
+    if ensure_workbook() is None:
+        return
+    with pd.ExcelWriter(
+        XLSX_PATH, engine="openpyxl", mode="a", if_sheet_exists="replace"
+    ) as writer:
+        df.to_excel(writer, sheet_name="Referenda", index=False)
     print(f"✔ Workbook updated → {XLSX_PATH}")
 
     if failures:
