@@ -220,8 +220,9 @@ def collect_referendum(idx: int) -> Dict[str, str | int | float]:
 
 # ───────────────────── last stored id ──────────────────────────────────
 def last_stored_id() -> int:
-    if not XLSX_PATH.exists(): return -1
-    df = load_first_sheet()
+    if not XLSX_PATH.exists():
+        return -1
+    df = pd.read_excel(XLSX_PATH, sheet_name="Referenda")
     ids = pd.to_numeric(df.iloc[:, 0], errors="coerce").dropna()
     return int(ids.iloc[-1]) if not ids.empty else -1
 
@@ -231,7 +232,11 @@ def update_referenda(max_new: int = 500, max_gaps: int = 5) -> None:
     last = last_stored_id()
     print(f"Last Referendum_ID in workbook: {last}")
 
-    df = pd.read_excel(XLSX_PATH) if XLSX_PATH.exists() else pd.DataFrame(columns=COLS)
+    df = (
+        pd.read_excel(XLSX_PATH, sheet_name="Referenda")
+        if XLSX_PATH.exists()
+        else pd.DataFrame(columns=COLS)
+    )
     failures: List[Dict[str, str]] = []
     attempted = gap_streak = 0
     next_id = last + 1
