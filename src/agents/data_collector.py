@@ -46,6 +46,14 @@ class DataCollector:
             "forum": "daily",
             "news": "hourly",
         }
+        platform_map = {
+            "chat": "X (@PolkadotNetwork), Reddit (r/Polkadot)",
+            "forum": "https://forum.polkadot.network",
+            "news": (
+                "https://cryptorank.io/news/polkadot; "
+                "https://www.binance.com/en/square/post"
+            ),
+        }
         if stats is None:
             stats = {}
         stats.setdefault("data_sources", {})
@@ -58,6 +66,7 @@ class DataCollector:
                 "count": count,
                 "avg_word_length": avg_words,
                 "update_frequency": update_freq.get(source, "unknown"),
+                "platform": platform_map.get(source),
             }
 
         print("🔄 Fetching news …")
