@@ -20,7 +20,6 @@ import pandas as pd
 from bs4 import BeautifulSoup
 from substrateinterface import SubstrateInterface
 
-from data_processing.data_loader import load_first_sheet
 from data_processing.proposal_store import ensure_workbook
 from utils.helpers import extract_json_safe, utc_now_iso
 
