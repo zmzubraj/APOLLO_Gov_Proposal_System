@@ -61,7 +61,7 @@ def test_main_submits(monkeypatch, capsys):
 
     import src.main as main
 
-    monkeypatch.setattr(main, "collect_recent_messages", lambda: [])
+    monkeypatch.setattr(main, "collect_recent_messages", lambda: {})
     monkeypatch.setattr(main, "analyse_messages", lambda msgs: {})
     monkeypatch.setattr(main, "fetch_and_summarise_news", lambda: {})
     monkeypatch.setattr(main, "update_referenda", lambda max_new=500: None)

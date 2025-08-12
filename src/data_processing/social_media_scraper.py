@@ -15,7 +15,7 @@ import html
 import os
 import re
 import time
-from typing import List
+from typing import List, Dict
 
 import requests
 from bs4 import BeautifulSoup
@@ -187,32 +187,39 @@ def fetch_binance_square() -> List[str]:
 # -----------------------------------------------------------------------------
 # Unified public API
 # -----------------------------------------------------------------------------
-def collect_recent_messages() -> List[str]:
+def collect_recent_messages() -> Dict[str, List[str]]:
+    """Return recent messages grouped by their source.
+
+    Each key represents a general source category (e.g. ``"forum"``,
+    ``"news"``, ``"chat"``) mapped to a list of text snippets pulled from the
+    relevant platforms.  Failures from individual sources are logged and
+    represented as empty lists so the caller can handle missing data
+    gracefully.
     """
-    Return a merged, de-duplicated list of recent messages
-    from all configured sources.
-    """
-    sources = [
-        fetch_x,
-        fetch_forum,
-        fetch_cryptorank,
-        # fetch_telegram,
-        fetch_reddit,
-        fetch_binance_square,
-    ]
-    messages: list[str] = []
-    for fn in sources:
-        try:
-            messages.extend(fn())
-        except Exception as e:
-            print(f"[warn] {fn.__name__} failed: {e}")
-    # de-dup & keep order
-    seen, deduped = set(), []
-    for m in messages:
-        if m not in seen:
-            deduped.append(m)
-            seen.add(m)
-    return deduped
+
+    source_funcs: Dict[str, List] = {
+        "chat": [fetch_x, fetch_reddit],
+        "forum": [fetch_forum],
+        "news": [fetch_cryptorank, fetch_binance_square],
+    }
+
+    grouped: Dict[str, List[str]] = {}
+    for name, funcs in source_funcs.items():
+        texts: list[str] = []
+        for fn in funcs:
+            try:
+                texts.extend(fn())
+            except Exception as e:
+                print(f"[warn] {fn.__name__} failed: {e}")
+        # de-dup & keep order within the source
+        seen, deduped = set(), []
+        for t in texts:
+            if t not in seen:
+                deduped.append(t)
+                seen.add(t)
+        grouped[name] = deduped
+
+    return grouped
 
 
 # Stand-alone quick test ------------------------------------------------------

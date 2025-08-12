@@ -66,8 +66,10 @@ def main() -> None:
         get_recent_blocks_cached,
     )
 
-    msgs = data["messages"]
-    sentiment = analyse_messages(msgs)
+    msgs_by_source = data["messages"]
+    # Flatten all message lists for sentiment analysis
+    all_msgs = [m for msgs in msgs_by_source.values() for m in msgs]
+    sentiment = analyse_messages(all_msgs)
     # sentiment = []
 
     news = data["news"]
