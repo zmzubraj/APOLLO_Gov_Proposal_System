@@ -15,21 +15,43 @@ class DataCollector:
 
     @staticmethod
     def collect(
-        msg_fn: Callable[[], list] = collect_recent_messages,
+        msg_fn: Callable[[], Dict[str, list[str]]] = collect_recent_messages,
         news_fn: Callable[[], Dict[str, Any]] = fetch_and_summarise_news,
         block_fn: Callable[[], list] = get_recent_blocks_cached,
         evm_fn: Callable[[], list] | None = None,
     ) -> Dict[str, Any]:
-        """Return recent messages, news summary, and block data.
+        """Return recent messages, news summary, block data and stats.
 
         If the environment variable ``ENABLE_EVM_FETCH`` is set to ``"true"``
         (case-insensitive), EVM block data will also be collected. A custom
         function can be supplied via ``evm_fn``; otherwise a default fetcher
         using :func:`data_processing.evm_data_fetcher.fetch_evm_blocks` is
-        invoked. Results are stored under the ``"evm_blocks"`` key.
+        invoked. Results are stored under the ``"evm_blocks"`` key. Simple
+        statistics about the collected message sources are attached under the
+        ``"stats"`` key.
         """
         print("🔄 Collecting social sentiment …")
         messages = msg_fn()
+
+        # ------------------------------------------------------------------
+        # Compute simple source statistics
+        # ------------------------------------------------------------------
+        update_freq = {
+            "chat": "realtime",
+            "forum": "daily",
+            "news": "hourly",
+        }
+        stats: Dict[str, Any] = {"data_sources": {}}
+        for source, texts in messages.items():
+            count = len(texts)
+            avg_words = (
+                sum(len(t.split()) for t in texts) / count if count else 0.0
+            )
+            stats["data_sources"][source] = {
+                "count": count,
+                "avg_word_length": avg_words,
+                "update_frequency": update_freq.get(source, "unknown"),
+            }
 
         print("🔄 Fetching news …")
         news = news_fn()
@@ -37,7 +59,12 @@ class DataCollector:
         print("🔄 Fetching on-chain data …")
         blocks = block_fn()
 
-        result = {"messages": messages, "news": news, "blocks": blocks}
+        result = {
+            "messages": messages,
+            "news": news,
+            "blocks": blocks,
+            "stats": stats,
+        }
 
         enable_evm = os.getenv("ENABLE_EVM_FETCH", "false").lower() == "true"
         if enable_evm:

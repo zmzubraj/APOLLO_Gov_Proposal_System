@@ -51,7 +51,7 @@ def test_data_collector_optional_evm(monkeypatch):
 
     monkeypatch.setenv("ENABLE_EVM_FETCH", "true")
     data = DataCollector.collect(
-        msg_fn=lambda: [],
+        msg_fn=lambda: {},
         news_fn=lambda: {},
         block_fn=lambda: [],
         evm_fn=dummy_evm_fn,

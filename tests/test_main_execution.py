@@ -19,7 +19,7 @@ def test_main_records_final_status(monkeypatch, tmp_path):
 
     import src.main as main
 
-    monkeypatch.setattr(main, "collect_recent_messages", lambda: [])
+    monkeypatch.setattr(main, "collect_recent_messages", lambda: {})
     monkeypatch.setattr(main, "analyse_messages", lambda msgs: {})
     monkeypatch.setattr(main, "fetch_and_summarise_news", lambda: {})
     monkeypatch.setattr(main, "get_recent_blocks_cached", lambda: [])
