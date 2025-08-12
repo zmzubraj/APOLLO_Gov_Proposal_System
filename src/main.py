@@ -10,11 +10,13 @@ $ python src/main.py
 
 from __future__ import annotations
 import json, pathlib, datetime as dt, os
+import pandas as pd
 from agents.data_collector import DataCollector
 from data_processing.social_media_scraper import collect_recent_messages
 from reporting.summary_tables import (
     print_data_sources_table,
     print_sentiment_embedding_table,
+    print_prediction_accuracy_table,
 )
 from agents.sentiment_analyser import analyse_messages
 from data_processing.news_fetcher import fetch_and_summarise_news
@@ -24,6 +26,7 @@ from data_processing.blockchain_cache import get_recent_blocks_cached
 from analysis.blockchain_metrics import summarise_blocks
 from analysis.governance_analysis import get_governance_insights
 from agents.outcome_forecaster import forecast_outcomes
+from analysis.prediction_evaluator import compare_predictions
 from agents import proposal_generator
 from agents.context_generator import build_context
 from llm import ollama_api
@@ -131,6 +134,26 @@ def main() -> None:
     print_sentiment_embedding_table(stats.get("sentiment_batches", []))
     forecast = forecast_outcomes(context)
     context["forecast"] = forecast
+    try:
+        df_pred = pd.DataFrame(
+            [
+                {
+                    "proposal_id": 0,
+                    "dao": "Gov",
+                    "predicted": "Approved"
+                    if forecast.get("approval_prob", 0.0) >= 0.5
+                    else "Rejected",
+                    "confidence": forecast.get("approval_prob", 0.0),
+                    "prediction_time": dt.datetime.utcnow().isoformat(),
+                    "margin_of_error": forecast.get("turnout_estimate", 0.0),
+                }
+            ]
+        )
+        eval_res = compare_predictions(df_pred)
+        stats["prediction_eval"] = eval_res.get("prediction_eval", [])
+    except Exception:
+        stats["prediction_eval"] = []
+    print_prediction_accuracy_table(stats.get("prediction_eval", []))
     timestamp = dt.datetime.utcnow().strftime("%Y%m%d-%H%M%S")
     (OUT_DIR / f"context_{timestamp}.json").write_text(json.dumps(context, indent=2))
 
