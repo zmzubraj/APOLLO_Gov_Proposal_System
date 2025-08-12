@@ -70,6 +70,48 @@ def print_data_sources_table(stats: Mapping[str, Mapping[str, Any]]) -> None:
     print(table)
 
 
+def print_prediction_accuracy_table(stats: Iterable[Mapping[str, Any]]) -> None:
+    """Print a table comparing forecasted outcomes with actual results.
+
+    Parameters
+    ----------
+    stats:
+        Iterable of dictionaries each containing the keys ``Proposal ID``,
+        ``DAO``, ``Predicted``, ``Actual``, ``Confidence``, ``Prediction Time``
+        and ``Margin of Error``.
+    """
+
+    headers = [
+        "Proposal ID",
+        "DAO",
+        "Predicted",
+        "Actual",
+        "Confidence",
+        "Prediction Time",
+        "Margin of Error",
+    ]
+
+    rows = []
+    for info in stats:
+        pid = info.get("Proposal ID", "-")
+        dao = info.get("DAO", "-")
+        predicted = info.get("Predicted", "-")
+        actual = info.get("Actual", "-")
+        confidence = info.get("Confidence")
+        confidence_str = f"{confidence:.2f}" if isinstance(confidence, (int, float)) else "-"
+        pred_time = info.get("Prediction Time", "-")
+        moe = info.get("Margin of Error")
+        moe_str = f"{moe:.2f}" if isinstance(moe, (int, float)) else "-"
+        rows.append([pid, dao, predicted, actual, confidence_str, pred_time, moe_str])
+
+    if not rows:
+        print("No prediction evaluations available")
+        return
+
+    table = _format_table(headers, rows)
+    print(table)
+
+
 def print_sentiment_embedding_table(stats: Iterable[Mapping[str, Any]]) -> None:
     """Print a table summarising sentiment analysis batches.
 
