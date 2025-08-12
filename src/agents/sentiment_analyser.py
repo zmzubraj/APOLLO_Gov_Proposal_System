@@ -58,7 +58,7 @@ def analyse_messages(messages: Iterable[str]) -> Dict[str, Any]:
             prompt=raw_text,
             system=SYSTEM_PROMPT,
             temperature=0.1,
-            max_tokens=256,
+            max_tokens=1028,
             model="gemma3:4b",
         )
         result = _extract_json(response)

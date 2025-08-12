@@ -30,5 +30,5 @@ def draft(context_dict: Dict[str, Any]) -> str:
         system="You are Polkadot-Gov-Agent v1.",
         model="gemma3:4b",
         temperature=0.3,
-        max_tokens=2048,
+        max_tokens=4096,
     )

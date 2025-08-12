@@ -86,8 +86,8 @@ def summarise_news(items: List[Dict[str, Any]]) -> Dict[str, Any]:
     raw = generate_completion(
         prompt=bullet_source[:8000],
         system=SYSTEM_PROMPT,
-        temperature=0.2,
-        max_tokens=512,
+        temperature=0.3,
+        max_tokens=1028,
         model="gemma3:4b",
     )
 
