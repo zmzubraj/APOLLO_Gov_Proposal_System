@@ -4,6 +4,7 @@ from __future__ import annotations
 import pathlib
 from typing import Dict, Any, TYPE_CHECKING
 import json
+import warnings
 
 from utils.helpers import utc_now_iso
 
@@ -16,19 +17,24 @@ if TYPE_CHECKING:
     from openpyxl import Workbook  # type: ignore
 
 
-def ensure_workbook() -> "Workbook | None":
+def ensure_workbook() -> "Workbook":
     """Create the governance workbook with required sheets if needed.
 
-    Returns the loaded/created workbook or ``None`` if ``openpyxl`` is
-    unavailable. When a new workbook is created, the default "Sheet" is
-    removed and the sheets "Referenda", "Proposals", and
-    "ExecutionResults" are ensured to exist.
+    Returns the loaded/created workbook.  If ``openpyxl`` is unavailable,
+    an informative :class:`ImportError` is raised after emitting a warning.
+    When a new workbook is created, the default "Sheet" is removed and the
+    sheets "Referenda", "Proposals", and "ExecutionResults" are ensured to
+    exist.
     """
 
     try:
         from openpyxl import load_workbook, Workbook  # type: ignore
-    except Exception:
-        return None
+    except Exception as exc:  # pragma: no cover - exercised in tests via monkeypatch
+        warnings.warn(
+            "openpyxl is required for storing governance data; install it to enable persistence",
+            stacklevel=2,
+        )
+        raise exc
 
     XLSX_PATH.parent.mkdir(parents=True, exist_ok=True)
     wb = load_workbook(XLSX_PATH) if XLSX_PATH.exists() else Workbook()
@@ -47,9 +53,6 @@ def ensure_workbook() -> "Workbook | None":
 def _append_row(sheet: str, row: Dict[str, Any]) -> None:
     """Append a dictionary ``row`` to ``sheet`` creating workbook/sheet if needed."""
     wb = ensure_workbook()
-    if wb is None:
-        # ``openpyxl`` (or its deps) not available – skip persistence silently
-        return
     ws = wb[sheet] if sheet in wb.sheetnames else wb.create_sheet(sheet)
     # Write header if sheet empty
     if ws.max_row == 1 and all(cell.value is None for cell in ws[1]):
