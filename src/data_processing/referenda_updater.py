@@ -237,7 +237,7 @@ def update_referenda(max_new: int = 500, max_gaps: int = 5) -> None:
         try:
             row = collect_referendum(next_id)
             df = pd.concat([df, pd.DataFrame([row])], ignore_index=True)
-            print(f"✅ {next_id}")
+            # print(f"✅ {next_id}")
             gap_streak = 0
 
         except IncompleteDataError as inc:
