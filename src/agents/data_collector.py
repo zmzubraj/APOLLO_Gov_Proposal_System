@@ -19,16 +19,21 @@ class DataCollector:
         news_fn: Callable[[], Dict[str, Any]] = fetch_and_summarise_news,
         block_fn: Callable[[], list] = get_recent_blocks_cached,
         evm_fn: Callable[[], list] | None = None,
+        stats: Dict[str, Any] | None = None,
     ) -> Dict[str, Any]:
         """Return recent messages, news summary, block data and stats.
+
+        Parameters are the same as before with the addition of ``stats`` which
+        allows callers to provide a dictionary for metric aggregation. When not
+        supplied, a new dictionary is created.  Any collected source statistics
+        are added under ``stats['data_sources']`` and the dictionary is returned
+        as part of the result for backwards compatibility.
 
         If the environment variable ``ENABLE_EVM_FETCH`` is set to ``"true"``
         (case-insensitive), EVM block data will also be collected. A custom
         function can be supplied via ``evm_fn``; otherwise a default fetcher
         using :func:`data_processing.evm_data_fetcher.fetch_evm_blocks` is
-        invoked. Results are stored under the ``"evm_blocks"`` key. Simple
-        statistics about the collected message sources are attached under the
-        ``"stats"`` key.
+        invoked. Results are stored under the ``"evm_blocks"`` key.
         """
         print("🔄 Collecting social sentiment …")
         messages = msg_fn()
@@ -41,7 +46,9 @@ class DataCollector:
             "forum": "daily",
             "news": "hourly",
         }
-        stats: Dict[str, Any] = {"data_sources": {}}
+        if stats is None:
+            stats = {}
+        stats.setdefault("data_sources", {})
         for source, texts in messages.items():
             count = len(texts)
             avg_words = (
