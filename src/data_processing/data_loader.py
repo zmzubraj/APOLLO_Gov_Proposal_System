@@ -1,10 +1,9 @@
 import pandas as pd
-import os
 
-# Define the path to the Excel file
-DATA_DIR = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'input')
-FILE_NAME = 'PKD Governance Data.xlsx'
-FILE_PATH = os.path.join(DATA_DIR, FILE_NAME)
+from .proposal_store import ensure_workbook, XLSX_PATH
+
+# Backwards compatibility: retain previous constant name
+FILE_PATH = XLSX_PATH
 
 
 def load_governance_data(sheet_name=None):
@@ -25,21 +24,14 @@ def load_governance_data(sheet_name=None):
             print(f"✅ Loaded sheet '{sheet_name or 'default'}'")
         return df
     except FileNotFoundError:
-        print(f"❌ Error: '{FILE_NAME}' not found in '{DATA_DIR}'. Creating empty workbook.")
+        print(
+            f"❌ Error: '{FILE_PATH.name}' not found in '{FILE_PATH.parent}'. "
+            "Creating empty workbook."
+        )
         try:
-            from openpyxl import Workbook  # type: ignore
-            os.makedirs(DATA_DIR, exist_ok=True)
-            wb = Workbook()
-            # Remove default sheet and create expected ones
-            default = wb.active
-            wb.remove(default)
-            for sheet in ("Referenda", "Proposals", "ExecutionResults"):
-                wb.create_sheet(sheet)
-            wb.save(FILE_PATH)
+            ensure_workbook()
         except Exception as e:
-            # If we cannot create the workbook, just return empty structures
             print(f"❌ Failed to create workbook: {e}")
-        # Return empty DataFrames for the expected structure
         if sheet_name is None:
             return {s: pd.DataFrame() for s in ("Referenda", "Proposals", "ExecutionResults")}
         return pd.DataFrame()
