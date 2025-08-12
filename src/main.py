@@ -12,6 +12,7 @@ from __future__ import annotations
 import json, pathlib, datetime as dt, os
 from agents.data_collector import DataCollector
 from data_processing.social_media_scraper import collect_recent_messages
+from reporting.summary_tables import print_data_sources_table
 from agents.sentiment_analyser import analyse_messages
 from data_processing.news_fetcher import fetch_and_summarise_news
 from data_processing.referenda_updater import update_referenda
@@ -65,6 +66,9 @@ def main() -> None:
         fetch_and_summarise_news,
         get_recent_blocks_cached,
     )
+
+    # Display summary of collected data sources
+    print_data_sources_table(data["stats"]["data_sources"])
 
     msgs_by_source = data["messages"]
     # Flatten all message lists for sentiment analysis
