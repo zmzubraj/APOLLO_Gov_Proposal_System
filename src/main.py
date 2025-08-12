@@ -17,6 +17,7 @@ from reporting.summary_tables import (
     print_data_sources_table,
     print_sentiment_embedding_table,
     print_prediction_accuracy_table,
+    print_timing_benchmarks_table,
 )
 from agents.sentiment_analyser import analyse_messages
 from data_processing.news_fetcher import fetch_and_summarise_news
@@ -272,6 +273,9 @@ def main() -> None:
         timings_path.write_text(json.dumps(existing, indent=2))
     except Exception:
         pass
+
+    # Display timing benchmarks for this run
+    print_timing_benchmarks_table(stats.get("timings", {}))
 
     duration = (dt.datetime.utcnow() - start).total_seconds()
     print(
