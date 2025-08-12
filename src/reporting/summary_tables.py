@@ -1,7 +1,14 @@
 """Utilities for printing summary tables about collected data."""
 from __future__ import annotations
 
-from typing import Mapping, Any, Iterable
+import datetime as dt
+from typing import Any, Iterable, Mapping
+
+import pandas as pd
+
+from agents.outcome_forecaster import forecast_outcomes
+from analysis.prediction_evaluator import compare_predictions
+from data_processing.data_loader import load_governance_data
 
 
 def _format_table(headers: Iterable[str], rows: Iterable[Iterable[Any]]) -> str:
@@ -129,6 +136,116 @@ def print_timing_benchmarks_table(stats: Mapping[str, Any]) -> None:
 
     table = _format_table(headers, rows)
     print(table)
+
+
+def evaluate_historical_predictions(sample_size: int = 5) -> list[dict[str, Any]]:
+    """Compare naive forecasts against historical referendum outcomes.
+
+    Parameters
+    ----------
+    sample_size:
+        Maximum number of historical rows to evaluate. Defaults to ``5``.
+
+    Returns
+    -------
+    list
+        List of prediction evaluation dictionaries. Empty if prerequisites
+        are missing.
+    """
+
+    try:
+        df = load_governance_data(sheet_name="Referenda")
+        if isinstance(df, dict):
+            df = next(iter(df.values()))
+    except Exception:
+        return []
+
+    if df is None or df.empty:
+        return []
+
+    col_map = {c.lower().replace(" ", "_"): c for c in df.columns}
+
+    status_col = next(
+        (col_map[c] for c in ["status", "state", "result", "outcome"] if c in col_map),
+        None,
+    )
+    id_col = next(
+        (
+            col_map[c]
+            for c in ["proposal_id", "referendum_id", "id", "referendum"]
+            if c in col_map
+        ),
+        None,
+    )
+    if status_col is None or id_col is None:
+        return []
+
+    finished_mask = (
+        df[status_col]
+        .astype(str)
+        .str.lower()
+        .isin(
+            [
+                "executed",
+                "approved",
+                "rejected",
+                "failed",
+                "passed",
+                "completed",
+                "finished",
+            ]
+        )
+    )
+    df_done = df[finished_mask]
+    if df_done.empty:
+        return []
+
+    sample_df = df_done.sample(n=min(sample_size, len(df_done)), random_state=0)
+
+    title_col = next((col_map[c] for c in ["title", "name"] if c in col_map), None)
+    summary_col = next(
+        (col_map[c] for c in ["summary", "content", "description"] if c in col_map),
+        None,
+    )
+
+    predictions: list[dict[str, Any]] = []
+    for _, row in sample_df.iterrows():
+        context = {}
+        if title_col:
+            context["title"] = row.get(title_col, "")
+        if summary_col:
+            context["summary"] = row.get(summary_col, "")
+
+        forecast = forecast_outcomes(context)
+        prob = forecast.get("approval_prob", 0.0)
+        predicted = "Approved" if prob >= 0.5 else "Rejected"
+
+        dao_col = col_map.get("dao")
+        predictions.append(
+            {
+                "proposal_id": row.get(id_col),
+                "dao": row.get(dao_col, "Gov") if dao_col else "Gov",
+                "predicted": predicted,
+                "confidence": prob,
+                "prediction_time": dt.datetime.now(dt.UTC).isoformat(),
+                "margin_of_error": forecast.get("turnout_estimate", 0.0),
+            }
+        )
+
+    df_pred = pd.DataFrame(predictions)
+    if df_pred.empty:
+        return []
+
+    df_actual = df_done.rename(columns={id_col: "proposal_id", status_col: "actual"})
+    dao_col = col_map.get("dao")
+    if dao_col:
+        df_actual = df_actual.rename(columns={dao_col: "dao"})
+    else:
+        df_actual["dao"] = "Gov"
+    df_actual = df_actual[["proposal_id", "dao", "actual"]]
+
+    eval_res = compare_predictions(df_pred, df_actual)
+    return eval_res.get("prediction_eval", [])
 
 
 def print_prediction_accuracy_table(stats: Iterable[Mapping[str, Any]]) -> None:
