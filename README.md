@@ -259,7 +259,13 @@ discord_post("Example proposal summary")
 telegram_post("Example proposal summary")
 twitter_post("Example proposal summary")
 ```
-- Sends a text summary to Discord, Telegram, and Twitter using the configured credentials.
+- Sends a text summary to Discord, Telegram, and Twitter using the configured credentials. For community sentiment, APOLLO also monitors Reddit's r/Polkadot via `src/data_processing/social_media_scraper.py`.
+
+### 7. Review Prediction Accuracy
+
+After `main.py` completes, APOLLO prints a prediction‑accuracy table comparing forecasted outcomes with actual referendum results. When no current evaluations are available, the system samples five historical executed referenda to populate this table.
+
+> **Prerequisite:** `data/input/PKD Governance Data.xlsx` must exist and include executed referenda (e.g., populate it via `python src/data_processing/referenda_updater.py`). Without this data the fallback accuracy report cannot be generated.
 
 ---
 
