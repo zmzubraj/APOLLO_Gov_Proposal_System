@@ -23,7 +23,7 @@ from bs4 import BeautifulSoup
 # -----------------------------------------------------------------------------
 # Utility
 # -----------------------------------------------------------------------------
-UTC_CUTOFF = dt.datetime.utcnow() - dt.timedelta(days=3)  # last 72 h
+UTC_CUTOFF = dt.datetime.now(dt.UTC) - dt.timedelta(days=3)  # last 72 h
 
 
 def _within_cutoff(ts: dt.datetime) -> bool:
@@ -52,7 +52,7 @@ def fetch_x() -> List[str]:
     resp = requests.get(timeline, headers={"Authorization": f"Bearer {token}"}, params=params).json()
     msgs: list[str] = []
     for tw in resp.get("data", []):
-        ts = dt.datetime.fromisoformat(tw["created_at"].rstrip("Z"))
+        ts = dt.datetime.fromisoformat(tw["created_at"].replace("Z", "+00:00"))
         if _within_cutoff(ts):
             msgs.append(_clean(tw["text"]))
     return msgs
@@ -70,9 +70,11 @@ def fetch_forum() -> List[str]:
     latest = r.json().get("topic_list", {}).get("topics", [])
     msgs: list[str] = []
     for t in latest[:15]:
-        created = dt.datetime.fromtimestamp(t["created_at"] // 1000) if isinstance(t["created_at"],
-                                                                                   int) else dt.datetime.strptime(
-            t["created_at"][:19], "%Y-%m-%dT%H:%M:%S")
+        created = (
+            dt.datetime.fromtimestamp(t["created_at"] // 1000, dt.UTC)
+            if isinstance(t["created_at"], int)
+            else dt.datetime.strptime(t["created_at"][:19], "%Y-%m-%dT%H:%M:%S").replace(tzinfo=dt.UTC)
+        )
         if _within_cutoff(created):
             msgs.append(_clean(t["title"]))
     return msgs
@@ -145,7 +147,7 @@ def fetch_reddit(limit: int = 20) -> List[str]:
     msgs: list[str] = []
     for post in data.get("data", {}).get("children", []):
         p = post["data"]
-        created = dt.datetime.utcfromtimestamp(p["created_utc"])
+        created = dt.datetime.fromtimestamp(p["created_utc"], dt.UTC)
         if not _within_cutoff(created):
             continue
         title = html.unescape(p["title"])

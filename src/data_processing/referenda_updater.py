@@ -52,7 +52,11 @@ NUMERIC_COLS = {
     "Total_Voted_DOT", "Eligible_DOT", "Not_Perticipated_DOT", "Voted_percentage"
 }
 
-to_iso  = lambda ts: dt.datetime.utcfromtimestamp(ts).strftime("%Y-%m-%d %H:%M:%S") if ts else ""
+to_iso  = (
+    lambda ts: dt.datetime.fromtimestamp(ts, dt.UTC).strftime("%Y-%m-%d %H:%M:%S")
+    if ts
+    else ""
+)
 strip_h = lambda h: BeautifulSoup(h, "html.parser").get_text(" ", strip=True)
 
 
