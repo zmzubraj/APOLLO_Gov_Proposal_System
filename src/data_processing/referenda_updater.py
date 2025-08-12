@@ -324,6 +324,10 @@ def update_referenda(max_new: int = 500, max_gaps: int = 5) -> None:
 def append_referendum(idx: int) -> None:
     """Fetch ``idx`` and append or update its row in the Referenda sheet."""
 
+    # Ensure the workbook and required sheets exist before any I/O.
+    if ensure_workbook() is None:
+        return
+
     df = (
         pd.read_excel(XLSX_PATH, sheet_name="Referenda")
         if XLSX_PATH.exists()
