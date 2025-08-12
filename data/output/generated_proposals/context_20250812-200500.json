@@ -1,0 +1,79 @@
+{
+  "timestamp_utc": "2025-08-12T20:04:54Z",
+  "sentiment": {
+    "sentiment_score": 0.6,
+    "summary": "Recent discussions surrounding Polkadot highlight ongoing developments and community engagement. Key topics include the network's validator size adjustments for optimal decentralization and security, advancements in on-chain privacy via projects like Flipchan, and significant investment and growth within the Polkadot ecosystem.  Several projects, such as Hydration and Mythical Games, are receiving positive attention, while concerns about past exploits like Parallel are being addressed.  The overall sentiment is optimistic, with a strong focus on the ecosystem's future and increasing adoption.",
+    "key_topics": [
+      "Polkadot Validator Size & Decentralization",
+      "On-Chain Privacy (Flipchan)",
+      "Ecosystem Growth & Investment",
+      "Project Updates (Hydration, Mythical Games)",
+      "Network Security & Risk Mitigation"
+    ],
+    "sentiment": "Positive",
+    "confidence": 0.6,
+    "message_size_kb": 7.8857421875
+  },
+  "news": {
+    "digest": [
+      "Bitcoin Miner MARA HPC Stake",
+      "Coinbase Stablecoin",
+      "Polkadot DOT Advance",
+      "ATOM Range",
+      "eToro Revenue",
+      "NEAR Whipsaw",
+      "Ether Pumps",
+      "Monero 51% Attack",
+      "Do Kwon Guilty",
+      "ICP Bounce"
+    ]
+  },
+  "chain_kpis": {
+    "daily_tx_count": {
+      "2025-08-12": 50
+    },
+    "daily_total_fees_DOT": {
+      "2025-08-12": 0.0
+    },
+    "avg_tx_per_block": 2.63,
+    "avg_fee_per_tx_DOT": 0.0,
+    "busiest_hour_utc": "2025-08-12 19:00"
+  },
+  "governance_kpis": {
+    "total_referenda": 1706,
+    "executed_pct": 57.9,
+    "rejected_pct": 27.0,
+    "avg_turnout_pct": 2.63,
+    "median_turnout_pct": 2.27,
+    "avg_participants": 281,
+    "avg_duration_days": 19.94,
+    "monthly_counts": {
+      "2025-03": 48,
+      "2025-04": 34,
+      "2025-05": 41,
+      "2025-06": 53,
+      "2025-07": 49,
+      "2025-08": 12
+    },
+    "top_keywords": [
+      "polkadot",
+      "proposal",
+      "vote",
+      "nay",
+      "bounty",
+      "funding",
+      "retroactive",
+      "ecosystem",
+      "please",
+      "tip"
+    ],
+    "insight_summary": "Okay, here\u2019s a summary of the Polkadot governance KPIs, focusing on engagement and key trends:\n\nAs of June 2025, Polkadot has seen a significant number of proposals (1706) but execution remains relatively low at 57.9%. Turnout is extremely low, averaging just 2.63% and a median of 2.27%, indicating a major challenge for broader participation.  Monthly vote counts are declining sharply, with only 12 votes in April 2025, a concerning trend.  Average participation is 281 individuals. Proposals take an average of 19.94 days to resolve. Top keywords highlight frequent discussion around proposals, voting, and funding opportunities.  The low turnout warrants"
+  },
+  "kb_snippets": [],
+  "kb_summary": "",
+  "kb_embedded": false,
+  "forecast": {
+    "approval_prob": 0.5791324736225087,
+    "turnout_estimate": 0.02626300937866354
+  }
+}

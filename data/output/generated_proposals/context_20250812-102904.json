@@ -1,0 +1,75 @@
+{
+  "timestamp_utc": "2025-08-12T10:29:03Z",
+  "sentiment": {
+    "sentiment_score": -0.65,
+    "summary": "The messages reveal significant community skepticism and frustration regarding Polkadot's governance, particularly concerning high inflation, excessive staking rewards, and the perceived inefficiency of the open-governance system. There's a strong desire to reduce inflation, shift capital into DeFi, and eliminate what's seen as wasteful spending by the foundation and related entities. Many users express concern about the lack of real-world value on-ramps and the overall stagnation of the ecosystem. Calls for burning the treasury and a more focused approach to DeFi incentives are prevalent.",
+    "key_topics": [
+      "High Inflation & Staking Rewards",
+      "OpenGov Criticism & Waste",
+      "DeFi Incentive Shift",
+      "Lack of Real-World Value On-Ramps",
+      "Treasury Burn & Waste Reduction"
+    ]
+  },
+  "news": {
+    "digest": [
+      "Bitcoin $115K Bets",
+      "Ether $4.8K",
+      "DOGE drops",
+      "Ripple-SEC",
+      "Bitcoin pullback",
+      "Solana BONK",
+      "Terra Do Kwon",
+      "Sui price fall",
+      "ETH volume climb"
+    ],
+    "risks": "Market volatility driven by inflation data and profit-taking threatens crypto prices."
+  },
+  "chain_kpis": {
+    "daily_tx_count": {
+      "2025-08-12": 138
+    },
+    "daily_total_fees_DOT": {
+      "2025-08-12": 0.0
+    },
+    "avg_tx_per_block": 7.26,
+    "avg_fee_per_tx_DOT": 0.0,
+    "busiest_hour_utc": "2025-08-12 07:00"
+  },
+  "governance_kpis": {
+    "total_referenda": 1387,
+    "executed_pct": 60.5,
+    "rejected_pct": 26.7,
+    "avg_turnout_pct": 2.64,
+    "median_turnout_pct": 2.16,
+    "avg_participants": 280,
+    "avg_duration_days": 20.49,
+    "monthly_counts": {
+      "2024-02": 120,
+      "2024-03": 188,
+      "2024-04": 196,
+      "2024-05": 186,
+      "2024-06": 171,
+      "2024-07": 70
+    },
+    "top_keywords": [
+      "polkadot",
+      "proposal",
+      "vote",
+      "nay",
+      "bounty",
+      "funding",
+      "ecosystem",
+      "dot",
+      "retroactive",
+      "please"
+    ],
+    "insight_summary": "Here\u2019s a summary of the Polkadot governance KPIs, focusing on voter engagement and key trends:\n\nCurrently, 1387 referenda have been created, with 60.5% successfully executed, 26.7% rejected. Voter turnout remains exceptionally low, averaging just 2.64% and a median of 2.16%, indicating a significant disconnect between proposals and participation. Monthly vote counts have dramatically decreased, plummeting from 120 in February 2024 to a low of 70 in July 2024.  The average number of participants is 280.  The high number of outstanding referenda (over 700) alongside this low engagement is a worrying trend, suggesting a need"
+  },
+  "kb_snippets": [],
+  "kb_summary": "",
+  "forecast": {
+    "approval_prob": 0.6049026676279741,
+    "turnout_estimate": 0.02635156813266042
+  }
+}

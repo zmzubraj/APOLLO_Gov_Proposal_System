@@ -1,5 +1,7 @@
- # runtime cache
-data/output/blocks_last3days.json
+# Python cache
+__pycache__/
 data/input/*.xlsx
+data/output/*.xlsx
+data/output/*.json
 !data/input/.gitkeep
 .env

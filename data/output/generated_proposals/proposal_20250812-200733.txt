@@ -1,0 +1,22 @@
+**Root Track Proposal: Enhanced Community Engagement & Proposal Turnout Initiatives**
+
+**Title:** Boosting Polkadot Participation: A Multi-faceted Approach
+
+**Rationale:**
+
+Recent governance KPIs, particularly the dramatically declining monthly vote counts (12 in April 2025), signal a critical need to reinvigorate community engagement within Polkadot’s governance process. While the ecosystem demonstrates strong growth and investment, low turnout rates represent a significant risk to the long-term health and decentralization of the network. This proposal outlines a series of targeted initiatives designed to increase awareness, simplify participation, and incentivize voting, aligning with historical governance patterns of iterative improvements and community-driven development. The recent news cycle, including significant activity in Bitcoin mining and broader crypto market fluctuations, underscores the importance of a robust and responsive governance system.
+
+**Action:**
+
+1.  **Simplified Proposal Submission:** Implement a streamlined proposal submission process, reducing the technical barrier to entry. This includes pre-approved template options and dedicated support channels.
+2.  **Targeted Awareness Campaigns:** Launch a phased awareness campaign utilizing existing Polkadot channels (Discord, Telegram, Discourse) and strategic partnerships to highlight the importance of governance participation.
+3.  **Voting Incentives (Small Scale):** Introduce a small-scale, pilot program offering modest rewards (e.g., DOT airdrops) for participating in governance votes – focusing initially on lower-complexity proposals. (Note: This will be carefully monitored for potential manipulation).
+4.  **Community Bounty Program Expansion:** Increase funding for the existing bounty program, focusing on tasks that directly benefit community members (e.g., documentation, testing, translation).
+5.  **Regular Turnout Reports:** Publish weekly reports detailing governance participation metrics, highlighting successes and areas for improvement.
+
+**Expected Impact:**
+
+*   **Increased Turnout:** Achieve a 5% increase in monthly voting participation within six months.
+*   **Enhanced Community Engagement:** Foster a more active and informed community contributing to the future development of Polkadot.
+*   **Improved Proposal Quality:** Encourage more diverse and well-considered proposals reflecting community priorities.
+*   **Strengthened Decentralization:** Reinforce Polkadot’s commitment to decentralized governance by increasing participation across the network.

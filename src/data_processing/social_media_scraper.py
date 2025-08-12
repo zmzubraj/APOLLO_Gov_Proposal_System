@@ -178,7 +178,7 @@ def fetch_reddit(limit: int = 20) -> List[str]:
 # -----------------------------------------------------------------------------
 def fetch_binance_square() -> List[str]:
     url = "https://www.binance.com/en/square/post"
-    soup = BeautifulSoup(requests.get(url, timeout=10).text, "html.parser")
+    soup = BeautifulSoup(requests.get(url, timeout=60).text, "html.parser")
     cards = soup.select("div.css-1ej4hfo")[:15]  # class may change
     return [_clean(c.get_text(" ", strip=True)) for c in cards]
 

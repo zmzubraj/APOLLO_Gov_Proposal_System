@@ -70,3 +70,40 @@ Referendum_ID,error,missing_info,function,time
 1702,incomplete data after fallback,"Start, End, Status",collect_referendum,2025-08-09T18:32:12Z
 1703,incomplete data after fallback,"Start, End, Status",collect_referendum,2025-08-09T18:32:15Z
 1704,incomplete data after fallback,"Start, End, Status",collect_referendum,2025-08-09T18:32:17Z
+888,[WinError 10054] An existing connection was forcibly closed by the remote host,,collect_referendum,2025-08-12T10:27:10Z
+889,gap (true 404),,collect_referendum,2025-08-12T10:27:10Z
+890,gap (true 404),,collect_referendum,2025-08-12T10:27:11Z
+891,gap (true 404),,collect_referendum,2025-08-12T10:27:11Z
+892,gap (true 404),,collect_referendum,2025-08-12T10:27:11Z
+1605,Connection to remote host was lost.,,collect_referendum,2025-08-12T19:57:05Z
+1668,incomplete data after fallback,End,collect_referendum,2025-08-12T20:01:36Z
+1679,incomplete data after fallback,End,collect_referendum,2025-08-12T20:02:17Z
+1680,incomplete data after fallback,End,collect_referendum,2025-08-12T20:02:21Z
+1681,incomplete data after fallback,End,collect_referendum,2025-08-12T20:02:24Z
+1682,incomplete data after fallback,End,collect_referendum,2025-08-12T20:02:27Z
+1684,incomplete data after fallback,End,collect_referendum,2025-08-12T20:02:34Z
+1686,incomplete data after fallback,End,collect_referendum,2025-08-12T20:02:41Z
+1688,incomplete data after fallback,End,collect_referendum,2025-08-12T20:02:48Z
+1689,incomplete data after fallback,End,collect_referendum,2025-08-12T20:02:51Z
+1691,incomplete data after fallback,End,collect_referendum,2025-08-12T20:03:00Z
+1692,incomplete data after fallback,End,collect_referendum,2025-08-12T20:03:03Z
+1693,incomplete data after fallback,End,collect_referendum,2025-08-12T20:03:06Z
+1695,incomplete data after fallback,End,collect_referendum,2025-08-12T20:03:13Z
+1696,incomplete data after fallback,End,collect_referendum,2025-08-12T20:03:16Z
+1697,incomplete data after fallback,End,collect_referendum,2025-08-12T20:03:19Z
+1698,incomplete data after fallback,End,collect_referendum,2025-08-12T20:03:22Z
+1699,incomplete data after fallback,End,collect_referendum,2025-08-12T20:03:25Z
+1700,incomplete data after fallback,End,collect_referendum,2025-08-12T20:03:28Z
+1701,incomplete data after fallback,End,collect_referendum,2025-08-12T20:03:32Z
+1702,incomplete data after fallback,End,collect_referendum,2025-08-12T20:03:35Z
+1703,incomplete data after fallback,"Start, End, Status",collect_referendum,2025-08-12T20:03:38Z
+1704,incomplete data after fallback,"Start, End, Status",collect_referendum,2025-08-12T20:03:40Z
+1705,incomplete data after fallback,"Start, End, Status",collect_referendum,2025-08-12T20:03:43Z
+1706,incomplete data after fallback,"Start, End, Status",collect_referendum,2025-08-12T20:03:45Z
+1707,incomplete data after fallback,"Start, End, Status",collect_referendum,2025-08-12T20:03:48Z
+1702,incomplete data after fallback,End,collect_referendum,2025-08-12T20:49:39Z
+1703,incomplete data after fallback,"Start, End, Status",collect_referendum,2025-08-12T20:49:42Z
+1704,incomplete data after fallback,"Start, End, Status",collect_referendum,2025-08-12T20:49:44Z
+1705,incomplete data after fallback,"Start, End, Status",collect_referendum,2025-08-12T20:49:47Z
+1706,incomplete data after fallback,"Start, End, Status",collect_referendum,2025-08-12T20:49:50Z
+1707,incomplete data after fallback,"Start, End, Status",collect_referendum,2025-08-12T20:49:52Z
