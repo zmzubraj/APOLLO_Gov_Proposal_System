@@ -70,6 +70,67 @@ def print_data_sources_table(stats: Mapping[str, Mapping[str, Any]]) -> None:
     print(table)
 
 
+def print_timing_benchmarks_table(stats: Mapping[str, Any]) -> None:
+    """Print a table summarising pipeline timing benchmarks.
+
+    Parameters
+    ----------
+    stats:
+        Mapping of scenario names to dictionaries describing timing
+        information. Each dictionary should contain at least the keys
+        ``proposals``, ``ingestion_s``, ``analysis_prediction_s`` and
+        ``draft_sign_s`` representing the duration of each phase in
+        seconds.
+    """
+
+    headers = [
+        "Scenario",
+        "# Proposals",
+        "Ingestion (s)",
+        "Analysis + Prediction (s)",
+        "Draft + Sign (s)",
+        "Total (s)",
+    ]
+
+    rows = []
+    for scenario, info in stats.items():
+        if not isinstance(info, Mapping):
+            # If a list of runs is provided, aggregate by averaging
+            runs = list(info)
+            if not runs:
+                continue
+            proposals = sum(r.get("proposals", 0) for r in runs) / len(runs)
+            ingestion = sum(r.get("ingestion_s", 0.0) for r in runs) / len(runs)
+            analysis = sum(
+                r.get("analysis_prediction_s", 0.0) for r in runs
+            ) / len(runs)
+            draft = sum(r.get("draft_sign_s", 0.0) for r in runs) / len(runs)
+        else:
+            proposals = info.get("proposals", 0)
+            ingestion = info.get("ingestion_s", 0.0)
+            analysis = info.get("analysis_prediction_s", 0.0)
+            draft = info.get("draft_sign_s", 0.0)
+
+        total = ingestion + analysis + draft
+        rows.append(
+            [
+                scenario,
+                f"{proposals:.0f}",
+                f"{ingestion:.2f}",
+                f"{analysis:.2f}",
+                f"{draft:.2f}",
+                f"{total:.2f}",
+            ]
+        )
+
+    if not rows:
+        print("No timing benchmarks available")
+        return
+
+    table = _format_table(headers, rows)
+    print(table)
+
+
 def print_prediction_accuracy_table(stats: Iterable[Mapping[str, Any]]) -> None:
     """Print a table comparing forecasted outcomes with actual results.
 
