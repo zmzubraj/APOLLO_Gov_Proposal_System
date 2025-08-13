@@ -73,6 +73,7 @@ def print_data_sources_table(stats: Mapping[str, Mapping[str, Any]]) -> None:
         print("No data sources available")
         return
 
+    print("\nTable: Data Sources and Scraping Volume")
     table = _format_table(headers, rows)
     print(table)
 
@@ -134,6 +135,7 @@ def print_timing_benchmarks_table(stats: Mapping[str, Any]) -> None:
         print("No timing benchmarks available")
         return
 
+    print("\nTable: End-to-End Timing Benchmarks")
     table = _format_table(headers, rows)
     print(table)
 
@@ -270,11 +272,14 @@ def print_prediction_accuracy_table(stats: Iterable[Mapping[str, Any]]) -> None:
     ]
 
     rows = []
+    has_actual = False
     for info in stats:
         pid = info.get("Proposal ID", "-")
         dao = info.get("DAO", "-")
         predicted = info.get("Predicted", "-")
         actual = info.get("Actual", "-")
+        if actual not in (None, "", "-", "nan", "NaN"):
+            has_actual = True
         confidence = info.get("Confidence")
         confidence_str = f"{confidence:.2f}" if isinstance(confidence, (int, float)) else "-"
         pred_time = info.get("Prediction Time", "-")
@@ -286,6 +291,12 @@ def print_prediction_accuracy_table(stats: Iterable[Mapping[str, Any]]) -> None:
         print("No prediction evaluations available")
         return
 
+    title = "Table: Voting Result Prediction vs. Actual Outcomes"
+    if has_actual:
+        title += " (historical referenda data)"
+    else:
+        title += " (current data)"
+    print(f"\n{title}")
     table = _format_table(headers, rows)
     print(table)
 
@@ -324,5 +335,6 @@ def print_sentiment_embedding_table(stats: Iterable[Mapping[str, Any]]) -> None:
         print("No sentiment batches available")
         return
 
+    print("\nTable: Sentiment Analysis and Knowledge Base Embedding")
     table = _format_table(headers, rows)
     print(table)
