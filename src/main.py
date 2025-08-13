@@ -122,6 +122,28 @@ def main() -> None:
 
     blocks = data["blocks"]
     chain_kpis = summarise_blocks(blocks)
+    # Perform sentiment analysis + embedding on-chain KPIs
+    chain_text = json.dumps(chain_kpis)
+    chain_res = analyse_messages([chain_text])
+    chain_ctx_size = (
+        len(chain_text.encode("utf-8")) / 1024 if chain_text else 0.0
+    )
+    try:
+        ollama_api.embed_text(chain_text)
+        chain_embedded = True
+    except Exception:
+        chain_embedded = False
+    stats["sentiment_batches"].append(
+        {
+            "batch_id": batch_id,
+            "source": "chain",
+            "ctx_size_kb": chain_ctx_size,
+            "sentiment": chain_res.get("sentiment", ""),
+            "confidence": chain_res.get("confidence", 0.0),
+            "embedded": chain_embedded,
+        }
+    )
+    batch_id += 1
     # chain_kpis = []
 
     print("🔄 Analysing governance history …")
