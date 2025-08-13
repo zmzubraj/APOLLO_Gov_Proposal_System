@@ -223,8 +223,15 @@ def last_stored_id() -> int:
     if not XLSX_PATH.exists():
         return -1
     df = pd.read_excel(XLSX_PATH, sheet_name="Referenda")
-    ids = pd.to_numeric(df.iloc[:, 0], errors="coerce").dropna()
+    mask = ~((df.get("Start") == "/") & (df.get("End") == "/") & (df.get("Status") == "/"))
+    ids = pd.to_numeric(df.loc[mask].iloc[:, 0], errors="coerce").dropna()
     return int(ids.iloc[-1]) if not ids.empty else -1
+
+
+def _trim_trailing_gaps(df: pd.DataFrame) -> pd.DataFrame:
+    while not df.empty and (df.iloc[-1][["Start", "End", "Status"]] == "/").all():
+        df = df.iloc[:-1]
+    return df
 
 
 # ───────────────────── Main updater ─────────────────────────────────────
@@ -301,6 +308,7 @@ def update_referenda(max_new: int = 500, max_gaps: int = 5) -> None:
         time.sleep(0.25)
 
     # persist results
+    df = _trim_trailing_gaps(df)
     print(f"Stopped after {attempted} attempts (gaps {gap_streak}/{max_gaps}).")
     if ensure_workbook() is None:
         return
