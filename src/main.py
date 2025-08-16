@@ -23,6 +23,7 @@ from reporting.summary_tables import (
     print_timing_benchmarks_table,
     evaluate_historical_predictions,
     draft_onchain_proposal,
+    summarise_draft_predictions,
 )
 from agents.sentiment_analyser import analyse_messages
 from data_processing.news_fetcher import fetch_and_summarise_news
@@ -36,9 +37,7 @@ from analysis.prediction_evaluator import compare_predictions
 from agents import proposal_generator
 from agents.context_generator import build_context
 from llm import ollama_api
-from execution.discord_bot import post_summary as post_discord
-from execution.telegram_bot import post_summary as post_telegram
-from execution.twitter_bot import post_summary as post_twitter
+from execution.broadcast import broadcast_proposal
 from execution.governor_interface import (
     await_execution,
     execute_proposal,
@@ -57,54 +56,6 @@ OUT_DIR = PROJECT_ROOT / "data" / "output" / "generated_proposals"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 load_dotenv()
 MIN_PASS_CONFIDENCE = float(os.getenv("MIN_PASS_CONFIDENCE", "0.80"))
-
-
-def extract_first_heading(text: str) -> str:
-    """Return the first markdown heading found in ``text``."""
-    for line in text.splitlines():
-        line = line.strip()
-        if line.startswith("#"):
-            return line.lstrip("#").strip()
-    return text.splitlines()[0].strip() if text else ""
-
-
-def summarise_draft_predictions(
-    drafts: list[dict[str, Any]], threshold: float
-) -> list[dict[str, Any]]:
-    """Create summary prediction records for each draft."""
-    records: list[dict[str, Any]] = []
-    for draft in drafts:
-        forecast = draft.get("forecast", {})
-        confidence = forecast.get("approval_prob", 0.0)
-        predicted = "Pass" if confidence >= threshold else "Fail"
-        records.append(
-            {
-                "source": draft.get("source", ""),
-                "title": extract_first_heading(draft.get("text", "")),
-                "predicted": predicted,
-                "confidence": confidence,
-                "prediction_time": draft.get("prediction_time", 0.0),
-                "margin_of_error": forecast.get(
-                    "margin_of_error", forecast.get("turnout_estimate", 0.0)
-                ),
-            }
-        )
-    return records
-
-
-def broadcast_proposal(text: str) -> None:
-    """Send ``text`` to any configured community platforms."""
-    sent = []
-    if post_discord(text):
-        sent.append("Discord")
-    if post_telegram(text):
-        sent.append("Telegram")
-    if post_twitter(text):
-        sent.append("Twitter")
-    if sent:
-        print("📢 Broadcasted proposal to " + ", ".join(sent))
-    else:
-        print("⚠️ No community platforms configured")
 def main() -> None:
     start = dt.datetime.now(dt.UTC)
     stats: dict[str, Any] = {}
@@ -409,24 +360,23 @@ def main() -> None:
         scenario_label = "Medium Load"
     else:
         scenario_label = "High Load"
-    stats["timings"] = {
-        scenario_label: {
-            "proposals": proposals_processed,
-            **phase_times,
-        }
+    run_timings = {
+        "scenario": scenario_label,
+        "proposals": proposals_processed,
+        **phase_times,
     }
     timings_path = PROJECT_ROOT / "data" / "output" / "timings.json"
     try:
         timings_path.parent.mkdir(parents=True, exist_ok=True)
         existing = (
-            json.loads(timings_path.read_text()) if timings_path.exists() else {}
+            json.loads(timings_path.read_text()) if timings_path.exists() else []
         )
-        existing.setdefault(scenario_label, []).append(
-            stats["timings"][scenario_label]
-        )
-        timings_path.write_text(json.dumps(existing, indent=2))
+        existing.append(run_timings)
+        timings_history = existing[-3:]
+        timings_path.write_text(json.dumps(timings_history, indent=2))
     except Exception:
-        pass
+        timings_history = [run_timings]
+    stats["timings"] = timings_history
 
     duration = (dt.datetime.now(dt.UTC) - start).total_seconds()
     print(
@@ -441,7 +391,7 @@ def main() -> None:
         stats.get("draft_predictions", []), MIN_PASS_CONFIDENCE
     )
     print_prediction_accuracy_table(stats["prediction_eval"])
-    print_timing_benchmarks_table(stats.get("timings", {}))
+    print_timing_benchmarks_table(stats.get("timings", []))
 
 if __name__ == "__main__":
     main()

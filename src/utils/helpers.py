@@ -69,6 +69,18 @@ def abbrev_number(value: float, suffix: str = "") -> str:
 
 
 # ────────────────────────────────────────────────────────────────────────────
+# 4. Markdown helpers
+# ────────────────────────────────────────────────────────────────────────────
+def extract_first_heading(text: str) -> str:
+    """Return the first markdown heading found in ``text``."""
+    for line in text.splitlines():
+        line = line.strip()
+        if line.startswith("#"):
+            return line.lstrip("#").strip()
+    return text.splitlines()[0].strip() if text else ""
+
+
+# ────────────────────────────────────────────────────────────────────────────
 # Stand-alone smoke test
 # ────────────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":

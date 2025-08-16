@@ -14,6 +14,7 @@ from agents.outcome_forecaster import forecast_outcomes
 from analysis.prediction_evaluator import compare_predictions
 from data_processing.data_loader import load_governance_data
 from data_processing.proposal_store import record_proposal
+from utils.helpers import extract_first_heading
 
 
 def _format_table(headers: Iterable[str], rows: Iterable[Iterable[Any]]) -> str:
@@ -103,17 +104,16 @@ def print_data_sources_table(stats: Mapping[str, Mapping[str, Any]]) -> None:
     print(table)
 
 
-def print_timing_benchmarks_table(stats: Mapping[str, Any]) -> None:
+def print_timing_benchmarks_table(stats: Iterable[Mapping[str, Any]]) -> None:
     """Print a table summarising pipeline timing benchmarks.
 
     Parameters
     ----------
     stats:
-        Mapping of scenario names to dictionaries describing timing
-        information. Each dictionary should contain at least the keys
-        ``proposals``, ``ingestion_s``, ``analysis_prediction_s`` and
-        ``draft_sign_s`` representing the duration of each phase in
-        seconds.
+        Iterable of timing dictionaries, typically the last few runs. Each
+        dictionary should contain the keys ``scenario``, ``proposals``,
+        ``ingestion_s``, ``analysis_prediction_s`` and ``draft_sign_s``
+        representing the duration of each phase in seconds.
     """
 
     headers = [
@@ -135,25 +135,13 @@ def print_timing_benchmarks_table(stats: Mapping[str, Any]) -> None:
     }
 
     rows = []
-    for scenario, info in stats.items():
-        scenario_display = scenario_labels.get(str(scenario).lower(), scenario)
-        if not isinstance(info, Mapping):
-            # If a list of runs is provided, aggregate by averaging
-            runs = list(info)
-            if not runs:
-                continue
-            proposals = sum(r.get("proposals", 0) for r in runs) / len(runs)
-            ingestion = sum(r.get("ingestion_s", 0.0) for r in runs) / len(runs)
-            analysis = sum(
-                r.get("analysis_prediction_s", 0.0) for r in runs
-            ) / len(runs)
-            draft = sum(r.get("draft_sign_s", 0.0) for r in runs) / len(runs)
-        else:
-            proposals = info.get("proposals", 0)
-            ingestion = info.get("ingestion_s", 0.0)
-            analysis = info.get("analysis_prediction_s", 0.0)
-            draft = info.get("draft_sign_s", 0.0)
-
+    for info in stats:
+        scenario_raw = str(info.get("scenario", "-"))
+        scenario_display = scenario_labels.get(scenario_raw.lower(), scenario_raw)
+        proposals = info.get("proposals", 0)
+        ingestion = info.get("ingestion_s", 0.0)
+        analysis = info.get("analysis_prediction_s", 0.0)
+        draft = info.get("draft_sign_s", 0.0)
         total = ingestion + analysis + draft
         rows.append(
             [
@@ -482,3 +470,27 @@ def draft_onchain_proposal(
         "forecast": chain_forecast,
         "prediction_time": prediction_time,
     }
+
+
+def summarise_draft_predictions(
+    drafts: list[dict[str, Any]], threshold: float
+) -> list[dict[str, Any]]:
+    """Create summary prediction records for each draft."""
+    records: list[dict[str, Any]] = []
+    for draft in drafts:
+        forecast = draft.get("forecast", {})
+        confidence = forecast.get("approval_prob", 0.0)
+        predicted = "Pass" if confidence >= threshold else "Fail"
+        records.append(
+            {
+                "source": draft.get("source", ""),
+                "title": extract_first_heading(draft.get("text", "")),
+                "predicted": predicted,
+                "confidence": confidence,
+                "prediction_time": draft.get("prediction_time", 0.0),
+                "margin_of_error": forecast.get(
+                    "margin_of_error", forecast.get("turnout_estimate", 0.0)
+                ),
+            }
+        )
+    return records
