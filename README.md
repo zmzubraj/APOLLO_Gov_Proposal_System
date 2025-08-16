@@ -208,6 +208,8 @@ Create a `.env` file in the project root:
  NEWS_LOOKBACK_DAYS=3          # days of news to fetch
  # Fallback historical evaluation
  HISTORICAL_SAMPLE_SEED=0      # optional seed for sampling historical referenda
+ # Minimum confidence to label a draft as passing
+ MIN_PASS_CONFIDENCE=0.80
 ```
 
 `SUBSTRATE_NODE_URL` should point to a Substrate RPC endpoint. Common choices
@@ -221,7 +223,8 @@ platforms via the execution layer connectors.
 `NEWS_LOOKBACK_DAYS` controls the number of past days of RSS items retrieved by
 the news fetcher. `HISTORICAL_SAMPLE_SEED` can be set to an integer to make
 historical prediction sampling reproducible; omit it to allow nondeterministic
-selection.
+selection. `MIN_PASS_CONFIDENCE` defines the approval probability threshold used
+to label draft proposals as "Pass" in the forecast summary table.
 
 #### Data Weighting System
 
@@ -290,7 +293,7 @@ twitter_post("Example proposal summary")
 
 ### 7. Review Prediction Accuracy
 
-After `main.py` completes, APOLLO prints a prediction‑accuracy table comparing forecasted outcomes with actual referendum results. When no current evaluations are available, the system samples five historical executed referenda to populate this table.
+After `main.py` completes, APOLLO prints a prediction‑accuracy table comparing forecasted outcomes with actual referendum results. It also prints a draft forecast table listing each generated draft, its predicted outcome, confidence, runtime and margin of error. When no current evaluations are available, the system samples five historical executed referenda to populate this table.
 
 > **Prerequisite:** `data/input/PKD Governance Data.xlsx` must exist and include executed referenda (e.g., populate it via `python src/data_processing/referenda_updater.py`). Without this data the fallback accuracy report cannot be generated.
 
