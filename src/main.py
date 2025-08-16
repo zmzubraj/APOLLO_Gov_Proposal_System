@@ -404,13 +404,13 @@ def main() -> None:
 
     proposals_processed = max(1, len(stats.get("prediction_eval", [])))
     if proposals_processed < 5:
-        scenario = "light"
+        scenario_label = "Light Load"
     elif proposals_processed < 20:
-        scenario = "medium"
+        scenario_label = "Medium Load"
     else:
-        scenario = "high"
+        scenario_label = "High Load"
     stats["timings"] = {
-        scenario: {
+        scenario_label: {
             "proposals": proposals_processed,
             **phase_times,
         }
@@ -421,7 +421,9 @@ def main() -> None:
         existing = (
             json.loads(timings_path.read_text()) if timings_path.exists() else {}
         )
-        existing.setdefault(scenario, []).append(stats["timings"][scenario])
+        existing.setdefault(scenario_label, []).append(
+            stats["timings"][scenario_label]
+        )
         timings_path.write_text(json.dumps(existing, indent=2))
     except Exception:
         pass

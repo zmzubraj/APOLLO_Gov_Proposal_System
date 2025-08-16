@@ -122,11 +122,21 @@ def print_timing_benchmarks_table(stats: Mapping[str, Any]) -> None:
         "Ingestion (s)",
         "Analysis + Prediction (s)",
         "Draft + Sign (s)",
-        "Total (s)",
+        "Total Time (s)",
     ]
+
+    scenario_labels = {
+        "light": "Light Load",
+        "light load": "Light Load",
+        "medium": "Medium Load",
+        "medium load": "Medium Load",
+        "high": "High Load",
+        "high load": "High Load",
+    }
 
     rows = []
     for scenario, info in stats.items():
+        scenario_display = scenario_labels.get(str(scenario).lower(), scenario)
         if not isinstance(info, Mapping):
             # If a list of runs is provided, aggregate by averaging
             runs = list(info)
@@ -147,7 +157,7 @@ def print_timing_benchmarks_table(stats: Mapping[str, Any]) -> None:
         total = ingestion + analysis + draft
         rows.append(
             [
-                scenario,
+                scenario_display,
                 f"{proposals:.0f}",
                 f"{ingestion:.2f}",
                 f"{analysis:.2f}",
