@@ -58,6 +58,22 @@ class DataCollector:
                 "https://www.binance.com/en/square/post"
             ),
         }
+        # ------------------------------------------------------------------
+        # Optional per-source weighting from environment variables
+        # ------------------------------------------------------------------
+        def _env_weight(var: str) -> float:
+            try:
+                return float(os.getenv(var, "1"))
+            except ValueError:
+                return 1.0
+
+        weights = {
+            "chat": _env_weight("DATA_WEIGHT_CHAT"),
+            "forum": _env_weight("DATA_WEIGHT_FORUM"),
+            "news": _env_weight("DATA_WEIGHT_NEWS"),
+            "chain": _env_weight("DATA_WEIGHT_CHAIN"),
+            "governance": _env_weight("DATA_WEIGHT_GOVERNANCE"),
+        }
         if stats is None:
             stats = {}
         stats.setdefault("data_sources", {})
@@ -71,10 +87,20 @@ class DataCollector:
                 "avg_word_length": avg_words,
                 "update_frequency": update_freq.get(source, "unknown"),
                 "platform": platform_map.get(source),
+                "weight": weights.get(source, 1.0),
             }
 
         print("🔄 Fetching news …")
         news = news_fn()
+
+        news_count = len(news.get("digest", [])) if isinstance(news, dict) else 0
+        stats["data_sources"]["news"] = {
+            "count": news_count,
+            "avg_word_length": 0.0,
+            "update_frequency": update_freq.get("news", "unknown"),
+            "platform": platform_map.get("news"),
+            "weight": weights.get("news", 1.0),
+        }
 
         print("🔄 Fetching on-chain data …")
         blocks = block_fn()
@@ -96,7 +122,20 @@ class DataCollector:
             "avg_word_length": avg_extrinsics,
             "update_frequency": update_freq.get("chain", "unknown"),
             "platform": rpc_url,
+            "weight": weights.get("chain", 1.0),
         }
+
+        # Include governance placeholder so that weight information is surfaced
+        stats["data_sources"].setdefault(
+            "governance",
+            {
+                "count": 0,
+                "avg_word_length": 0.0,
+                "update_frequency": "unknown",
+                "platform": None,
+                "weight": weights.get("governance", 1.0),
+            },
+        )
 
         result = {
             "messages": messages,

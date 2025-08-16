@@ -1,6 +1,7 @@
 """Context generation utilities."""
 from __future__ import annotations
 
+import os
 from math import sqrt
 from typing import Any, Dict, Iterable, List, Tuple
 
@@ -91,6 +92,25 @@ def _summarise(snippets: list[str]) -> str:
         return " ".join(snippets)[:500]
 
 
+def _env_weight(var: str) -> float:
+    """Fetch a numeric weight from ``var`` environment variable."""
+    try:
+        return float(os.getenv(var, "1"))
+    except ValueError:
+        return 1.0
+
+
+def _apply_weight(data: Any, weight: float) -> Any:
+    """Recursively multiply numeric values in ``data`` by ``weight``."""
+    if isinstance(data, dict):
+        return {k: _apply_weight(v, weight) for k, v in data.items()}
+    if isinstance(data, list):
+        return [_apply_weight(v, weight) for v in data]
+    if isinstance(data, (int, float)):
+        return data * weight
+    return data
+
+
 def build_context(
     sentiment: Dict[str, Any],
     news: Dict[str, Any],
@@ -115,12 +135,25 @@ def build_context(
         snippets = _dedup(snippets)
     summary = _summarise(snippets) if summarise_snippets and snippets else ""
 
+    # Apply weights to each component
+    chat_w = _env_weight("DATA_WEIGHT_CHAT")
+    forum_w = _env_weight("DATA_WEIGHT_FORUM")
+    sentiment_w = (chat_w + forum_w) / 2
+    news_w = _env_weight("DATA_WEIGHT_NEWS")
+    chain_w = _env_weight("DATA_WEIGHT_CHAIN")
+    gov_w = _env_weight("DATA_WEIGHT_GOVERNANCE")
+
+    weighted_sentiment = _apply_weight(sentiment, sentiment_w)
+    weighted_news = _apply_weight(news, news_w)
+    weighted_chain = _apply_weight(chain_kpis, chain_w)
+    weighted_gov = _apply_weight(gov_kpis, gov_w)
+
     context = {
         "timestamp_utc": utc_now_iso(),
-        "sentiment": sentiment,
-        "news": news,
-        "chain_kpis": chain_kpis,
-        "governance_kpis": gov_kpis,
+        "sentiment": weighted_sentiment,
+        "news": weighted_news,
+        "chain_kpis": weighted_chain,
+        "governance_kpis": weighted_gov,
         "kb_snippets": snippets,
         "kb_summary": summary,
         "kb_embedded": embedded,

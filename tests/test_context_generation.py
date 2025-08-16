@@ -96,3 +96,16 @@ def test_record_context_persist(tmp_path, monkeypatch):
     assert stored["governance_kpis"] == gov
     assert stored["kb_snippets"] == snippets
     assert stored["kb_summary"] == "summary"
+
+
+def test_component_weighting(monkeypatch):
+    sentiment, news, chain, gov = _dummy_components()
+    sentiment["sentiment_score"] = 1
+    chain["avg_tx_per_block"] = 10
+    monkeypatch.setenv("DATA_WEIGHT_CHAT", "2")
+    monkeypatch.setenv("DATA_WEIGHT_FORUM", "2")
+    monkeypatch.setenv("DATA_WEIGHT_CHAIN", "0.5")
+    monkeypatch.setattr(proposal_store, "record_context", lambda _c: None)
+    ctx = build_context(sentiment, news, chain, gov)
+    assert ctx["sentiment"]["sentiment_score"] == 2
+    assert ctx["chain_kpis"]["avg_tx_per_block"] == 5
