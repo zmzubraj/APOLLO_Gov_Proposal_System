@@ -50,7 +50,7 @@ def test_main_records_final_status(monkeypatch, tmp_path):
             "is_success": True,
         },
     )
-    monkeypatch.setattr(main, "record_proposal", lambda text, sid: None)
+    monkeypatch.setattr(main, "record_proposal", lambda text, sid, stage=None: None)
     monkeypatch.setattr(main, "await_execution", lambda node_url, idx, sid: ("0xblock", "Approved"))
     monkeypatch.setattr(
         main,

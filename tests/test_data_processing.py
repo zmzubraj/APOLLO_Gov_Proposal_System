@@ -30,5 +30,5 @@ def test_missing_openpyxl_raises(monkeypatch):
 
     with pytest.warns(UserWarning, match="openpyxl is required"):
         with pytest.raises(ImportError):
-            proposal_store.record_proposal("text", None)
+            proposal_store.record_proposal("text", None, stage="draft")
 

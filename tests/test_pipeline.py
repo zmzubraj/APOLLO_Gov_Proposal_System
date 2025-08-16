@@ -51,7 +51,9 @@ def test_stored_proposals_influence_context(tmp_path, monkeypatch):
     monkeypatch.setattr(proposal_store, "XLSX_PATH", tmp_xlsx)
 
     # Simulate a previous run recording proposal and context
-    proposal_store.record_proposal("Increase staking rewards", submission_id=None)
+    proposal_store.record_proposal(
+        "Increase staking rewards", submission_id=None, stage="draft"
+    )
     proposal_store.record_context({"note": "staking yields high"})
 
     # Patch embeddings so "staking" aligns with the stored proposal

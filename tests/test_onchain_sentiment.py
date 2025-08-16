@@ -33,7 +33,7 @@ def test_chain_sentiment_included(monkeypatch, tmp_path):
     monkeypatch.setattr(main, "evaluate_historical_predictions", lambda: [])
     monkeypatch.setattr(main.proposal_generator, "draft", lambda ctx: "Proposal")
     monkeypatch.setattr(main, "broadcast_proposal", lambda text: None)
-    monkeypatch.setattr(main, "record_proposal", lambda text, sid: None)
+    monkeypatch.setattr(main, "record_proposal", lambda text, sid, stage=None: None)
     monkeypatch.setattr(main, "record_execution_result", lambda *a, **k: None)
     monkeypatch.setattr(main, "print_data_sources_table", lambda stats: None)
     monkeypatch.setattr(main, "print_prediction_accuracy_table", lambda stats: None)

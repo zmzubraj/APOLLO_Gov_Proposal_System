@@ -72,13 +72,34 @@ def _append_row(sheet: str, row: Dict[str, Any]) -> None:
     wb.save(XLSX_PATH)
 
 
-def record_proposal(proposal_text: str, submission_id: str | None) -> None:
-    """Record a generated proposal and optional submission identifier."""
+def record_proposal(
+    proposal_text: str,
+    submission_id: str | None,
+    *,
+    stage: str | None = None,
+) -> None:
+    """Record a generated proposal and optional submission identifier.
+
+    Parameters
+    ----------
+    proposal_text:
+        The text of the proposal.
+    submission_id:
+        Optional on-chain submission identifier.
+    stage:
+        Workflow stage of the proposal (e.g. ``"draft"`` or ``"final"``).
+        When provided this is persisted alongside the proposal text so that
+        intermediate drafts can later be ranked or reviewed.  The argument is
+        keyword-only to maintain backwards compatibility with existing calls.
+    """
+
     row = {
         "timestamp": utc_now_iso(),
         "proposal_text": proposal_text,
         "submission_id": submission_id or "",
     }
+    if stage is not None:
+        row["stage"] = stage
     _append_row("Proposals", row)
 
 
