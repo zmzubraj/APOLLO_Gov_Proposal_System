@@ -349,7 +349,9 @@ def print_sentiment_embedding_table(stats: Iterable[Mapping[str, Any]]) -> None:
     print(table)
 
 
-def print_draft_forecast_table(stats: Iterable[Mapping[str, Any]]) -> None:
+def print_draft_forecast_table(
+    stats: Iterable[Mapping[str, Any]], threshold: float
+) -> None:
     """Print a table of proposal draft outcome forecasts."""
 
     headers = [
@@ -363,14 +365,17 @@ def print_draft_forecast_table(stats: Iterable[Mapping[str, Any]]) -> None:
 
     rows = []
     for info in stats:
+        confidence = info.get("confidence", 0.0)
+        prediction_time = info.get("prediction_time", 0.0)
+        margin = info.get("margin_of_error", 0.0)
         rows.append(
             [
                 info.get("source", "-"),
                 info.get("title", "-"),
                 info.get("predicted", "-"),
-                f"{info.get('confidence', 0.0) * 100:.1f}",
-                f"{info.get('prediction_time', 0.0):.2f}",
-                f"{info.get('margin_of_error', 0.0):.2f}",
+                f"{confidence * 100:.0f}%",
+                f"{prediction_time:.1f}",
+                f"±{margin * 100:.0f}%",
             ]
         )
 
@@ -378,6 +383,9 @@ def print_draft_forecast_table(stats: Iterable[Mapping[str, Any]]) -> None:
         print("No draft predictions available")
         return
 
-    print("\nTable: Draft Outcome Forecasts")
+    print(
+        "\nTable: Drafted proposal success prediction and forecast "
+        f"(Pass confidence threshold <{threshold * 100:.0f}%)"
+    )
     table = _format_table(headers, rows)
     print(table)

@@ -81,7 +81,9 @@ def summarise_draft_predictions(
                 "predicted": predicted,
                 "confidence": confidence,
                 "prediction_time": draft.get("prediction_time", 0.0),
-                "margin_of_error": forecast.get("turnout_estimate", 0.0),
+                "margin_of_error": forecast.get(
+                    "margin_of_error", forecast.get("turnout_estimate", 0.0)
+                ),
             }
         )
     return records
@@ -422,7 +424,9 @@ def main() -> None:
     # Display summary tables (Tables 2-5)
     print_data_sources_table(stats.get("data_sources", {}))
     print_sentiment_embedding_table(stats.get("sentiment_batches", []))
-    print_draft_forecast_table(stats.get("draft_predictions", []))
+    print_draft_forecast_table(
+        stats.get("draft_predictions", []), MIN_PASS_CONFIDENCE
+    )
     print_prediction_accuracy_table(stats["prediction_eval"])
     print_timing_benchmarks_table(stats.get("timings", {}))
 
