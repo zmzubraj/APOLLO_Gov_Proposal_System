@@ -60,15 +60,24 @@ def ensure_workbook() -> "Workbook":
 
 def _append_row(sheet: str, row: Dict[str, Any]) -> None:
     """Append a dictionary ``row`` to ``sheet`` creating workbook/sheet if needed."""
+
     wb = ensure_workbook()
     ws = wb[sheet] if sheet in wb.sheetnames else wb.create_sheet(sheet)
-    # Write header if sheet empty
-    if ws.max_row == 1 and all(cell.value is None for cell in ws[1]):
+
+    header = [cell.value for cell in ws[1]] if ws.max_row else []
+    if not header or all(h is None for h in header):
         ws.delete_rows(1)
-        ws.append(list(row.keys()))
-    elif ws.max_row == 0:
-        ws.append(list(row.keys()))
-    ws.append([row.get(col.value, "") for col in ws[1]])
+        header = list(row.keys())
+        ws.append(header)
+    else:
+        for key in row.keys():
+            if key not in header:
+                header.append(key)
+                ws.cell(row=1, column=len(header)).value = key
+                for r in range(2, ws.max_row + 1):
+                    ws.cell(row=r, column=len(header)).value = ""
+
+    ws.append([row.get(col, "") for col in header])
     wb.save(XLSX_PATH)
 
 
@@ -87,10 +96,10 @@ def record_proposal(
     submission_id:
         Optional on-chain submission identifier.
     stage:
-        Workflow stage of the proposal (e.g. ``"draft"`` or ``"final"``).
+        Workflow stage of the proposal (``"draft"`` or ``"submitted"``).
         When provided this is persisted alongside the proposal text so that
-        intermediate drafts can later be ranked or reviewed.  The argument is
-        keyword-only to maintain backwards compatibility with existing calls.
+        intermediate drafts or submissions can later be tracked. The argument
+        is keyword-only to maintain backwards compatibility with existing calls.
     """
 
     row = {
@@ -117,6 +126,29 @@ def record_execution_result(
     fetched and stored in the ``Referenda`` sheet via
     :func:`referenda_updater.append_referendum`.
     """
+    proposal_row: int | None = None
+    if submission_id:
+        wb = ensure_workbook()
+        if "Proposals" in wb.sheetnames:
+            ws = wb["Proposals"]
+            header = [cell.value for cell in ws[1]]
+            try:
+                sub_col = header.index("submission_id") + 1
+            except ValueError:
+                sub_col = None
+            try:
+                stage_col = header.index("stage") + 1
+            except ValueError:
+                stage_col = None
+            if sub_col is not None:
+                for r in range(2, ws.max_row + 1):
+                    if ws.cell(row=r, column=sub_col).value == submission_id:
+                        if stage_col is not None:
+                            if ws.cell(row=r, column=stage_col).value != "submitted":
+                                continue
+                        proposal_row = r
+                        break
+
     row = {
         "timestamp": utc_now_iso(),
         "submission_id": submission_id or "",
@@ -125,6 +157,8 @@ def record_execution_result(
         "outcome": outcome,
         "extrinsic_hash": extrinsic_hash or "",
     }
+    if proposal_row is not None:
+        row["proposal_row"] = proposal_row
     _append_row("ExecutionResults", row)
 
     if referendum_index is not None:
