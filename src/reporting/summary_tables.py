@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import datetime as dt
+import os
 from typing import Any, Iterable, Mapping
 
 import pandas as pd
@@ -202,7 +203,15 @@ def evaluate_historical_predictions(sample_size: int = 5) -> list[dict[str, Any]
     if df_done.empty:
         return []
 
-    sample_df = df_done.sample(n=min(sample_size, len(df_done)), random_state=0)
+    seed = os.getenv("HISTORICAL_SAMPLE_SEED")
+    sample_kwargs = {"n": min(sample_size, len(df_done))}
+    if seed:
+        try:
+            sample_kwargs["random_state"] = int(seed)
+        except ValueError:
+            pass
+
+    sample_df = df_done.sample(**sample_kwargs)
 
     title_col = next((col_map[c] for c in ["title", "name"] if c in col_map), None)
     summary_col = next(

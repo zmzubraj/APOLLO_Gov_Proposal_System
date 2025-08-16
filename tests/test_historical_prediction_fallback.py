@@ -20,10 +20,16 @@ def test_historical_prediction_fallback(monkeypatch):
         "src.agents.outcome_forecaster.load_governance_data", lambda sheet_name="Referenda": df
     )
 
+    # Ensure deterministic sampling
+    monkeypatch.setenv("HISTORICAL_SAMPLE_SEED", "0")
+
     results = evaluate_historical_predictions(sample_size=5)
 
     # Only three referenda are eligible despite requesting five
     assert len(results) == 3
+
+    # Sample order should be deterministic due to seed
+    assert [r["Proposal ID"] for r in results] == [3, 2, 1]
 
     for res in results:
         assert res.get("Predicted")
