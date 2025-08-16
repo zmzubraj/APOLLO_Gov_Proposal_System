@@ -12,6 +12,7 @@ from __future__ import annotations
 import json, pathlib, datetime as dt, os, time
 from typing import Any
 import pandas as pd
+from dotenv import load_dotenv
 from agents.data_collector import DataCollector
 from data_processing.social_media_scraper import collect_recent_messages
 from reporting.summary_tables import (
@@ -53,6 +54,7 @@ from data_processing.proposal_store import (
 PROJECT_ROOT = pathlib.Path(__file__).resolve().parents[1]  # src/..
 OUT_DIR = PROJECT_ROOT / "data" / "output" / "generated_proposals"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
+load_dotenv()
 MIN_PASS_CONFIDENCE = float(os.getenv("MIN_PASS_CONFIDENCE", "0.80"))
 
 
@@ -198,6 +200,8 @@ def main() -> None:
     # ------------------------------------------------------------------
     proposal_drafts: list[dict[str, str]] = []
     for source, msgs in msgs_by_source.items():
+        if source == "news":
+            continue
         ctx = build_context(
             sentiments_by_source.get(source, {}),
             {},
@@ -246,6 +250,32 @@ def main() -> None:
             }
         )
         record_proposal(news_draft, None, stage="draft")
+
+    # Draft purely from on-chain metrics
+    if chain_kpis:
+        ctx_chain = build_context(
+            chain_res,
+            {},
+            chain_kpis,
+            gov_kpis,
+            kb_query=query,
+            summarise_snippets=True,
+        )
+        chain_draft = proposal_generator.draft(ctx_chain)
+        t_pred = time.perf_counter()
+        chain_forecast = forecast_outcomes(ctx_chain)
+        prediction_time = time.perf_counter() - t_pred
+        ctx_chain["forecast"] = chain_forecast
+        proposal_drafts.append(
+            {
+                "source": "onchain",
+                "text": chain_draft,
+                "context": ctx_chain,
+                "forecast": chain_forecast,
+                "prediction_time": prediction_time,
+            }
+        )
+        record_proposal(chain_draft, None, stage="draft")
 
     stats["drafts"] = proposal_drafts
     stats["draft_predictions"] = summarise_draft_predictions(
