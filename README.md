@@ -197,6 +197,7 @@ Create a `.env` file in the project root:
  TELEGRAM_BOT_TOKEN=your_telegram_bot_token
  TELEGRAM_CHAT_ID=your_chat_id
  TWITTER_BEARER=your_twitter_api_bearer_token
+ NEWS_LOOKBACK_DAYS=3  # days of news to fetch
 ```
 
 `SUBSTRATE_NODE_URL` should point to a Substrate RPC endpoint. Common choices
@@ -206,6 +207,9 @@ include `wss://rpc.polkadot.io` for Polkadot mainnet or
 submitting OpenGov transactions and must be funded for deposits. The Discord,
 Telegram, and Twitter variables enable posting proposal summaries to those
 platforms via the execution layer connectors.
+
+`NEWS_LOOKBACK_DAYS` controls the number of past days of RSS items retrieved by
+the news fetcher.
 
 ---
 
