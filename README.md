@@ -295,17 +295,6 @@ twitter_post("Example proposal summary")
 
 After `main.py` completes, APOLLO prints a prediction‑accuracy table comparing forecasted outcomes with actual referendum results. It also prints a draft forecast table listing each generated draft, its predicted outcome, confidence, runtime and margin of error. When no current evaluations are available, the system samples five historical executed referenda to populate this table.
 
-Example output:
-
-Drafted proposal success prediction and forecast (Pass confidence threshold <80%)
-
-| Source Type | Title | Predicted | Confidence (%) | Prediction Time (s) | Margin of Error |
-|-------------|-------|-----------|----------------|---------------------|-----------------|
-| Forum | a | Pass | 89% | 5.3 | ±3% |
-| Chat | b | Pass | 84% | 4.7 | ±2% |
-| News | c | Pass | 90% | 5.3 | ±3% |
-| Onchain | d | Fail | 55% | 4.7 | ±2% |
-
 > **Prerequisite:** `data/input/PKD Governance Data.xlsx` must exist and include executed referenda (e.g., populate it via `python src/data_processing/referenda_updater.py`). Without this data the fallback accuracy report cannot be generated.
 
 ### 8. Draft Ranking & Workbook Storage
