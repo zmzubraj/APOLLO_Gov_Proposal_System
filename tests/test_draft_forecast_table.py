@@ -22,17 +22,34 @@ def test_drafts_under_threshold_label_fail(monkeypatch):
 def test_print_draft_forecast_table_output(capsys):
     stats = [
         {
-            "source": "Forum",
+            "source": "forum",
             "title": "a",
             "predicted": "Pass",
-            "confidence": 0.89,
+            "confidence": 0.79,
             "prediction_time": 5.3,
             "margin_of_error": 0.03,
-        }
+        },
+        {
+            "source": "chat",
+            "title": "b",
+            "predicted": "Pass",
+            "confidence": 0.89,
+            "prediction_time": 4.2,
+            "margin_of_error": 0.05,
+        },
+        {
+            "source": "onchain",
+            "title": "c",
+            "predicted": "Fail",
+            "confidence": 0.74,
+            "prediction_time": 3.1,
+            "margin_of_error": 0.07,
+        },
     ]
     print_draft_forecast_table(stats, 0.8)
     out = capsys.readouterr().out
     assert "Drafted proposal success prediction and forecast" in out
     assert "Pass confidence threshold <80%" in out
-    assert "89%" in out
+    assert "Forum" in out and "Onchain" in out and "Chat" not in out
+    assert "79%" in out
     assert "±3%" in out
