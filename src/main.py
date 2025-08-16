@@ -12,6 +12,7 @@ from __future__ import annotations
 import json, pathlib, datetime as dt, os, time
 from typing import Any
 import pandas as pd
+from dotenv import load_dotenv
 from agents.data_collector import DataCollector
 from data_processing.social_media_scraper import collect_recent_messages
 from reporting.summary_tables import (
@@ -21,6 +22,7 @@ from reporting.summary_tables import (
     print_prediction_accuracy_table,
     print_timing_benchmarks_table,
     evaluate_historical_predictions,
+    draft_onchain_proposal,
 )
 from agents.sentiment_analyser import analyse_messages
 from data_processing.news_fetcher import fetch_and_summarise_news
@@ -53,6 +55,7 @@ from data_processing.proposal_store import (
 PROJECT_ROOT = pathlib.Path(__file__).resolve().parents[1]  # src/..
 OUT_DIR = PROJECT_ROOT / "data" / "output" / "generated_proposals"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
+load_dotenv()
 MIN_PASS_CONFIDENCE = float(os.getenv("MIN_PASS_CONFIDENCE", "0.80"))
 
 
@@ -198,6 +201,8 @@ def main() -> None:
     # ------------------------------------------------------------------
     proposal_drafts: list[dict[str, str]] = []
     for source, msgs in msgs_by_source.items():
+        if source == "news":
+            continue
         ctx = build_context(
             sentiments_by_source.get(source, {}),
             {},
@@ -246,6 +251,12 @@ def main() -> None:
             }
         )
         record_proposal(news_draft, None, stage="draft")
+
+    chain_draft_info = draft_onchain_proposal(
+        chain_res, chain_kpis, gov_kpis, query
+    )
+    if chain_draft_info:
+        proposal_drafts.append(chain_draft_info)
 
     stats["drafts"] = proposal_drafts
     stats["draft_predictions"] = summarise_draft_predictions(

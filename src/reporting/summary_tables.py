@@ -3,13 +3,17 @@ from __future__ import annotations
 
 import datetime as dt
 import os
+import time
 from typing import Any, Iterable, Mapping
 
 import pandas as pd
 
+from agents import proposal_generator
+from agents.context_generator import build_context
 from agents.outcome_forecaster import forecast_outcomes
 from analysis.prediction_evaluator import compare_predictions
 from data_processing.data_loader import load_governance_data
+from data_processing.proposal_store import record_proposal
 
 
 def _format_table(headers: Iterable[str], rows: Iterable[Iterable[Any]]) -> str:
@@ -389,3 +393,37 @@ def print_draft_forecast_table(
     )
     table = _format_table(headers, rows)
     print(table)
+
+
+def draft_onchain_proposal(
+    chain_res: Mapping[str, Any],
+    chain_kpis: Mapping[str, Any],
+    gov_kpis: Mapping[str, Any],
+    query: str,
+) -> dict[str, Any] | None:
+    """Draft a proposal using only on-chain metrics."""
+
+    if not chain_kpis:
+        return None
+
+    ctx_chain = build_context(
+        chain_res,
+        {},
+        chain_kpis,
+        gov_kpis,
+        kb_query=query,
+        summarise_snippets=True,
+    )
+    chain_draft = proposal_generator.draft(ctx_chain)
+    t_pred = time.perf_counter()
+    chain_forecast = forecast_outcomes(ctx_chain)
+    prediction_time = time.perf_counter() - t_pred
+    ctx_chain["forecast"] = chain_forecast
+    record_proposal(chain_draft, None, stage="draft")
+    return {
+        "source": "onchain",
+        "text": chain_draft,
+        "context": ctx_chain,
+        "forecast": chain_forecast,
+        "prediction_time": prediction_time,
+    }
