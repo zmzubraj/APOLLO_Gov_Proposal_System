@@ -251,7 +251,9 @@ def evaluate_historical_predictions(sample_size: int = 5) -> list[dict[str, Any]
         if summary_col:
             context["summary"] = row.get(summary_col, "")
 
+        t_pred = time.perf_counter()
         forecast = forecast_outcomes(context)
+        prediction_time = time.perf_counter() - t_pred
         prob = forecast.get("approval_prob", 0.0)
         predicted = "Approved" if prob >= 0.5 else "Rejected"
 
@@ -262,7 +264,7 @@ def evaluate_historical_predictions(sample_size: int = 5) -> list[dict[str, Any]
                 "dao": row.get(dao_col, "Gov") if dao_col else "Gov",
                 "predicted": predicted,
                 "confidence": prob,
-                "prediction_time": dt.datetime.now(dt.UTC).isoformat(),
+                "prediction_time": prediction_time,
                 "margin_of_error": forecast.get("turnout_estimate", 0.0),
             }
         )
@@ -290,8 +292,8 @@ def print_prediction_accuracy_table(stats: Iterable[Mapping[str, Any]]) -> None:
     ----------
     stats:
         Iterable of dictionaries each containing the keys ``Proposal ID``,
-        ``DAO``, ``Predicted``, ``Actual``, ``Confidence``, ``Prediction Time``
-        and ``Margin of Error``.
+        ``DAO``, ``Predicted``, ``Actual``, ``Confidence``,
+        ``Prediction Time`` and ``Margin of Error``.
     """
 
     headers = [
@@ -299,8 +301,8 @@ def print_prediction_accuracy_table(stats: Iterable[Mapping[str, Any]]) -> None:
         "DAO",
         "Predicted",
         "Actual",
-        "Confidence",
-        "Prediction Time",
+        "Confidence (%)",
+        "Prediction Time (s)",
         "Margin of Error",
     ]
 
@@ -314,10 +316,23 @@ def print_prediction_accuracy_table(stats: Iterable[Mapping[str, Any]]) -> None:
         if actual not in (None, "", "-", "nan", "NaN"):
             has_actual = True
         confidence = info.get("Confidence")
-        confidence_str = f"{confidence:.2f}" if isinstance(confidence, (int, float)) else "-"
-        pred_time = info.get("Prediction Time", "-")
+        if isinstance(confidence, (int, float)):
+            confidence_str = f"{confidence * 100:.2f}%"
+        else:
+            confidence_str = "-"
+
+        pred_time_val = info.get("Prediction Time")
+        if isinstance(pred_time_val, (int, float)):
+            pred_time = f"{pred_time_val:.2f}"
+        else:
+            pred_time = str(pred_time_val or "-")
+
         moe = info.get("Margin of Error")
-        moe_str = f"{moe:.2f}" if isinstance(moe, (int, float)) else "-"
+        if isinstance(moe, (int, float)):
+            moe_str = f"±{moe * 100:.2f}%"
+        else:
+            moe_str = "-"
+
         rows.append([pid, dao, predicted, actual, confidence_str, pred_time, moe_str])
 
     if not rows:
