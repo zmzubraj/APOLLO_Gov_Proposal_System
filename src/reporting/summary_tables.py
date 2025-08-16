@@ -341,28 +341,26 @@ def print_sentiment_embedding_table(stats: Iterable[Mapping[str, Any]]) -> None:
     ----------
     stats:
         Iterable of dictionaries each describing one sentiment analysis batch
-        with the keys ``batch_id``, ``source``, ``ctx_size_kb``, ``sentiment``,
+        with the keys ``batch_id``, ``ctx_size_kb``, ``sentiment``,
         ``confidence`` and ``embedded``.
     """
 
     headers = [
-        "Batch",
-        "Source",
-        "Ctx Size (KB)",
+        "Batch ID",
+        "CTX Size (KB)",
         "Sentiment",
         "Confidence",
-        "Embedded",
+        "Embedded in KB",
     ]
 
     rows = []
     for info in stats:
         batch = info.get("batch_id", "-")
-        source = info.get("source", "-")
         size = f"{info.get('ctx_size_kb', 0.0):.1f}"
         sent = info.get("sentiment", "-")
         conf = f"{info.get('confidence', 0.0):.2f}"
-        embedded = "yes" if info.get("embedded") else "no"
-        rows.append([batch, source, size, sent, conf, embedded])
+        embedded = "Yes" if info.get("embedded") else "No"
+        rows.append([batch, size, sent, conf, embedded])
 
     if not rows:
         print("No sentiment batches available")
