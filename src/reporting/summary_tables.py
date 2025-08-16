@@ -62,17 +62,37 @@ def print_data_sources_table(stats: Mapping[str, Mapping[str, Any]]) -> None:
         "Source Type",
         "Platform/URL",
         "# Documents",
-        "Avg. Length",
+        "Avg. Length (words)",
         "Update Frequency",
         ]
+
+    source_map = {
+        "chat": "Community Chat",
+        "forum": "Forum",
+        "news": "News Blogs",
+        "governance": "Governance Docs",
+        "chain": "Voting Histories",
+    }
+    freq_map = {
+        "daily": "Daily",
+        "hourly": "Hourly",
+        "realtime": "Real time",
+        "real time": "Real time",
+        "every run": "Every Run",
+        "every_run": "Every Run",
+        "~6s": "~6 sec",
+        "~6 sec": "~6 sec",
+        "≈6s": "~6 sec",
+    }
 
     rows = []
     for source, info in stats.items():
         platform = info.get("platform") or info.get("url") or "-"
         count = info.get("count", 0)
-        avg_len = f"{info.get('avg_word_length', 0):.1f}"
-        freq = info.get("update_frequency", "-")
-        rows.append([source, platform, count, avg_len, freq])
+        avg_len = int(info.get("avg_word_length", 0) or 0)
+        freq_raw = str(info.get("update_frequency", "-"))
+        freq = freq_map.get(freq_raw.lower(), freq_raw)
+        rows.append([source_map.get(source, source), platform, count, avg_len, freq])
 
     if not rows:
         print("No data sources available")
