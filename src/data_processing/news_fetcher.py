@@ -1,8 +1,8 @@
 """
 news_fetcher.py
 ---------------
-Fetch Polkadot-related headlines from multiple RSS feeds (3-day look-back)
-and summarise them with the LLM.
+Fetch Polkadot-related headlines from multiple RSS feeds (configurable
+look-back, default 3 days) and summarise them with the LLM.
 
 # Usage:
 # >>> from src.data_processing.news_fetcher import fetch_and_summarise_news
@@ -11,6 +11,7 @@ and summarise them with the LLM.
 
 from __future__ import annotations
 from typing import List, Dict, Any
+import os
 import datetime as dt
 import feedparser, requests
 from bs4 import BeautifulSoup
@@ -23,7 +24,7 @@ RSS_FEEDS = [
     "https://www.coindesk.com/arc/outboundfeeds/rss/?outputType=xml&search=polkadot",
     "https://polkadot.network/blog/rss.xml",
 ]
-LOOKBACK_DAYS = 30
+LOOKBACK_DAYS = int(os.getenv("NEWS_LOOKBACK_DAYS", 3))
 MAX_ARTICLES = 10
 
 SYSTEM_PROMPT = """
@@ -44,8 +45,8 @@ def _parse_entry(entry) -> Dict[str, Any]:
     }
 
 
-def _collect_recent_items() -> List[Dict[str, Any]]:
-    cutoff = dt.datetime.now(dt.UTC) - dt.timedelta(days=LOOKBACK_DAYS)
+def _collect_recent_items(lookback_days: int = LOOKBACK_DAYS) -> List[Dict[str, Any]]:
+    cutoff = dt.datetime.now(dt.UTC) - dt.timedelta(days=lookback_days)
     items: list[dict] = []
     for url in RSS_FEEDS:
         for e in feedparser.parse(url).entries:
