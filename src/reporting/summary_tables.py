@@ -347,3 +347,37 @@ def print_sentiment_embedding_table(stats: Iterable[Mapping[str, Any]]) -> None:
     print("\nTable: Sentiment Analysis and Knowledge Base Embedding")
     table = _format_table(headers, rows)
     print(table)
+
+
+def print_draft_forecast_table(stats: Iterable[Mapping[str, Any]]) -> None:
+    """Print a table of proposal draft outcome forecasts."""
+
+    headers = [
+        "Source Type",
+        "Title",
+        "Predicted",
+        "Confidence (%)",
+        "Prediction Time (s)",
+        "Margin of Error",
+    ]
+
+    rows = []
+    for info in stats:
+        rows.append(
+            [
+                info.get("source", "-"),
+                info.get("title", "-"),
+                info.get("predicted", "-"),
+                f"{info.get('confidence', 0.0) * 100:.1f}",
+                f"{info.get('prediction_time', 0.0):.2f}",
+                f"{info.get('margin_of_error', 0.0):.2f}",
+            ]
+        )
+
+    if not rows:
+        print("No draft predictions available")
+        return
+
+    print("\nTable: Draft Outcome Forecasts")
+    table = _format_table(headers, rows)
+    print(table)

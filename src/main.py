@@ -17,6 +17,7 @@ from data_processing.social_media_scraper import collect_recent_messages
 from reporting.summary_tables import (
     print_data_sources_table,
     print_sentiment_embedding_table,
+    print_draft_forecast_table,
     print_prediction_accuracy_table,
     print_timing_benchmarks_table,
     evaluate_historical_predictions,
@@ -52,6 +53,38 @@ from data_processing.proposal_store import (
 PROJECT_ROOT = pathlib.Path(__file__).resolve().parents[1]  # src/..
 OUT_DIR = PROJECT_ROOT / "data" / "output" / "generated_proposals"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
+MIN_PASS_CONFIDENCE = float(os.getenv("MIN_PASS_CONFIDENCE", "0.80"))
+
+
+def extract_first_heading(text: str) -> str:
+    """Return the first markdown heading found in ``text``."""
+    for line in text.splitlines():
+        line = line.strip()
+        if line.startswith("#"):
+            return line.lstrip("#").strip()
+    return text.splitlines()[0].strip() if text else ""
+
+
+def summarise_draft_predictions(
+    drafts: list[dict[str, Any]], threshold: float
+) -> list[dict[str, Any]]:
+    """Create summary prediction records for each draft."""
+    records: list[dict[str, Any]] = []
+    for draft in drafts:
+        forecast = draft.get("forecast", {})
+        confidence = forecast.get("approval_prob", 0.0)
+        predicted = "Pass" if confidence >= threshold else "Fail"
+        records.append(
+            {
+                "source": draft.get("source", ""),
+                "title": extract_first_heading(draft.get("text", "")),
+                "predicted": predicted,
+                "confidence": confidence,
+                "prediction_time": draft.get("prediction_time", 0.0),
+                "margin_of_error": forecast.get("turnout_estimate", 0.0),
+            }
+        )
+    return records
 
 
 def broadcast_proposal(text: str) -> None:
@@ -172,10 +205,18 @@ def main() -> None:
             summarise_snippets=True,
         )
         draft_text = proposal_generator.draft(ctx)
+        t_pred = time.perf_counter()
         forecast = forecast_outcomes(ctx)
+        prediction_time = time.perf_counter() - t_pred
         ctx["forecast"] = forecast
         proposal_drafts.append(
-            {"source": source, "text": draft_text, "context": ctx, "forecast": forecast}
+            {
+                "source": source,
+                "text": draft_text,
+                "context": ctx,
+                "forecast": forecast,
+                "prediction_time": prediction_time,
+            }
         )
         record_proposal(draft_text, None, stage="draft")
 
@@ -189,7 +230,9 @@ def main() -> None:
             summarise_snippets=True,
         )
         news_draft = proposal_generator.draft(ctx_news)
+        t_pred = time.perf_counter()
         news_forecast = forecast_outcomes(ctx_news)
+        prediction_time = time.perf_counter() - t_pred
         ctx_news["forecast"] = news_forecast
         proposal_drafts.append(
             {
@@ -197,11 +240,15 @@ def main() -> None:
                 "text": news_draft,
                 "context": ctx_news,
                 "forecast": news_forecast,
+                "prediction_time": prediction_time,
             }
         )
         record_proposal(news_draft, None, stage="draft")
 
     stats["drafts"] = proposal_drafts
+    stats["draft_predictions"] = summarise_draft_predictions(
+        proposal_drafts, MIN_PASS_CONFIDENCE
+    )
 
     # Select best draft (fallback to consolidated context if none)
     if proposal_drafts:
@@ -221,7 +268,9 @@ def main() -> None:
             kb_query=query,
             summarise_snippets=True,
         )
+        t_pred = time.perf_counter()
         forecast = forecast_outcomes(context)
+        prediction_time = time.perf_counter() - t_pred
         context["forecast"] = forecast
         proposal_text = proposal_generator.draft(context)
         proposal_drafts.append(
@@ -230,6 +279,7 @@ def main() -> None:
                 "text": proposal_text,
                 "context": context,
                 "forecast": forecast,
+                "prediction_time": prediction_time,
             }
         )
         record_proposal(proposal_text, None, stage="draft")
@@ -372,6 +422,7 @@ def main() -> None:
     # Display summary tables (Tables 2-5)
     print_data_sources_table(stats.get("data_sources", {}))
     print_sentiment_embedding_table(stats.get("sentiment_batches", []))
+    print_draft_forecast_table(stats.get("draft_predictions", []))
     print_prediction_accuracy_table(stats["prediction_eval"])
     print_timing_benchmarks_table(stats.get("timings", {}))
 
