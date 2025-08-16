@@ -89,9 +89,11 @@ def main() -> None:
     t1 = time.perf_counter()
     batch_id = 1
     all_msgs: list[str] = []
+    sentiments_by_source: dict[str, Any] = {}
     for source, msgs in msgs_by_source.items():
         all_msgs.extend(msgs)
         res = analyse_messages(msgs)
+        sentiments_by_source[source] = res
         raw_text = "\n".join(msgs).strip()
         ctx_size = res.get(
             "message_size_kb",
@@ -153,6 +155,42 @@ def main() -> None:
     # Bundle context via agent including semantic KB retrieval
     keywords = gov_kpis.get("top_keywords", []) if isinstance(gov_kpis, dict) else []
     query = " ".join(keywords[:3])
+
+    # ------------------------------------------------------------------
+    # Draft a proposal per source using only that source's data combined
+    # with chain/governance metrics.  These drafts are stored for later
+    # ranking and analysis.
+    # ------------------------------------------------------------------
+    proposal_drafts: list[dict[str, str]] = []
+    for source, msgs in msgs_by_source.items():
+        ctx = build_context(
+            sentiments_by_source.get(source, {}),
+            {},
+            chain_kpis,
+            gov_kpis,
+            kb_query=query,
+            summarise_snippets=True,
+        )
+        draft_text = proposal_generator.draft(ctx)
+        proposal_drafts.append({"source": source, "text": draft_text})
+        record_proposal(draft_text, None, stage="draft")
+
+    if news:
+        ctx_news = build_context(
+            {},
+            news,
+            chain_kpis,
+            gov_kpis,
+            kb_query=query,
+            summarise_snippets=True,
+        )
+        news_draft = proposal_generator.draft(ctx_news)
+        proposal_drafts.append({"source": "news", "text": news_draft})
+        record_proposal(news_draft, None, stage="draft")
+
+    stats["drafts"] = proposal_drafts
+
+    # Consolidated context using all sources for final proposal
     context = build_context(
         sentiment,
         news,
@@ -217,7 +255,7 @@ def main() -> None:
             submission_id = None
             referendum_index = 0
 
-    record_proposal(proposal_text, submission_id)
+    record_proposal(proposal_text, submission_id, stage="final")
     if submission_id:
         print(f"🔗 Proposal submitted → {submission_id}")
         try:
