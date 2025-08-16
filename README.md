@@ -197,7 +197,15 @@ Create a `.env` file in the project root:
  TELEGRAM_BOT_TOKEN=your_telegram_bot_token
  TELEGRAM_CHAT_ID=your_chat_id
  TWITTER_BEARER=your_twitter_api_bearer_token
- NEWS_LOOKBACK_DAYS=3  # days of news to fetch
+ # Relative weighting of data sources
+ DATA_WEIGHT_CHAT=0.25         # real-time chat sentiment
+ DATA_WEIGHT_FORUM=0.25        # long-form forum posts
+ DATA_WEIGHT_NEWS=0.10         # news articles
+ DATA_WEIGHT_CHAIN=0.20        # on-chain metrics
+ DATA_WEIGHT_GOVERNANCE=0.20   # past governance data
+
+ # Recency controls
+ NEWS_LOOKBACK_DAYS=3          # days of news to fetch
 ```
 
 `SUBSTRATE_NODE_URL` should point to a Substrate RPC endpoint. Common choices
@@ -210,6 +218,17 @@ platforms via the execution layer connectors.
 
 `NEWS_LOOKBACK_DAYS` controls the number of past days of RSS items retrieved by
 the news fetcher.
+
+#### Data Weighting System
+
+APOLLO merges sentiment, news, on‑chain metrics, and historical governance
+signals into a single context for the LLM. Each `DATA_WEIGHT_*` environment
+variable is a numeric multiplier that adjusts how strongly a given source
+affects that context. Values greater than `1` amplify a source, while values
+between `0` and `1` down‑weight it. `NEWS_LOOKBACK_DAYS` sets the recency window
+for RSS items (default `3` days) so only fresh articles influence proposal
+drafts. The example `.env` above shows one possible weighting split, but any
+combination can be used to suit local priorities.
 
 ---
 
@@ -270,6 +289,18 @@ twitter_post("Example proposal summary")
 After `main.py` completes, APOLLO prints a prediction‑accuracy table comparing forecasted outcomes with actual referendum results. When no current evaluations are available, the system samples five historical executed referenda to populate this table.
 
 > **Prerequisite:** `data/input/PKD Governance Data.xlsx` must exist and include executed referenda (e.g., populate it via `python src/data_processing/referenda_updater.py`). Without this data the fallback accuracy report cannot be generated.
+
+### 8. Draft Ranking & Workbook Storage
+
+For each data source (chat, forum, news, etc.) APOLLO drafts a proposal and
+forecasts its likelihood of approval. These drafts are ranked by the
+`approval_prob` produced by the forecasting step, and the highest‑scoring draft
+is selected as the main proposal. Every generated draft is still persisted in
+the governance workbook at `data/input/PKD Governance Data.xlsx` under the
+`Proposals` sheet with a `stage` of `draft`. The final chosen text is recorded
+again with `stage` set to `final`, and any on‑chain submission adds a
+`submission_id` with `stage` set to `submitted` so that all iterations remain
+auditable.
 
 ---
 
