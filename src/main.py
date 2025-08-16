@@ -172,7 +172,11 @@ def main() -> None:
             summarise_snippets=True,
         )
         draft_text = proposal_generator.draft(ctx)
-        proposal_drafts.append({"source": source, "text": draft_text})
+        forecast = forecast_outcomes(ctx)
+        ctx["forecast"] = forecast
+        proposal_drafts.append(
+            {"source": source, "text": draft_text, "context": ctx, "forecast": forecast}
+        )
         record_proposal(draft_text, None, stage="draft")
 
     if news:
@@ -185,22 +189,50 @@ def main() -> None:
             summarise_snippets=True,
         )
         news_draft = proposal_generator.draft(ctx_news)
-        proposal_drafts.append({"source": "news", "text": news_draft})
+        news_forecast = forecast_outcomes(ctx_news)
+        ctx_news["forecast"] = news_forecast
+        proposal_drafts.append(
+            {
+                "source": "news",
+                "text": news_draft,
+                "context": ctx_news,
+                "forecast": news_forecast,
+            }
+        )
         record_proposal(news_draft, None, stage="draft")
 
     stats["drafts"] = proposal_drafts
 
-    # Consolidated context using all sources for final proposal
-    context = build_context(
-        sentiment,
-        news,
-        chain_kpis,
-        gov_kpis,
-        kb_query=query,
-        summarise_snippets=True,
-    )
-    forecast = forecast_outcomes(context)
-    context["forecast"] = forecast
+    # Select best draft (fallback to consolidated context if none)
+    if proposal_drafts:
+        best_draft = max(
+            proposal_drafts,
+            key=lambda d: d.get("forecast", {}).get("approval_prob", 0.0),
+        )
+        context = best_draft["context"]
+        forecast = best_draft["forecast"]
+        proposal_text = best_draft["text"]
+    else:
+        context = build_context(
+            sentiment,
+            news,
+            chain_kpis,
+            gov_kpis,
+            kb_query=query,
+            summarise_snippets=True,
+        )
+        forecast = forecast_outcomes(context)
+        context["forecast"] = forecast
+        proposal_text = proposal_generator.draft(context)
+        proposal_drafts.append(
+            {
+                "source": "consolidated",
+                "text": proposal_text,
+                "context": context,
+                "forecast": forecast,
+            }
+        )
+        record_proposal(proposal_text, None, stage="draft")
     try:
         df_pred = pd.DataFrame(
             [
@@ -229,7 +261,6 @@ def main() -> None:
     # -------------------------- Draft + Sign ------------------------------
     t2 = time.perf_counter()
     print("🔄 Asking LLM to draft proposal …")
-    proposal_text = proposal_generator.draft(context)
     timestamp = dt.datetime.now(dt.UTC).strftime("%Y%m%d-%H%M%S")
     (OUT_DIR / f"proposal_{timestamp}.txt").write_text(proposal_text)
     broadcast_proposal(proposal_text)
@@ -255,7 +286,8 @@ def main() -> None:
             submission_id = None
             referendum_index = 0
 
-    record_proposal(proposal_text, submission_id, stage="final")
+    record_proposal(proposal_text, None, stage="final")
+    record_proposal(proposal_text, submission_id, stage="submitted")
     if submission_id:
         print(f"🔗 Proposal submitted → {submission_id}")
         try:
