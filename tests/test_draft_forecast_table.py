@@ -1,6 +1,7 @@
 import importlib
 
 from src import main
+from src.reporting.summary_tables import print_draft_forecast_table
 
 
 def test_drafts_under_threshold_label_fail(monkeypatch):
@@ -16,3 +17,22 @@ def test_drafts_under_threshold_label_fail(monkeypatch):
     ]
     records = main.summarise_draft_predictions(drafts, main.MIN_PASS_CONFIDENCE)
     assert records[0]["predicted"] == "Fail"
+
+
+def test_print_draft_forecast_table_output(capsys):
+    stats = [
+        {
+            "source": "Forum",
+            "title": "a",
+            "predicted": "Pass",
+            "confidence": 0.89,
+            "prediction_time": 5.3,
+            "margin_of_error": 0.03,
+        }
+    ]
+    print_draft_forecast_table(stats, 0.8)
+    out = capsys.readouterr().out
+    assert "Drafted proposal success prediction and forecast" in out
+    assert "Pass confidence threshold <80%" in out
+    assert "89%" in out
+    assert "±3%" in out
