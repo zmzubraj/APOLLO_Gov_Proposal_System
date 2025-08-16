@@ -45,10 +45,11 @@ class DataCollector:
         # Compute simple source statistics
         # ------------------------------------------------------------------
         update_freq = {
-            "chat": "realtime",
-            "forum": "daily",
-            "news": "hourly",
-            "chain": "≈6s",
+            "chat": "Real time",
+            "forum": "Daily",
+            "news": "Hourly",
+            "governance": "Every Run",
+            "chain": "~6 sec",
         }
         platform_map = {
             "chat": "X (@PolkadotNetwork), Reddit (r/Polkadot)",
@@ -94,9 +95,14 @@ class DataCollector:
         news = news_fn()
 
         news_count = len(news.get("digest", [])) if isinstance(news, dict) else 0
+        avg_news_words = (
+            sum(len(t.split()) for t in news.get("digest", [])) / news_count
+            if news_count
+            else 0.0
+        )
         stats["data_sources"]["news"] = {
             "count": news_count,
-            "avg_word_length": 0.0,
+            "avg_word_length": avg_news_words,
             "update_frequency": update_freq.get("news", "unknown"),
             "platform": platform_map.get("news"),
             "weight": weights.get("news", 1.0),
@@ -131,7 +137,7 @@ class DataCollector:
             {
                 "count": 0,
                 "avg_word_length": 0.0,
-                "update_frequency": "unknown",
+                "update_frequency": update_freq.get("governance", "unknown"),
                 "platform": None,
                 "weight": weights.get("governance", 1.0),
             },
