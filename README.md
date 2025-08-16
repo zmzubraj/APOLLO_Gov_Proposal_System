@@ -41,19 +41,20 @@ APOLLO’s modular architecture is deployable on any blockchain supporting on-ch
 
 - **LLM-Based Analysis:** Uses open-source LLMs (e.g., Gemma3:4B, Deepseek R1:1.5B) via Ollama for summarization, classification, and proposal generation.
 - **Retrieval-Augmented Knowledge Base:** Stores governance data in an Excel workbook (`data/input/PKD Governance Data.xlsx`, auto-generated if missing) for retrieval-augmented generation (RAG). See [docs/workbook_structure.md](docs/workbook_structure.md) for worksheet details.
-- **Predictive Outcome Modeling (planned):** Lightweight ML models to forecast proposal success and voter turnout (not yet implemented).
+- **Predictive Outcome Forecasting:** Baseline statistics-driven model estimates approval probability and voter turnout from historical referenda.
+- **Community Broadcast & Submission:** Connectors push proposal summaries to Discord, Telegram, and Twitter with optional Substrate proposal submission.
 - **Chain-Agnostic Design:** Integrates with Polkadot’s OpenGov pallet; easily adaptable to other platforms.
 - **Modular Pipeline:** Separate modules for data collection, analysis, LLM inference, and on-chain logging.
-- **Audit Trail:** Every output is hashed and stored on-chain or in versioned files for transparency.
+- **Audit Trail & Workbook Logging:** Proposals, context, referenda, and execution results are stored in versioned files for transparency.
 
-> **Current Status:** The context-generation agent, prediction-analysis agent, on-chain Governor integration, community-platform submission, and knowledge-base feedback loops are not yet implemented in this MVP.
+> **Current Status:** Data collection, sentiment analysis, context generation, outcome forecasting, proposal drafting, community broadcasting, and Substrate submission stubs are implemented. Advanced prediction models, autonomous execution, and richer knowledge-base feedback loops remain under development.
 
 ### Roadmap
 
-- Complete context-generation module for richer governance context.
-- Develop prediction-analysis agent for outcome forecasting.
-- Integrate with on-chain Governor for autonomous proposal submission.
-- Establish RAG feedback loop to continuously update the knowledge base.
+- Enhance outcome forecaster with richer machine-learning models.
+- Harden on-chain Governor interface for autonomous proposal execution.
+- Expand RAG feedback loop to continuously enrich the knowledge base.
+- Build additional community-platform integrations and a simple UI/dashboard.
 
 ### Current Implementation Status
 
@@ -65,19 +66,18 @@ APOLLO’s modular architecture is deployable on any blockchain supporting on-ch
 
 **Agents Layer**
 
- - Data-collector, sentiment-analysis, proposal-generator, proposal-submission — implemented
- - Context-generator, prediction-analysis — not yet implemented
+- Data-collector, sentiment-analysis, proposal-generator, context-generator, outcome-forecaster, proposal-submission — implemented
 
 **Execution Layer**
 
-- Governor smart contract — not yet implemented
-- Community platform connectors — post proposal summaries to Discord, Telegram, and Twitter
+- Governor smart contract interface — basic submission and execution helpers implemented
+- Community platform connectors — send proposal summaries to Discord, Telegram, and Twitter
 
 **RAG Feedback Loops**
 
- - Context-generator → knowledge base — not yet implemented
- - Proposal-submission → knowledge base — not yet implemented
- - Governor executed results → knowledge base — not yet implemented
+- Context-generator → knowledge base — implemented
+- Proposal-submission → knowledge base — implemented
+- Governor executed results → knowledge base — implemented
 
 #### 3.1 Core Capabilities
 
@@ -318,35 +318,42 @@ apollo-governance/
 ├── .env
 ├── README.md
 ├── requirements.txt
-├── LICENSE
 ├── data/
 │   ├── input/
-│   │   └── (generated) PKD Governance Data.xlsx
-│   ├── output/
-│   │   ├── referenda_failures.csv
-│   │   ├── blocks_last1days.json
-│   └── generated_proposals/
-│       ├── proposal_YYYYMMDD_HHMMSS.txt
-│       └── context_YYYYMMDD_HHMMSS.json
-├── tests/
-│   ├── test_sentiment_analysis.py
-│   ├── test_governance_analysis.py
-│   └── test_blockchain_metrics.py
+│   └── output/
+├── docs/
+├── models/
 ├── src/
 │   ├── main.py
-│   ├── utils/
-│   │   └── helpers.py
+│   ├── agents/
+│   │   ├── context_generator.py
+│   │   ├── outcome_forecaster.py
+│   │   └── …
+│   ├── analysis/
+│   │   ├── blockchain_metrics.py
+│   │   ├── governance_analysis.py
+│   │   ├── prediction_evaluator.py
+│   │   └── …
+│   ├── data_processing/
+│   │   ├── proposal_store.py
+│   │   ├── referenda_updater.py
+│   │   └── …
+│   ├── execution/
+│   │   ├── discord_bot.py
+│   │   ├── telegram_bot.py
+│   │   ├── twitter_bot.py
+│   │   └── governor_interface.py
+│   ├── reporting/
+│   │   └── summary_tables.py
 │   ├── llm/
 │   │   └── ollama_api.py
-│   ├── analysis/
-│   │   ├── sentiment_analysis.py
-│   │   ├── governance_analysis.py
-│   │   └── blockchain_metrics.py
-│   └── data_processing/
-│       ├── referenda_updater.py
-│       ├── blockchain_data_fetcher.py
-│       ├── social_media_scraper.py
-│       └── news_fetcher.py
+│   └── utils/
+│       ├── helpers.py
+│       └── validators.py
+└── tests/
+    ├── test_pipeline.py
+    ├── test_prediction_analysis.py
+    └── …  # 40+ pytest modules
 ```
 
 ---
