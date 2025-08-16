@@ -1,7 +1,10 @@
 import importlib
 
 from src import main
-from src.reporting.summary_tables import print_draft_forecast_table
+from src.reporting.summary_tables import (
+    print_draft_forecast_table,
+    summarise_draft_predictions,
+)
 
 
 def test_drafts_under_threshold_label_fail(monkeypatch):
@@ -15,7 +18,7 @@ def test_drafts_under_threshold_label_fail(monkeypatch):
             "prediction_time": 0.01,
         }
     ]
-    records = main.summarise_draft_predictions(drafts, main.MIN_PASS_CONFIDENCE)
+    records = summarise_draft_predictions(drafts, main.MIN_PASS_CONFIDENCE)
     assert records[0]["predicted"] == "Fail"
 
 
