@@ -366,8 +366,9 @@ def print_sentiment_embedding_table(stats: Iterable[Mapping[str, Any]]) -> None:
     ----------
     stats:
         Iterable of dictionaries each describing one sentiment analysis batch
-        with the keys ``batch_id``, ``ctx_size_kb``, ``sentiment``,
-        ``confidence`` and ``embedded``.
+        with the keys ``batch_id``, ``ctx_size_kb`` (CTX size in KB),
+        ``sentiment``, ``confidence`` and ``embedded`` specifying if the batch
+        was stored in the KB.
     """
 
     headers = [
