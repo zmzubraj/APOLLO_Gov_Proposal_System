@@ -385,14 +385,27 @@ def print_draft_forecast_table(
         "Margin of Error",
     ]
 
+    source_map = {
+        "forum": "Forum",
+        "chat": "Chat",
+        "news": "News",
+        "onchain": "Onchain",
+        "chain": "Onchain",
+        "governance": "Governance",
+    }
+
     rows = []
     for info in stats:
         confidence = info.get("confidence", 0.0)
+        if confidence >= threshold:
+            continue
         prediction_time = info.get("prediction_time", 0.0)
         margin = info.get("margin_of_error", 0.0)
+        source_key = str(info.get("source", "-"))
+        source = source_map.get(source_key.lower(), source_key)
         rows.append(
             [
-                info.get("source", "-"),
+                source,
                 info.get("title", "-"),
                 info.get("predicted", "-"),
                 f"{confidence * 100:.0f}%",
