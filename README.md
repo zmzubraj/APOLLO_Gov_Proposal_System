@@ -206,6 +206,8 @@ Create a `.env` file in the project root:
 
  # Recency controls
  NEWS_LOOKBACK_DAYS=3          # days of news to fetch
+ # Fallback historical evaluation
+ HISTORICAL_SAMPLE_SEED=0      # optional seed for sampling historical referenda
 ```
 
 `SUBSTRATE_NODE_URL` should point to a Substrate RPC endpoint. Common choices
@@ -217,7 +219,9 @@ Telegram, and Twitter variables enable posting proposal summaries to those
 platforms via the execution layer connectors.
 
 `NEWS_LOOKBACK_DAYS` controls the number of past days of RSS items retrieved by
-the news fetcher.
+the news fetcher. `HISTORICAL_SAMPLE_SEED` can be set to an integer to make
+historical prediction sampling reproducible; omit it to allow nondeterministic
+selection.
 
 #### Data Weighting System
 
