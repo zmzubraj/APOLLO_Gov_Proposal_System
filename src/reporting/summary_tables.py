@@ -411,9 +411,6 @@ def print_draft_forecast_table(
     rows = []
     for info in stats:
         confidence = info.get("confidence", 0.0)
-        predicted = str(info.get("predicted", ""))
-        if predicted.lower() == "pass" and confidence >= threshold:
-            continue
         prediction_time = info.get("prediction_time", 0.0)
         margin = info.get("margin_of_error", 0.0)
         source_key = str(info.get("source", "-"))
@@ -478,17 +475,28 @@ def draft_onchain_proposal(
 def summarise_draft_predictions(
     drafts: list[dict[str, Any]], threshold: float
 ) -> list[dict[str, Any]]:
-    """Create summary prediction records for each draft."""
+    """Create summary prediction records for each draft.
+
+    The provided ``drafts`` list may be empty if no drafts were generated in the
+    current run.  In that case, this function falls back to the persisted
+    ``Proposals`` worksheet and produces forecasts for any rows marked with a
+    ``stage`` of ``draft``.
+    """
+
     records: list[dict[str, Any]] = []
+    seen_texts: set[str] = set()
+
     for draft in drafts:
         forecast = draft.get("forecast", {})
         approval_prob = forecast.get("approval_prob", 0.0)
         predicted = "Pass" if approval_prob >= threshold else "Fail"
         confidence = approval_prob if predicted == "Pass" else 1 - approval_prob
+        text = draft.get("text", "")
+        seen_texts.add(text)
         records.append(
             {
                 "source": draft.get("source", ""),
-                "title": extract_first_heading(draft.get("text", "")),
+                "title": extract_first_heading(text),
                 "predicted": predicted,
                 "confidence": confidence,
                 "prediction_time": draft.get("prediction_time", 0.0),
@@ -497,4 +505,53 @@ def summarise_draft_predictions(
                 ),
             }
         )
+
+    # Fallback: load any previously stored drafts
+    try:
+        from data_processing.proposal_store import load_proposals
+
+        df = load_proposals()
+        if not df.empty:
+            stage_col = (
+                df.columns[df.columns.str.lower() == "stage"].tolist() or [None]
+            )[0]
+            text_col = (
+                df.columns[df.columns.str.lower() == "proposal_text"].tolist()
+                or [None]
+            )[0]
+            if text_col:
+                if stage_col:
+                    mask = (
+                        df[stage_col].astype(str).str.lower() == "draft"
+                    )
+                    df = df[mask]
+                for text in df[text_col].astype(str):
+                    if text in seen_texts:
+                        continue
+                    t_pred = time.perf_counter()
+                    forecast = forecast_outcomes({})
+                    prediction_time = time.perf_counter() - t_pred
+                    approval_prob = forecast.get("approval_prob", 0.0)
+                    predicted = (
+                        "Pass" if approval_prob >= threshold else "Fail"
+                    )
+                    confidence = (
+                        approval_prob if predicted == "Pass" else 1 - approval_prob
+                    )
+                    records.append(
+                        {
+                            "source": "stored",
+                            "title": extract_first_heading(text),
+                            "predicted": predicted,
+                            "confidence": confidence,
+                            "prediction_time": prediction_time,
+                            "margin_of_error": forecast.get(
+                                "margin_of_error",
+                                forecast.get("turnout_estimate", 0.0),
+                            ),
+                        }
+                    )
+    except Exception:
+        pass
+
     return records
