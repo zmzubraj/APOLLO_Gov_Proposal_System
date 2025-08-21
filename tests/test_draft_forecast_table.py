@@ -14,12 +14,13 @@ def test_drafts_under_threshold_label_fail(monkeypatch):
         {
             "source": "chat",
             "text": "# Title\nBody",
-            "forecast": {"approval_prob": 0.5, "turnout_estimate": 0.1},
+            "forecast": {"approval_prob": 0.2, "turnout_estimate": 0.1},
             "prediction_time": 0.01,
         }
     ]
     records = summarise_draft_predictions(drafts, main.MIN_PASS_CONFIDENCE)
     assert records[0]["predicted"] == "Fail"
+    assert abs(records[0]["confidence"] - 0.8) < 1e-9
 
 
 def test_print_draft_forecast_table_output(capsys):
@@ -56,3 +57,20 @@ def test_print_draft_forecast_table_output(capsys):
     assert "Forum" in out and "Onchain" in out and "Chat" not in out
     assert "79%" in out
     assert "±3%" in out
+
+
+def test_print_draft_forecast_table_includes_fail_high_confidence(capsys):
+    stats = [
+        {
+            "source": "forum",
+            "title": "a",
+            "predicted": "Fail",
+            "confidence": 0.95,
+            "prediction_time": 1.0,
+            "margin_of_error": 0.02,
+        }
+    ]
+    print_draft_forecast_table(stats, 0.8)
+    out = capsys.readouterr().out
+    assert "forum".capitalize() in out  # source is shown
+    assert "95%" in out
