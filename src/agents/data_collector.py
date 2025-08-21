@@ -11,6 +11,7 @@ from data_processing.blockchain_cache import (
     SUBSTRATE_RPC,
 )
 from data_processing.evm_data_fetcher import fetch_evm_blocks
+from data_processing.proposal_store import ROOT, XLSX_PATH
 
 
 class DataCollector:
@@ -58,6 +59,7 @@ class DataCollector:
                 "https://cryptorank.io/news/polkadot; "
                 "https://www.binance.com/en/square/post"
             ),
+            "governance": str(XLSX_PATH.relative_to(ROOT)),
         }
         # ------------------------------------------------------------------
         # Optional per-source weighting from environment variables
@@ -138,7 +140,7 @@ class DataCollector:
                 "count": 0,
                 "avg_word_length": 0.0,
                 "update_frequency": update_freq.get("governance", "unknown"),
-                "platform": None,
+                "platform": platform_map.get("governance"),
                 "weight": weights.get("governance", 1.0),
             },
         )
