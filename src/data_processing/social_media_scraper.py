@@ -44,18 +44,34 @@ def fetch_x() -> List[str]:
     if not token:
         return []
 
-    url = "https://api.twitter.com/2/users/by/username/polkadotnetwork"
-    user_id = requests.get(url, headers={"Authorization": f"Bearer {token}"}).json()["data"]["id"]
+    try:
+        url = "https://api.twitter.com/2/users/by/username/polkadotnetwork"
+        resp = requests.get(
+            url, headers={"Authorization": f"Bearer {token}"}, timeout=10
+        )
+        user_id = resp.json().get("data", {}).get("id")
+        if not user_id:
+            return []
 
-    timeline = f"https://api.twitter.com/2/users/{user_id}/tweets"
-    params = {"max_results": 20, "tweet.fields": "created_at"}
-    resp = requests.get(timeline, headers={"Authorization": f"Bearer {token}"}, params=params).json()
-    msgs: list[str] = []
-    for tw in resp.get("data", []):
-        ts = dt.datetime.fromisoformat(tw["created_at"].replace("Z", "+00:00"))
-        if _within_cutoff(ts):
-            msgs.append(_clean(tw["text"]))
-    return msgs
+        timeline = f"https://api.twitter.com/2/users/{user_id}/tweets"
+        params = {"max_results": 20, "tweet.fields": "created_at"}
+        tw_resp = requests.get(
+            timeline,
+            headers={"Authorization": f"Bearer {token}"},
+            params=params,
+            timeout=10,
+        )
+        msgs: list[str] = []
+        for tw in tw_resp.json().get("data", []):
+            ts = dt.datetime.fromisoformat(tw["created_at"].replace("Z", "+00:00"))
+            if _within_cutoff(ts):
+                msgs.append(_clean(tw["text"]))
+        return msgs
+    except Exception:
+        # Return an empty list if the API response is malformed or the request
+        # fails (e.g. invalid token or rate limit).  Upstream code will log the
+        # failure but continue execution.
+        return []
 
 
 # (Official account reference) :contentReference[oaicite:0]{index=0}
