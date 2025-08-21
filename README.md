@@ -206,10 +206,10 @@ Create a `.env` file in the project root:
 
  # Recency controls
  NEWS_LOOKBACK_DAYS=3          # days of news to fetch
- # Fallback historical evaluation
- HISTORICAL_SAMPLE_SEED=0      # optional seed for sampling historical referenda
- # Minimum confidence to label a draft as passing
- MIN_PASS_CONFIDENCE=0.80
+# Fallback historical evaluation
+# HISTORICAL_SAMPLE_SEED=1      # optional seed for sampling historical referenda
+# Minimum confidence to label a draft as passing
+MIN_PASS_CONFIDENCE=0.80
 ```
 
 `SUBSTRATE_NODE_URL` should point to a Substrate RPC endpoint. Common choices
@@ -221,10 +221,11 @@ Telegram, and Twitter variables enable posting proposal summaries to those
 platforms via the execution layer connectors.
 
 `NEWS_LOOKBACK_DAYS` controls the number of past days of RSS items retrieved by
-the news fetcher. `HISTORICAL_SAMPLE_SEED` can be set to an integer to make
-historical prediction sampling reproducible; omit it to allow nondeterministic
-selection. `MIN_PASS_CONFIDENCE` defines the approval probability threshold used
-to label draft proposals as "Pass" in the forecast summary table.
+the news fetcher. `HISTORICAL_SAMPLE_SEED` can be set to a **non-zero** integer
+to make historical prediction sampling reproducible; omit it or set it to `0`
+to allow nondeterministic selection. `MIN_PASS_CONFIDENCE` defines the approval
+probability threshold used to label draft proposals as "Pass" in the forecast
+summary table.
 
 #### Data Weighting System
 

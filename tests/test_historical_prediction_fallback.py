@@ -21,7 +21,7 @@ def test_historical_prediction_fallback(monkeypatch):
     )
 
     # Ensure deterministic sampling
-    monkeypatch.setenv("HISTORICAL_SAMPLE_SEED", "0")
+    monkeypatch.setenv("HISTORICAL_SAMPLE_SEED", "42")
 
     results = evaluate_historical_predictions(sample_size=5)
 
@@ -29,7 +29,7 @@ def test_historical_prediction_fallback(monkeypatch):
     assert len(results) == 3
 
     # Sample order should be deterministic due to seed
-    assert [r["Proposal ID"] for r in results] == [3, 2, 1]
+    assert [r["Proposal ID"] for r in results] == [1, 2, 3]
 
     for res in results:
         assert res.get("Predicted")
