@@ -13,7 +13,7 @@ from agents.context_generator import build_context
 from agents.outcome_forecaster import forecast_outcomes
 from analysis.prediction_evaluator import compare_predictions
 from data_processing.data_loader import load_governance_data
-from data_processing.proposal_store import record_proposal
+from data_processing.proposal_store import load_proposals, record_proposal
 from utils.helpers import extract_first_heading
 
 
@@ -411,7 +411,8 @@ def print_draft_forecast_table(
     rows = []
     for info in stats:
         confidence = info.get("confidence", 0.0)
-        if confidence >= threshold:
+        predicted = str(info.get("predicted", ""))
+        if predicted.lower() == "pass" and confidence >= threshold:
             continue
         prediction_time = info.get("prediction_time", 0.0)
         margin = info.get("margin_of_error", 0.0)
@@ -481,8 +482,9 @@ def summarise_draft_predictions(
     records: list[dict[str, Any]] = []
     for draft in drafts:
         forecast = draft.get("forecast", {})
-        confidence = forecast.get("approval_prob", 0.0)
-        predicted = "Pass" if confidence >= threshold else "Fail"
+        approval_prob = forecast.get("approval_prob", 0.0)
+        predicted = "Pass" if approval_prob >= threshold else "Fail"
+        confidence = approval_prob if predicted == "Pass" else 1 - approval_prob
         records.append(
             {
                 "source": draft.get("source", ""),
@@ -496,3 +498,39 @@ def summarise_draft_predictions(
             }
         )
     return records
+
+
+def load_persisted_draft_predictions(threshold: float) -> list[dict[str, Any]]:
+    """Return prediction summaries for proposals stored in the workbook.
+
+    This reads the ``Proposals`` sheet and forecasts outcomes for any rows
+    marked with ``stage`` == ``"draft"``.  Each stored draft is processed in
+    isolation using the naive :func:`forecast_outcomes` agent and then
+    summarised via :func:`summarise_draft_predictions`.
+    """
+
+    df = load_proposals()
+    if df.empty or "proposal_text" not in df.columns:
+        return []
+
+    if "stage" in df.columns:
+        mask = df["stage"].astype(str).str.lower() == "draft"
+        texts = df.loc[mask, "proposal_text"].dropna().tolist()
+    else:
+        texts = df["proposal_text"].dropna().tolist()
+
+    drafts: list[dict[str, Any]] = []
+    for text in texts:
+        t_pred = time.perf_counter()
+        forecast = forecast_outcomes({})
+        prediction_time = time.perf_counter() - t_pred
+        drafts.append(
+            {
+                "source": "archive",
+                "text": text,
+                "forecast": forecast,
+                "prediction_time": prediction_time,
+            }
+        )
+
+    return summarise_draft_predictions(drafts, threshold)
