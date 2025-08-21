@@ -54,7 +54,7 @@ def test_print_draft_forecast_table_output(capsys):
     out = capsys.readouterr().out
     assert "Drafted proposal success prediction and forecast" in out
     assert "Pass confidence threshold <80%" in out
-    assert "Forum" in out and "Onchain" in out and "Chat" not in out
+    assert "Forum" in out and "Onchain" in out and "Chat" in out
     assert "79%" in out
     assert "±3%" in out
 
@@ -74,3 +74,14 @@ def test_print_draft_forecast_table_includes_fail_high_confidence(capsys):
     out = capsys.readouterr().out
     assert "forum".capitalize() in out  # source is shown
     assert "95%" in out
+
+
+def test_summarise_uses_stored_proposals(monkeypatch):
+    import pandas as pd
+
+    df = pd.DataFrame({"proposal_text": ["# Title"], "stage": ["draft"]})
+    monkeypatch.setattr(
+        "data_processing.proposal_store.load_proposals", lambda: df
+    )
+    records = summarise_draft_predictions([], 0.5)
+    assert records and records[0]["title"] == "Title"
