@@ -506,52 +506,57 @@ def summarise_draft_predictions(
             }
         )
 
-    # Fallback: load any previously stored drafts
-    try:
-        from data_processing.proposal_store import load_proposals
+    # Fallback: only load previously stored drafts if none were generated in
+    # this run.  Previously this function always appended stored drafts, which
+    # led to tables being cluttered with historic entries.  By checking for
+    # ``records`` first, we ensure that the summary reflects only the current
+    # execution's sources unless no new drafts were produced.
+    if not records:
+        try:
+            from data_processing.proposal_store import load_proposals
 
-        df = load_proposals()
-        if not df.empty:
-            stage_col = (
-                df.columns[df.columns.str.lower() == "stage"].tolist() or [None]
-            )[0]
-            text_col = (
-                df.columns[df.columns.str.lower() == "proposal_text"].tolist()
-                or [None]
-            )[0]
-            if text_col:
-                if stage_col:
-                    mask = (
-                        df[stage_col].astype(str).str.lower() == "draft"
-                    )
-                    df = df[mask]
-                for text in df[text_col].astype(str):
-                    if text in seen_texts:
-                        continue
-                    t_pred = time.perf_counter()
-                    forecast = forecast_outcomes({})
-                    prediction_time = time.perf_counter() - t_pred
-                    approval_prob = forecast.get("approval_prob", 0.0)
-                    predicted = (
-                        "Pass" if approval_prob >= threshold else "Fail"
-                    )
-                    confidence = (
-                        approval_prob if predicted == "Pass" else 1 - approval_prob
-                    )
-                    records.append(
-                        {
-                            "source": "stored",
-                            "title": extract_first_heading(text),
-                            "predicted": predicted,
-                            "confidence": confidence,
-                            "prediction_time": prediction_time,
-                            "margin_of_error": forecast.get(
-                                "margin_of_error",
-                                forecast.get("turnout_estimate", 0.0),
-                            ),
-                        }
-                    )
-    except Exception:
-        pass
+            df = load_proposals()
+            if not df.empty:
+                stage_col = (
+                    df.columns[df.columns.str.lower() == "stage"].tolist() or [None]
+                )[0]
+                text_col = (
+                    df.columns[df.columns.str.lower() == "proposal_text"].tolist()
+                    or [None]
+                )[0]
+                if text_col:
+                    if stage_col:
+                        mask = (
+                            df[stage_col].astype(str).str.lower() == "draft"
+                        )
+                        df = df[mask]
+                    for text in df[text_col].astype(str):
+                        if text in seen_texts:
+                            continue
+                        t_pred = time.perf_counter()
+                        forecast = forecast_outcomes({})
+                        prediction_time = time.perf_counter() - t_pred
+                        approval_prob = forecast.get("approval_prob", 0.0)
+                        predicted = (
+                            "Pass" if approval_prob >= threshold else "Fail"
+                        )
+                        confidence = (
+                            approval_prob if predicted == "Pass" else 1 - approval_prob
+                        )
+                        records.append(
+                            {
+                                "source": "stored",
+                                "title": extract_first_heading(text),
+                                "predicted": predicted,
+                                "confidence": confidence,
+                                "prediction_time": prediction_time,
+                                "margin_of_error": forecast.get(
+                                    "margin_of_error",
+                                    forecast.get("turnout_estimate", 0.0),
+                                ),
+                            }
+                        )
+        except Exception:
+            pass
 
     return records
