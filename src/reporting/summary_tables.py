@@ -411,7 +411,8 @@ def print_draft_forecast_table(
     rows = []
     for info in stats:
         confidence = info.get("confidence", 0.0)
-        if confidence >= threshold:
+        predicted = str(info.get("predicted", ""))
+        if predicted.lower() == "pass" and confidence >= threshold:
             continue
         prediction_time = info.get("prediction_time", 0.0)
         margin = info.get("margin_of_error", 0.0)
@@ -481,8 +482,9 @@ def summarise_draft_predictions(
     records: list[dict[str, Any]] = []
     for draft in drafts:
         forecast = draft.get("forecast", {})
-        confidence = forecast.get("approval_prob", 0.0)
-        predicted = "Pass" if confidence >= threshold else "Fail"
+        approval_prob = forecast.get("approval_prob", 0.0)
+        predicted = "Pass" if approval_prob >= threshold else "Fail"
+        confidence = approval_prob if predicted == "Pass" else 1 - approval_prob
         records.append(
             {
                 "source": draft.get("source", ""),
