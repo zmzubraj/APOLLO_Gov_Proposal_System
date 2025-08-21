@@ -24,6 +24,7 @@ from reporting.summary_tables import (
     evaluate_historical_predictions,
     draft_onchain_proposal,
     summarise_draft_predictions,
+    load_persisted_draft_predictions,
 )
 from agents.sentiment_analyser import analyse_messages
 from data_processing.news_fetcher import fetch_and_summarise_news
@@ -209,11 +210,6 @@ def main() -> None:
     if chain_draft_info:
         proposal_drafts.append(chain_draft_info)
 
-    stats["drafts"] = proposal_drafts
-    stats["draft_predictions"] = summarise_draft_predictions(
-        proposal_drafts, MIN_PASS_CONFIDENCE
-    )
-
     # Select best draft (fallback to consolidated context if none)
     if proposal_drafts:
         best_draft = max(
@@ -247,6 +243,19 @@ def main() -> None:
             }
         )
         record_proposal(proposal_text, None, stage="draft")
+
+    # Summaries for reporting now that drafts are finalised
+    stats["drafts"] = proposal_drafts
+    stats["draft_predictions"] = load_persisted_draft_predictions(
+        MIN_PASS_CONFIDENCE
+    )
+
+    # Print all draft texts for debugging before showing the final proposal
+    if proposal_drafts:
+        print("\nDraft proposals:")
+        for d in proposal_drafts:
+            src = d.get("source", "-")
+            print(f"\nSource: {src}\n{d.get('text', '')}\n")
     try:
         df_pred = pd.DataFrame(
             [
