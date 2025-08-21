@@ -229,7 +229,9 @@ def evaluate_historical_predictions(sample_size: int = 5) -> list[dict[str, Any]
     sample_kwargs = {"n": min(sample_size, len(df_done))}
     if seed:
         try:
-            sample_kwargs["random_state"] = int(seed)
+            seed_val = int(seed)
+            if seed_val != 0:
+                sample_kwargs["random_state"] = seed_val
         except ValueError:
             pass
 
