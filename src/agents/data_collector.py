@@ -85,9 +85,11 @@ class DataCollector:
             avg_words = (
                 sum(len(t.split()) for t in texts) / count if count else 0.0
             )
+            total_tokens = int(count * avg_words)
             stats["data_sources"][source] = {
                 "count": count,
                 "avg_word_length": avg_words,
+                "total_tokens": total_tokens,
                 "update_frequency": update_freq.get(source, "unknown"),
                 "platform": platform_map.get(source),
                 "weight": weights.get(source, 1.0),
@@ -102,9 +104,11 @@ class DataCollector:
             if news_count
             else 0.0
         )
+        total_tokens = int(news_count * avg_news_words)
         stats["data_sources"]["news"] = {
             "count": news_count,
             "avg_word_length": avg_news_words,
+            "total_tokens": total_tokens,
             "update_frequency": update_freq.get("news", "unknown"),
             "platform": platform_map.get("news"),
             "weight": weights.get("news", 1.0),
@@ -125,9 +129,11 @@ class DataCollector:
             else 0.0
         )
         rpc_url = os.getenv("SUBSTRATE_RPC", SUBSTRATE_RPC)
+        total_tokens = int(block_count * avg_extrinsics)
         stats["data_sources"]["chain"] = {
             "count": block_count,
             "avg_word_length": avg_extrinsics,
+            "total_tokens": total_tokens,
             "update_frequency": update_freq.get("chain", "unknown"),
             "platform": rpc_url,
             "weight": weights.get("chain", 1.0),
@@ -139,6 +145,7 @@ class DataCollector:
             {
                 "count": 0,
                 "avg_word_length": 0.0,
+                "total_tokens": 0,
                 "update_frequency": update_freq.get("governance", "unknown"),
                 "platform": platform_map.get("governance"),
                 "weight": weights.get("governance", 1.0),
