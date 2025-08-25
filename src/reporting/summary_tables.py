@@ -54,9 +54,11 @@ def print_data_sources_table(stats: Mapping[str, Mapping[str, Any]]) -> None:
     ----------
     stats:
         Mapping of source type to a dictionary containing at least the keys
-        ``count``, ``avg_word_length`` and ``update_frequency``.  Optional keys
+        ``count``, ``avg_word_length`` and ``update_frequency``. Optional keys
         ``platform`` or ``url`` may be supplied for display under the
-        ``Platform/URL`` column.  Missing values are represented by ``-``.
+        ``Platform/URL`` column, and ``total_tokens`` may be provided. When
+        ``total_tokens`` is absent it is estimated as ``count * avg_word_length``.
+        Missing values are represented by ``-``.
     """
 
     headers = [
@@ -64,8 +66,9 @@ def print_data_sources_table(stats: Mapping[str, Mapping[str, Any]]) -> None:
         "Platform/URL",
         "# Documents",
         "Avg. Length (words)",
+        "Total token (Data volume)",
         "Update Frequency",
-        ]
+    ]
 
     source_map = {
         "chat": "Community Chat",
@@ -91,9 +94,19 @@ def print_data_sources_table(stats: Mapping[str, Mapping[str, Any]]) -> None:
         platform = info.get("platform") or info.get("url") or "-"
         count = info.get("count", 0)
         avg_len = int(info.get("avg_word_length", 0) or 0)
+        total = int(info.get("total_tokens") or count * avg_len)
         freq_raw = str(info.get("update_frequency", "-"))
         freq = freq_map.get(freq_raw.lower(), freq_raw)
-        rows.append([source_map.get(source, source), platform, count, avg_len, freq])
+        rows.append(
+            [
+                source_map.get(source, source),
+                platform,
+                count,
+                avg_len,
+                total,
+                freq,
+            ]
+        )
 
     if not rows:
         print("No data sources available")
