@@ -4,6 +4,8 @@ from __future__ import annotations
 import os
 from typing import Any, Dict, Callable
 
+import pandas as pd
+
 from data_processing.social_media_scraper import collect_recent_messages
 from data_processing.news_fetcher import fetch_and_summarise_news
 from data_processing.blockchain_cache import (
@@ -139,18 +141,39 @@ class DataCollector:
             "weight": weights.get("chain", 1.0),
         }
 
-        # Include governance placeholder so that weight information is surfaced
-        stats["data_sources"].setdefault(
-            "governance",
-            {
-                "count": 0,
-                "avg_word_length": 0.0,
-                "total_tokens": 0,
-                "update_frequency": update_freq.get("governance", "unknown"),
-                "platform": platform_map.get("governance"),
-                "weight": weights.get("governance", 1.0),
-            },
-        )
+        # Governance workbook statistics
+        gov_count = 0
+        gov_avg = 0.0
+        gov_total = 0
+        if XLSX_PATH.exists():
+            try:
+                sheets = pd.read_excel(XLSX_PATH, sheet_name=None)
+                frames = sheets.values() if isinstance(sheets, dict) else [sheets]
+                docs: list[str] = []
+                for df in frames:
+                    if not isinstance(df, pd.DataFrame) or df.empty:
+                        continue
+                    for _, row in df.iterrows():
+                        text = " ".join(
+                            str(v) for v in row.dropna().astype(str)
+                        )
+                        if text.strip():
+                            docs.append(text)
+                gov_count = len(docs)
+                if gov_count:
+                    gov_avg = sum(len(t.split()) for t in docs) / gov_count
+                    gov_total = int(gov_count * gov_avg)
+            except Exception:
+                pass
+
+        stats["data_sources"]["governance"] = {
+            "count": gov_count,
+            "avg_word_length": gov_avg,
+            "total_tokens": gov_total,
+            "update_frequency": update_freq.get("governance", "unknown"),
+            "platform": platform_map.get("governance"),
+            "weight": weights.get("governance", 1.0),
+        }
 
         result = {
             "messages": messages,
