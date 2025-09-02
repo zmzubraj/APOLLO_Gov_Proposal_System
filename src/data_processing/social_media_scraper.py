@@ -228,43 +228,66 @@ def fetch_cryptorank() -> List[str]:
 #    Uses PRAW – requires REDDIT_CLIENT_ID, REDDIT_SECRET, REDDIT_USERAGENT
 # -----------------------------------------------------------------------------
 def fetch_reddit(limit: int = 20) -> List[str]:
+    """Fetch recent r/Polkadot posts and their comments.
+
+    Uses Reddit's public JSON endpoints so no credentials are required.  The
+    function gathers the latest posts and then fetches comments for each post
+    to provide additional context.  Results are filtered to the last 72 hours
+    and returned as a simple list of text snippets.
     """
-    Pull recent posts + top comments from r/Polkadot via the public JSON
-    endpoints.  No credentials required.  Limited to ~100 requests / 10 min
-    per Reddit's unauthenticated rate-limit.:contentReference[oaicite:0]{index=0}
-    """
-    base = "https://www.reddit.com"
-    headers = {"User-Agent": "pd-gov-bot/0.1 (public data)"}
-    url = f"{base}/r/Polkadot/new.json?limit={limit}"
+
+    headers = {"User-Agent": "Mozilla/5.0"}
     try:
-        data = requests.get(url, headers=headers, timeout=10).json()
+        resp = requests.get(
+            "https://www.reddit.com/r/Polkadot/new.json",
+            headers=headers,
+            params={"limit": limit, "t": "day"},
+            timeout=10,
+        )
+        resp.raise_for_status()
+        posts_json = resp.json()
     except Exception:
         return []
 
-    msgs: list[str] = []
-    for post in data.get("data", {}).get("children", []):
-        p = post["data"]
-        created = dt.datetime.fromtimestamp(p["created_utc"], dt.UTC)
+    messages: list[str] = []
+    for child in posts_json.get("data", {}).get("children", []):
+        post = child.get("data", {})
+        created = dt.datetime.fromtimestamp(post.get("created_utc", 0), dt.UTC)
         if not _within_cutoff(created):
             continue
-        title = html.unescape(p["title"])
-        msgs.append(_clean(title))
 
-        # Pull top 3 top-level comments for extra sentiment signal
-        permalink = p["permalink"]
+        title = _clean(html.unescape(post.get("title", "")))
+        if title:
+            messages.append(title)
+
+        post_id = post.get("id")
+        if not post_id:
+            continue
+
         try:
-            thread = requests.get(f"{base}{permalink}.json?limit=3",
-                                  headers=headers, timeout=10).json()
-            if len(thread) > 1:
-                for c in thread[1]["data"]["children"][:3]:
-                    body = c["data"].get("body")
-                    if body:
-                        msgs.append(_clean(html.unescape(body)))
-            # be polite to Reddit
-            time.sleep(1)
+            cm_resp = requests.get(
+                f"https://www.reddit.com/r/Polkadot/comments/{post_id}.json",
+                headers=headers,
+                timeout=10,
+            )
+            cm_resp.raise_for_status()
+            comments_json = cm_resp.json()
+        except Exception:
+            comments_json = []
+
+        # The second element holds the comment tree
+        try:
+            for c in comments_json[1]["data"]["children"]:
+                body = c.get("data", {}).get("body")
+                if body:
+                    messages.append(_clean(html.unescape(body)))
         except Exception:
             pass
-    return msgs
+
+        # Polite delay to avoid hitting rate limits
+        time.sleep(2)
+
+    return messages
 
 
 # subreddit reference :contentReference[oaicite:3]{index=3}
