@@ -15,7 +15,7 @@ import os
 import datetime as dt
 import feedparser, requests
 from bs4 import BeautifulSoup
-from llm.ollama_api import generate_completion
+from llm.ollama_api import generate_completion, OllamaError
 from utils.helpers import extract_json_safe
 
 # ---------------------------------------------------------------------------
@@ -70,13 +70,20 @@ def summarise_items(items: List[Dict[str, Any]], model: str | None = None) -> Di
 
     bullet_source = "\n\n".join(f"- {it['title']}: {it['summary']}" for it in items)
 
-    raw = generate_completion(
-        prompt=bullet_source[:8000],
-        system=SYSTEM_PROMPT,
-        model="gemma3:4b",
-        temperature=0.2,
-        max_tokens=256,
-    )
+    try:
+        raw = generate_completion(
+            prompt=bullet_source[:8000],
+            system=SYSTEM_PROMPT,
+            model="gemma3:4b",
+            temperature=0.2,
+            max_tokens=256,
+        )
+    except OllamaError as err:
+        # If the local Ollama server is unavailable (e.g. not installed or not
+        # running) we don't want the whole pipeline to crash.  Instead return a
+        # friendly message so callers can handle the absence of a summary.
+        return {"digest": [], "risks": f"LLM summary failed: {err}"}
+
     parsed = extract_json_safe(raw)
     return parsed or {"digest": [], "risks": "LLM summary failed."}
 

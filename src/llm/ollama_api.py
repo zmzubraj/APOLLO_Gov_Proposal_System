@@ -32,21 +32,21 @@ class OllamaError(RuntimeError):
     """Raised when the Ollama server returns a non‑200 or malformed response."""
 
 
-# def _post(url: str, payload: Dict[str, Any]) -> Dict[str, Any]:
-#     """Internal helper with basic error handling."""
-#     try:
-#         resp = requests.post(url, json=payload, timeout=240)
-#         resp.raise_for_status()
-#         return resp.json()
-#     except Exception as exc:  # noqa: BLE001
-#         raise OllamaError(f"Ollama request failed: {exc}") from exc
+def _post(url: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Internal helper with basic error handling.
 
-def _post(url, payload):
-    resp = requests.post(url, json=payload, timeout=240)
-    if resp.status_code != 200:
-        detail = resp.json().get("error", resp.text)
-        raise OllamaError(f"{resp.status_code} – {detail} – model asked: {payload.get('model')}")
-    return resp.json()
+    This wraps :func:`requests.post` so that network issues or non-2xx responses
+    raise :class:`OllamaError` with a helpful message.  The previous
+    implementation surfaced raw ``requests`` exceptions which bubbled up and
+    crashed the application when the local Ollama server was not running.
+    """
+
+    try:
+        resp = requests.post(url, json=payload, timeout=240)
+        resp.raise_for_status()
+        return resp.json()
+    except Exception as exc:  # noqa: BLE001
+        raise OllamaError(f"Ollama request failed: {exc}") from exc
 
 
 # -----------------------------------------------------------------------------
