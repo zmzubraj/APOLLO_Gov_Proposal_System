@@ -42,7 +42,26 @@ def _clean(text: str) -> str:
 def fetch_x() -> List[str]:
     token = os.getenv("TWITTER_BEARER")
     if not token:
-        return []
+        try:
+            import snscrape.modules.twitter as sntwitter
+
+            msgs: list[str] = []
+            for i, tweet in enumerate(
+                sntwitter.TwitterUserScraper("Polkadot").get_items()
+            ):
+                if i >= 20:
+                    break
+                ts = tweet.date
+                if isinstance(ts, dt.datetime):
+                    if ts.tzinfo is None:
+                        ts = ts.replace(tzinfo=dt.UTC)
+                    else:
+                        ts = ts.astimezone(dt.UTC)
+                    if _within_cutoff(ts):
+                        msgs.append(_clean(tweet.content))
+            return msgs
+        except Exception:
+            return []
 
     try:
         url = "https://api.twitter.com/2/users/by/username/polkadotnetwork"
