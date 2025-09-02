@@ -415,6 +415,8 @@ def collect_recent_messages() -> Dict[str, List[Any]]:
 
 # Stand-alone quick test ------------------------------------------------------
 if __name__ == "__main__":
-    data = collect_recent_messages()
-    print(f"Collected {len(data)} messages.")
-    print(data[:10])
+    grouped = collect_recent_messages()
+    total = sum(len(v) for v in grouped.values())
+    print(f"Collected {total} messages.")
+    for source, msgs in grouped.items():
+        print(source, msgs[:3])
