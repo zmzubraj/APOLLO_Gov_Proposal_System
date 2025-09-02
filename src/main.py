@@ -14,7 +14,10 @@ from typing import Any
 import pandas as pd
 from dotenv import load_dotenv
 from agents.data_collector import DataCollector
-from data_processing.social_media_scraper import collect_recent_messages
+from data_processing.social_media_scraper import (
+    collect_recent_messages,
+    flatten_forum_topic,
+)
 from reporting.summary_tables import (
     print_data_sources_table,
     print_sentiment_embedding_table,
@@ -80,10 +83,14 @@ def main() -> None:
     all_msgs: list[str] = []
     sentiments_by_source: dict[str, Any] = {}
     for source, msgs in msgs_by_source.items():
-        all_msgs.extend(msgs)
-        res = analyse_messages(msgs)
+        if msgs and isinstance(msgs[0], dict):
+            flat = [flatten_forum_topic(m) for m in msgs]
+        else:
+            flat = msgs
+        all_msgs.extend(flat)
+        res = analyse_messages(flat)
         sentiments_by_source[source] = res
-        raw_text = "\n".join(msgs).strip()
+        raw_text = "\n".join(flat).strip()
         ctx_size = res.get(
             "message_size_kb",
             len(raw_text.encode("utf-8")) / 1024 if raw_text else 0.0,

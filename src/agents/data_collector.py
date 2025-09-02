@@ -6,7 +6,10 @@ from typing import Any, Dict, Callable
 
 import pandas as pd
 
-from data_processing.social_media_scraper import collect_recent_messages
+from data_processing.social_media_scraper import (
+    collect_recent_messages,
+    flatten_forum_topic,
+)
 from data_processing.news_fetcher import fetch_and_summarise_news
 from data_processing.blockchain_cache import (
     get_recent_blocks_cached,
@@ -21,7 +24,7 @@ class DataCollector:
 
     @staticmethod
     def collect(
-        msg_fn: Callable[[], Dict[str, list[str]]] = collect_recent_messages,
+        msg_fn: Callable[[], Dict[str, list[Any]]] = collect_recent_messages,
         news_fn: Callable[[], Dict[str, Any]] = fetch_and_summarise_news,
         block_fn: Callable[[], list] = get_recent_blocks_cached,
         evm_fn: Callable[[], list] | None = None,
@@ -84,8 +87,15 @@ class DataCollector:
         stats.setdefault("data_sources", {})
         for source, texts in messages.items():
             count = len(texts)
+
+            def _to_text(item: Any) -> str:
+                if isinstance(item, dict):
+                    return flatten_forum_topic(item)
+                return str(item)
+
+            text_snippets = [_to_text(t) for t in texts]
             avg_words = (
-                sum(len(t.split()) for t in texts) / count if count else 0.0
+                sum(len(t.split()) for t in text_snippets) / count if count else 0.0
             )
             total_tokens = int(count * avg_words)
             stats["data_sources"][source] = {

@@ -15,7 +15,7 @@ import html
 import os
 import re
 import time
-from typing import List, Dict
+from typing import List, Dict, Any
 
 import requests
 from bs4 import BeautifulSoup
@@ -79,21 +79,83 @@ def fetch_x() -> List[str]:
 
 # -----------------------------------------------------------------------------
 # 2. Polkadot Forum (Discourse)
-#    Public JSON endpoint: https://forum.polkadot.network/latest.json
+#    Public JSON endpoints expose both topic lists and full thread details.
 # -----------------------------------------------------------------------------
-def fetch_forum() -> List[str]:
-    r = requests.get("https://forum.polkadot.network/latest.json", timeout=10)
-    latest = r.json().get("topic_list", {}).get("topics", [])
-    msgs: list[str] = []
-    for t in latest[:15]:
-        created = (
-            dt.datetime.fromtimestamp(t["created_at"] // 1000, dt.UTC)
-            if isinstance(t["created_at"], int)
-            else dt.datetime.strptime(t["created_at"][:19], "%Y-%m-%dT%H:%M:%S").replace(tzinfo=dt.UTC)
+BASE_FORUM_URL = "https://forum.polkadot.network"
+
+
+def _simple_post(post: dict) -> dict:
+    """Return a simplified representation of a forum post."""
+    return {
+        "author": post.get("username"),
+        "created_at": post.get("created_at"),
+        "content": post.get("cooked"),  # HTML content
+    }
+
+
+def flatten_forum_topic(topic: dict) -> str:
+    """Combine title, body and comments into a single text blob."""
+    parts: list[str] = [topic.get("title", "")]
+    details = topic.get("details", {})
+    if isinstance(details, dict):
+        parts.append(details.get("content", ""))
+    for c in topic.get("comments_replies", []):
+        if isinstance(c, dict):
+            parts.append(c.get("content", ""))
+    return _clean(" ".join(p for p in parts if p))
+
+
+def fetch_forum(limit: int = 15) -> List[dict]:
+    """Fetch latest Polkadot forum topics with comments.
+
+    Returns a list of dictionaries with the following structure::
+
+        {
+            "title": str,
+            "details": {"author": str, "created_at": str, "content": str},
+            "comments_replies": [same-as-details]
+        }
+
+    Network failures return an empty list so upstream callers can continue.
+    """
+
+    try:
+        resp = requests.get(f"{BASE_FORUM_URL}/latest.json", timeout=10)
+        resp.raise_for_status()
+        topics = resp.json().get("topic_list", {}).get("topics", [])[:limit]
+    except Exception:
+        return []
+
+    results: list[dict] = []
+    for topic in topics:
+        slug = topic.get("slug")
+        topic_id = topic.get("id")
+        if slug is None or topic_id is None:
+            continue
+        try:
+            detail_resp = requests.get(
+                f"{BASE_FORUM_URL}/t/{slug}/{topic_id}.json", timeout=10
+            )
+            detail_resp.raise_for_status()
+            data = detail_resp.json()
+        except Exception:
+            continue
+
+        posts = data.get("post_stream", {}).get("posts", [])
+        if not posts:
+            continue
+        details = _simple_post(posts[0])
+        comments = [_simple_post(p) for p in posts[1:]]
+        results.append(
+            {
+                "title": data.get("title"),
+                "details": details,
+                "comments_replies": comments,
+            }
         )
-        if _within_cutoff(created):
-            msgs.append(_clean(t["title"]))
-    return msgs
+        time.sleep(0.2)  # polite delay
+
+    return results
 
 
 # discourse JSON endpoint confirmed :contentReference[oaicite:1]{index=1}
@@ -205,14 +267,14 @@ def fetch_binance_square() -> List[str]:
 # -----------------------------------------------------------------------------
 # Unified public API
 # -----------------------------------------------------------------------------
-def collect_recent_messages() -> Dict[str, List[str]]:
+def collect_recent_messages() -> Dict[str, List[Any]]:
     """Return recent messages grouped by their source.
 
     Each key represents a general source category (e.g. ``"forum"``,
-    ``"news"``, ``"chat"``) mapped to a list of text snippets pulled from the
-    relevant platforms.  Failures from individual sources are logged and
-    represented as empty lists so the caller can handle missing data
-    gracefully.
+    ``"news"``, ``"chat"``) mapped to a list of snippets or topic dictionaries
+    pulled from the relevant platforms.  Failures from individual sources are
+    logged and represented as empty lists so the caller can handle missing
+    data gracefully.
     """
 
     source_funcs: Dict[str, List] = {
@@ -221,9 +283,9 @@ def collect_recent_messages() -> Dict[str, List[str]]:
         "news": [fetch_cryptorank, fetch_binance_square],
     }
 
-    grouped: Dict[str, List[str]] = {}
+    grouped: Dict[str, List[Any]] = {}
     for name, funcs in source_funcs.items():
-        texts: list[str] = []
+        texts: list[Any] = []
         for fn in funcs:
             try:
                 texts.extend(fn())
@@ -232,9 +294,10 @@ def collect_recent_messages() -> Dict[str, List[str]]:
         # de-dup & keep order within the source
         seen, deduped = set(), []
         for t in texts:
-            if t not in seen:
+            key = str(t) if not isinstance(t, dict) else t.get("title", str(t))
+            if key not in seen:
                 deduped.append(t)
-                seen.add(t)
+                seen.add(key)
         grouped[name] = deduped
 
     return grouped
