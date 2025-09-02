@@ -37,8 +37,37 @@ def _format_table(headers: Iterable[str], rows: Iterable[Iterable[Any]]) -> str:
         for i in range(len(headers_str))
     ]
 
-    # Build formatted lines
-    fmt = " | ".join(f"{{:<{w}}}" for w in widths)
+    def _is_numeric(text: str) -> bool:
+        """Return ``True`` if *text* looks like a number.
+
+        The check is intentionally permissive and strips common characters used
+        in the tables (percent signs, tildes, plus/minus etc.) before attempting
+        to parse the value as a float.  Empty strings and placeholder dashes are
+        treated as non-numeric.
+        """
+
+        s = text.strip()
+        if not s or s in {"-", "nan", "NaN"}:
+            return False
+        for ch in (",", "%", "±", "~"):
+            s = s.replace(ch, "")
+        try:
+            float(s)
+            return True
+        except ValueError:
+            return False
+
+    # Determine which columns are numeric
+    numeric_cols = [
+        rows_str
+        and all(_is_numeric(row[i]) or row[i] in {"-", ""} for row in rows_str)
+        for i in range(len(headers_str))
+    ]
+
+    # Build formatted lines with right alignment for numeric columns
+    fmt = " | ".join(
+        f"{{:>{w}}}" if numeric_cols[i] else f"{{:<{w}}}" for i, w in enumerate(widths)
+    )
     sep = "-+-".join("-" * w for w in widths)
 
     lines = [fmt.format(*headers_str), sep]
