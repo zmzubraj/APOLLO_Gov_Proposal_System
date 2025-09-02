@@ -114,13 +114,19 @@ def _simple_post(post: dict) -> dict:
 
 def flatten_forum_topic(topic: dict) -> str:
     """Combine title, body and comments into a single text blob."""
-    parts: list[str] = [topic.get("title", "")]
+
+    def _extract_text(fragment: Any) -> str:
+        if not isinstance(fragment, str):
+            return ""
+        return _clean(BeautifulSoup(fragment, "html.parser").get_text(" ", strip=True))
+
+    parts: list[str] = [_extract_text(topic.get("title", ""))]
     details = topic.get("details", {})
     if isinstance(details, dict):
-        parts.append(details.get("content", ""))
+        parts.append(_extract_text(details.get("content", "")))
     for c in topic.get("comments_replies", []):
         if isinstance(c, dict):
-            parts.append(c.get("content", ""))
+            parts.append(_extract_text(c.get("content", "")))
     return _clean(" ".join(p for p in parts if p))
 
 
