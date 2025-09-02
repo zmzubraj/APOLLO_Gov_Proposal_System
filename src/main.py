@@ -59,16 +59,51 @@ OUT_DIR = PROJECT_ROOT / "data" / "output" / "generated_proposals"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 load_dotenv()
 MIN_PASS_CONFIDENCE = float(os.getenv("MIN_PASS_CONFIDENCE", "0.80"))
+SENTIMENT_TEMPERATURE = float(os.getenv("SENTIMENT_TEMPERATURE", "0.1"))
+SENTIMENT_MAX_TOKENS = int(os.getenv("SENTIMENT_MAX_TOKENS", "1028"))
+PROPOSAL_TEMPERATURE = float(os.getenv("PROPOSAL_TEMPERATURE", "0.3"))
+PROPOSAL_MAX_TOKENS = int(os.getenv("PROPOSAL_MAX_TOKENS", "4096"))
+NEWS_TEMPERATURE = float(os.getenv("NEWS_TEMPERATURE", "0.2"))
+NEWS_MAX_TOKENS = int(os.getenv("NEWS_MAX_TOKENS", "256"))
 def main() -> None:
     start = dt.datetime.now(dt.UTC)
     stats: dict[str, Any] = {}
     phase_times: dict[str, float] = {}
 
+    def _analyse(msgs: list[str]):
+        try:
+            return analyse_messages(
+                msgs,
+                temperature=SENTIMENT_TEMPERATURE,
+                max_tokens=SENTIMENT_MAX_TOKENS,
+            )
+        except TypeError:
+            return analyse_messages(msgs)
+
+    def _draft(ctx: dict[str, Any]):
+        try:
+            return proposal_generator.draft(
+                ctx,
+                temperature=PROPOSAL_TEMPERATURE,
+                max_tokens=PROPOSAL_MAX_TOKENS,
+            )
+        except TypeError:
+            return proposal_generator.draft(ctx)
+
     # ------------------------------ Ingestion ------------------------------
     t0 = time.perf_counter()
+    def _news_fn():
+        try:
+            return fetch_and_summarise_news(
+                temperature=NEWS_TEMPERATURE, max_tokens=NEWS_MAX_TOKENS
+            )
+        except TypeError:
+            # Backwards compatibility for mocks without new parameters
+            return fetch_and_summarise_news()
+
     data = DataCollector.collect(
         collect_recent_messages,
-        fetch_and_summarise_news,
+        _news_fn,
         get_recent_blocks_cached,
         stats=stats,
     )
@@ -88,7 +123,7 @@ def main() -> None:
         else:
             flat = msgs
         all_msgs.extend(flat)
-        res = analyse_messages(flat)
+        res = _analyse(flat)
         sentiments_by_source[source] = res
         raw_text = "\n".join(flat).strip()
         ctx_size = res.get(
@@ -113,7 +148,7 @@ def main() -> None:
         batch_id += 1
 
     # Flatten all message lists for overall sentiment analysis
-    sentiment = analyse_messages(all_msgs) if all_msgs else {}
+    sentiment = _analyse(all_msgs) if all_msgs else {}
     # sentiment = []
 
     news = data["news"]
@@ -122,7 +157,7 @@ def main() -> None:
     chain_kpis = summarise_blocks(blocks)
     # Perform sentiment analysis + embedding on-chain KPIs
     chain_text = json.dumps(chain_kpis)
-    chain_res = analyse_messages([chain_text])
+    chain_res = _analyse([chain_text])
     chain_ctx_size = (
         len(chain_text.encode("utf-8")) / 1024 if chain_text else 0.0
     )
@@ -169,7 +204,7 @@ def main() -> None:
             kb_query=query,
             summarise_snippets=True,
         )
-        draft_text = proposal_generator.draft(ctx)
+        draft_text = _draft(ctx)
         t_pred = time.perf_counter()
         forecast = forecast_outcomes(ctx)
         prediction_time = time.perf_counter() - t_pred
@@ -194,7 +229,7 @@ def main() -> None:
             kb_query=query,
             summarise_snippets=True,
         )
-        news_draft = proposal_generator.draft(ctx_news)
+        news_draft = _draft(ctx_news)
         t_pred = time.perf_counter()
         news_forecast = forecast_outcomes(ctx_news)
         prediction_time = time.perf_counter() - t_pred
@@ -243,7 +278,7 @@ def main() -> None:
         forecast = forecast_outcomes(context)
         prediction_time = time.perf_counter() - t_pred
         context["forecast"] = forecast
-        proposal_text = proposal_generator.draft(context)
+        proposal_text = _draft(context)
         proposal_drafts.append(
             {
                 "source": "consolidated",
