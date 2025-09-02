@@ -23,7 +23,7 @@ from bs4 import BeautifulSoup
 # -----------------------------------------------------------------------------
 # Utility
 # -----------------------------------------------------------------------------
-UTC_CUTOFF = dt.datetime.now(dt.UTC) - dt.timedelta(days=3)  # last 72 h
+UTC_CUTOFF = dt.datetime.now(dt.UTC) - dt.timedelta(days=15)  # last 15 days
 
 
 def _within_cutoff(ts: dt.datetime) -> bool:

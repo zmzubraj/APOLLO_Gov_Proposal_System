@@ -24,8 +24,8 @@ RSS_FEEDS = [
     "https://www.coindesk.com/arc/outboundfeeds/rss/?outputType=xml&search=polkadot",
     "https://polkadot.network/blog/rss.xml",
 ]
-LOOKBACK_DAYS = int(os.getenv("NEWS_LOOKBACK_DAYS", 3))
-MAX_ARTICLES = 10
+LOOKBACK_DAYS = int(os.getenv("NEWS_LOOKBACK_DAYS", 30))
+MAX_ARTICLES = 50
 
 SYSTEM_PROMPT = """
 Return ONLY minified JSON with two keys:
