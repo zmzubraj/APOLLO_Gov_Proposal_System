@@ -252,13 +252,81 @@ def fetch_reddit(limit: int = 20) -> List[str]:
 
 
 # -----------------------------------------------------------------------------
-# 6. Binance Square (web scrape)
+# 6. Binance Square (API fetch)
 # -----------------------------------------------------------------------------
-def fetch_binance_square() -> List[str]:
-    url = "https://www.binance.com/en/square/post"
-    soup = BeautifulSoup(requests.get(url, timeout=60).text, "html.parser")
-    cards = soup.select("div.css-1ej4hfo")[:15]  # class may change
-    return [_clean(c.get_text(" ", strip=True)) for c in cards]
+def fetch_binance_square(limit: int = 30) -> List[str]:
+    """Fetch recent Binance Square posts and comments.
+
+    The unofficial CMS endpoints exposed by Binance's web client provide
+    metadata for articles as well as a separate endpoint for their comments.
+    This function pulls a limited number of Polkadot-related posts and flattens
+    the article titles, briefs and comment bodies into a simple list of text
+    snippets.  Network failures return an empty list so the caller can continue
+    gracefully.
+    """
+
+    url = (
+        "https://www.binance.com/bapi/composite/v1/public/cms/article/list/query"
+        f"?type=1&pageNo=1&pageSize={limit}"
+    )
+    try:
+        resp = requests.get(url, timeout=10)
+        resp.raise_for_status()
+        data = resp.json()
+    except Exception:
+        return []
+
+    posts: List[str] = []
+    fetched = 0
+    catalogs = data.get("data", {}).get("catalogs", [])
+    for catalog in catalogs:
+        for item in catalog.get("articles", []):
+            if fetched >= limit:
+                break
+            content = "\n".join(
+                filter(None, [item.get("title", ""), item.get("brief", "")])
+            )
+            code = item.get("code")
+            if code and not content:
+                # fallback to detailed endpoint for full body
+                try:
+                    d_url = (
+                        "https://www.binance.com/bapi/composite/v1/public/cms/article/detail/query"
+                        f"?articleCode={code}"
+                    )
+                    d_resp = requests.get(d_url, timeout=10)
+                    d_resp.raise_for_status()
+                    d_data = d_resp.json().get("data", {})
+                    content = "\n".join(
+                        filter(None, [d_data.get("title", ""), d_data.get("body", "")])
+                    )
+                except Exception:
+                    content = ""
+            if content:
+                posts.append(_clean(content))
+
+            post_id = item.get("id") or item.get("articleId")
+            if post_id:
+                c_url = (
+                    "https://www.binance.com/bapi/composite/v1/public/cms/comment/query"
+                    f"?articleId={post_id}&pageSize=50"
+                )
+                try:
+                    c_resp = requests.get(c_url, timeout=10)
+                    c_resp.raise_for_status()
+                    c_data = c_resp.json()
+                except Exception:
+                    c_data = {}
+                for c in c_data.get("data", {}).get("comments", []):
+                    text = c.get("content", "")
+                    if text:
+                        posts.append(_clean(text))
+            fetched += 1
+            time.sleep(0.2)  # polite delay
+        if fetched >= limit:
+            break
+
+    return posts
 
 
 # sample Polkadot content cited :contentReference[oaicite:4]{index=4}
