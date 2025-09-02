@@ -12,6 +12,12 @@ from agents.sentiment_analyser import (
 __all__ = ["analyse_messages", "_extract_json", "simple_polarity"]
 
 
-def analyse_messages(messages: Iterable[str]) -> Dict[str, Any]:
-    """Delegate to :func:`agents.sentiment_analyser.analyse_messages`."""
-    return _analyse_messages(messages)
+def analyse_messages(
+    messages: Iterable[str],
+    temperature: float | None = None,
+    max_tokens: int | None = None,
+) -> Dict[str, Any]:
+    """Delegate to :func:`agents.sentiment_analyser.analyse_messages` with optional parameters."""
+    return _analyse_messages(
+        messages, temperature=temperature, max_tokens=max_tokens
+    )

@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import re
 import textwrap
+import os
 from typing import Iterable, Dict, Any
 
 from llm.ollama_api import generate_completion
@@ -43,13 +44,31 @@ SYSTEM_PROMPT = textwrap.dedent(
 ).strip()
 
 
-def analyse_messages(messages: Iterable[str]) -> Dict[str, Any]:
+def analyse_messages(
+    messages: Iterable[str],
+    temperature: float | None = None,
+    max_tokens: int | None = None,
+) -> Dict[str, Any]:
     """Run LLM sentiment analysis over ``messages``.
 
     Besides the LLM's raw ``sentiment_score`` this helper now also returns a
     human readable sentiment label, a confidence score (absolute sentiment
     magnitude) and the raw message size in kilobytes.
+
+    Parameters ``temperature`` and ``max_tokens`` default to the environment
+    variables ``SENTIMENT_TEMPERATURE`` and ``SENTIMENT_MAX_TOKENS`` respectively,
+    falling back to the previous hard-coded values (0.1 and 1028) when not set.
     """
+    temperature = (
+        temperature
+        if temperature is not None
+        else float(os.getenv("SENTIMENT_TEMPERATURE", "0.1"))
+    )
+    max_tokens = (
+        max_tokens
+        if max_tokens is not None
+        else int(os.getenv("SENTIMENT_MAX_TOKENS", "1028"))
+    )
     raw_text = "\n".join(messages).strip()[:8000]
     msg_size_kb = len(raw_text.encode("utf-8")) / 1024 if raw_text else 0.0
 
@@ -57,8 +76,8 @@ def analyse_messages(messages: Iterable[str]) -> Dict[str, Any]:
         response = generate_completion(
             prompt=raw_text,
             system=SYSTEM_PROMPT,
-            temperature=0.1,
-            max_tokens=1028,
+            temperature=temperature,
+            max_tokens=max_tokens,
             model="gemma3:4b",
         )
         result = _extract_json(response)

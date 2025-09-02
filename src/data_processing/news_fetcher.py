@@ -64,9 +64,31 @@ def _collect_recent_items(lookback_days: int = LOOKBACK_DAYS) -> List[Dict[str, 
     return uniq
 
 
-def summarise_items(items: List[Dict[str, Any]], model: str | None = None) -> Dict[str, Any]:
+def summarise_items(
+    items: List[Dict[str, Any]],
+    model: str | None = None,
+    temperature: float | None = None,
+    max_tokens: int | None = None,
+) -> Dict[str, Any]:
+    """Summarise ``items`` using the LLM.
+
+    ``temperature`` and ``max_tokens`` default to ``NEWS_TEMPERATURE`` and
+    ``NEWS_MAX_TOKENS`` environment variables, falling back to 0.2 and 256
+    respectively when unset.
+    """
     if not items:
         return {"digest": [], "risks": "No recent Polkadot news."}
+
+    temperature = (
+        temperature
+        if temperature is not None
+        else float(os.getenv("NEWS_TEMPERATURE", "0.2"))
+    )
+    max_tokens = (
+        max_tokens
+        if max_tokens is not None
+        else int(os.getenv("NEWS_MAX_TOKENS", "256"))
+    )
 
     bullet_source = "\n\n".join(f"- {it['title']}: {it['summary']}" for it in items)
 
@@ -75,8 +97,8 @@ def summarise_items(items: List[Dict[str, Any]], model: str | None = None) -> Di
             prompt=bullet_source[:8000],
             system=SYSTEM_PROMPT,
             model="gemma3:4b",
-            temperature=0.2,
-            max_tokens=256,
+            temperature=temperature,
+            max_tokens=max_tokens,
         )
     except OllamaError as err:
         # If the local Ollama server is unavailable (e.g. not installed or not
@@ -89,8 +111,18 @@ def summarise_items(items: List[Dict[str, Any]], model: str | None = None) -> Di
 
 
 # Public one-shot helper ------------------------------------------------------
-def fetch_and_summarise_news(model: str | None = None) -> Dict[str, Any]:
-    return summarise_items(_collect_recent_items(), model)
+def fetch_and_summarise_news(
+    model: str | None = None,
+    temperature: float | None = None,
+    max_tokens: int | None = None,
+) -> Dict[str, Any]:
+    """Fetch recent news items and summarise them."""
+    return summarise_items(
+        _collect_recent_items(),
+        model,
+        temperature=temperature,
+        max_tokens=max_tokens,
+    )
 
 
 # CLI test --------------------------------------------------------------------
