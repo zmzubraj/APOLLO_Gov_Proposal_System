@@ -290,7 +290,7 @@ discord_post("Example proposal summary")
 telegram_post("Example proposal summary")
 twitter_post("Example proposal summary")
 ```
-- Sends a text summary to Discord, Telegram, and Twitter using the configured credentials. For community sentiment, APOLLO also monitors Reddit's r/Polkadot via `src/data_processing/social_media_scraper.py`.
+- Sends a text summary to Discord, Telegram, and Twitter using the configured credentials. For community sentiment, APOLLO also monitors X/Twitter, the Polkadot Forum, CryptoRank, Binance Square, and Reddit's r/Polkadot via `src/data_processing/social_media_scraper.py`. Set `TWITTER_BEARER` to use the official X API; the other sources rely on public endpoints and require no additional credentials.
 
 ### 7. Review Prediction Accuracy
 
