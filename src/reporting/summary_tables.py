@@ -4,6 +4,7 @@ from __future__ import annotations
 import datetime as dt
 import os
 import time
+import textwrap
 from typing import Any, Iterable, Mapping
 
 import pandas as pd
@@ -15,6 +16,12 @@ from analysis.prediction_evaluator import compare_predictions
 from data_processing.data_loader import load_governance_data
 from data_processing.proposal_store import record_proposal
 from utils.helpers import extract_first_heading
+
+
+try:
+    MAX_TITLE_WIDTH = int(os.getenv("MAX_TITLE_WIDTH", "80"))
+except ValueError:
+    MAX_TITLE_WIDTH = 80
 
 
 def _format_table(headers: Iterable[str], rows: Iterable[Iterable[Any]]) -> str:
@@ -504,10 +511,16 @@ def print_draft_forecast_table(
         margin = info.get("margin_of_error", 0.0)
         source_key = str(info.get("source", "-"))
         source = source_map.get(source_key.lower(), source_key)
+        title = str(info.get("title", "-"))
+        if title != "-":
+            width = MAX_TITLE_WIDTH
+            if width <= len("…"):
+                width = len("…") + 1
+            title = textwrap.shorten(title, width=width, placeholder="…")
         rows.append(
             [
                 source,
-                info.get("title", "-"),
+                title,
                 info.get("predicted", "-"),
                 f"{confidence * 100:.0f}%",
                 f"{prediction_time:.1f}",
