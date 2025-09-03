@@ -48,6 +48,12 @@ class DataCollector:
         print("🔄 Collecting social sentiment …")
         messages = msg_fn()
 
+        print("🔄 Fetching news …")
+        news = news_fn()
+
+        print("🔄 Fetching on-chain data …")
+        blocks = block_fn()
+
         # ------------------------------------------------------------------
         # Compute simple source statistics
         # ------------------------------------------------------------------
@@ -117,14 +123,16 @@ class DataCollector:
                 "last_3d_count": _default_last3(count),
             }
 
-        print("🔄 Fetching news …")
-        news = news_fn()
-
-        news_count = len(news.get("digest", [])) if isinstance(news, dict) else 0
+        article_texts: list[str] = []
+        for art in news.get("articles", []) if isinstance(news, dict) else []:
+            parts = [art.get("title", ""), art.get("body", "")]
+            comments = art.get("comments", [])
+            if isinstance(comments, list):
+                parts.extend(str(c) for c in comments)
+            article_texts.append(" ".join(p for p in parts if p))
+        news_count = len(article_texts)
         avg_news_words = (
-            sum(len(t.split()) for t in news.get("digest", [])) / news_count
-            if news_count
-            else 0.0
+            sum(len(t.split()) for t in article_texts) / news_count if news_count else 0.0
         )
         total_tokens = int(news_count * avg_news_words)
         stats["data_sources"]["news"] = {
@@ -136,9 +144,6 @@ class DataCollector:
             "weight": weights.get("news", 1.0),
             "last_3d_count": _default_last3(news_count),
         }
-
-        print("🔄 Fetching on-chain data …")
-        blocks = block_fn()
 
         # On-chain source statistics
         block_count = len(blocks)

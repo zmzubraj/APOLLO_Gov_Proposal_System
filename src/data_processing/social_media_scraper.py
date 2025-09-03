@@ -61,6 +61,16 @@ def fetch_x(limit: int = 50) -> List[str]:
                         ts = ts.astimezone(dt.UTC)
                     if _within_cutoff(ts):
                         msgs.append(_clean(tweet.content))
+                        try:
+                            for reply in sntwitter.TwitterTweetScraper(tweet.id).get_items():
+                                if getattr(reply, "inReplyToTweetId", None) == tweet.id:
+                                    rts = reply.date
+                                    if isinstance(rts, dt.datetime) and _within_cutoff(
+                                        rts.astimezone(dt.UTC)
+                                    ):
+                                        msgs.append(_clean(reply.content))
+                        except Exception:
+                            pass
             return msgs
         except Exception:
             return []
@@ -87,6 +97,29 @@ def fetch_x(limit: int = 50) -> List[str]:
             ts = dt.datetime.fromisoformat(tw["created_at"].replace("Z", "+00:00"))
             if _within_cutoff(ts):
                 msgs.append(_clean(tw["text"]))
+                try:
+                    search_url = "https://api.twitter.com/2/tweets/search/recent"
+                    params = {
+                        "query": f"conversation_id:{tw['id']}",
+                        "tweet.fields": "created_at",
+                        "max_results": 100,
+                    }
+                    rep_resp = requests.get(
+                        search_url,
+                        headers={"Authorization": f"Bearer {token}"},
+                        params=params,
+                        timeout=10,
+                    )
+                    for rep in rep_resp.json().get("data", []):
+                        if rep.get("id") == tw["id"]:
+                            continue
+                        rts = dt.datetime.fromisoformat(
+                            rep["created_at"].replace("Z", "+00:00")
+                        )
+                        if _within_cutoff(rts):
+                            msgs.append(_clean(rep.get("text", "")))
+                except Exception:
+                    pass
         return msgs
     except Exception:
         # Return an empty list if the API response is malformed or the request

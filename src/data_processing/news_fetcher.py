@@ -49,7 +49,25 @@ def _parse_entry(entry) -> Dict[str, Any]:
         "published": dt.datetime(*entry.published_parsed[:6], tzinfo=dt.UTC)
         if getattr(entry, "published_parsed", None)
         else dt.datetime.now(dt.UTC),
+        "link": getattr(entry, "link", ""),
     }
+
+
+def _fetch_article_text_and_comments(url: str) -> tuple[str, list[str]]:
+    """Return the main article text and any comments that can be scraped."""
+
+    if not url:
+        return "", []
+    try:
+        resp = requests.get(url, timeout=10)
+        resp.raise_for_status()
+    except Exception:
+        return "", []
+
+    soup = BeautifulSoup(resp.text, "html.parser")
+    body = " ".join(p.get_text(" ", strip=True) for p in soup.find_all("p"))
+    comments = [c.get_text(" ", strip=True) for c in soup.select(".comment")]
+    return body, comments
 
 
 def _collect_recent_items(lookback_days: int = LOOKBACK_DAYS) -> List[Dict[str, Any]]:
@@ -84,6 +102,11 @@ def _collect_recent_items(lookback_days: int = LOOKBACK_DAYS) -> List[Dict[str, 
         logger.warning(
             "Only %d recent articles found; expected at least %d", len(uniq), MIN_ARTICLES
         )
+
+    for it in uniq:
+        body, comments = _fetch_article_text_and_comments(it.get("link", ""))
+        it["body"] = body
+        it["comments"] = comments
 
     return uniq
 
@@ -141,12 +164,15 @@ def fetch_and_summarise_news(
     max_tokens: int | None = None,
 ) -> Dict[str, Any]:
     """Fetch recent news items and summarise them."""
-    return summarise_items(
-        _collect_recent_items(),
+    items = _collect_recent_items()
+    summary = summarise_items(
+        items,
         model,
         temperature=temperature,
         max_tokens=max_tokens,
     )
+    summary["articles"] = items
+    return summary
 
 
 # CLI test --------------------------------------------------------------------
