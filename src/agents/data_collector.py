@@ -48,13 +48,24 @@ class DataCollector:
         invoked. Results are stored under the ``"evm_blocks"`` key.
         """
         print("🔄 Collecting social sentiment …")
-        messages = msg_fn()
+        messages = msg_fn() or {}
+        for src in list(messages.keys()):
+            if not messages[src]:
+                print(f"[warn] {src} returned no content; skipping")
+                del messages[src]
+        if not messages:
+            print("[warn] no social messages collected")
 
         print("🔄 Fetching news …")
-        news = news_fn()
+        news = news_fn() or {}
+        if not isinstance(news, dict) or not news.get("articles"):
+            print("[warn] news source returned no articles; skipping")
+            news = {}
 
         print("🔄 Fetching on-chain data …")
-        blocks = block_fn()
+        blocks = block_fn() or []
+        if not blocks:
+            print("[warn] no on-chain data fetched")
 
         # ------------------------------------------------------------------
         # Compute simple source statistics
@@ -145,24 +156,25 @@ class DataCollector:
             }
 
         article_texts: list[str] = []
-        for art in news.get("articles", []) if isinstance(news, dict) else []:
-            parts = [art.get("title", ""), art.get("body", "")]
-            comments = art.get("comments", [])
-            if isinstance(comments, list):
-                parts.extend(str(c) for c in comments)
-            article_texts.append(" ".join(p for p in parts if p))
-        news_count = len(article_texts)
-        total_news_words = sum(len(t.split()) for t in article_texts)
-        avg_news_words = total_news_words / news_count if news_count else 0.0
-        stats["data_sources"]["news"] = {
-            "count": news_count,
-            "avg_word_length": avg_news_words,
-            "total_tokens": total_news_words,
-            "update_frequency": update_freq.get("news", "unknown"),
-            "platform": platform_map.get("news"),
-            "weight": weights.get("news", 1.0),
-            "last_3d_count": _default_last3(news_count),
-        }
+        if news.get("articles"):
+            for art in news.get("articles", []):
+                parts = [art.get("title", ""), art.get("body", "")]
+                comments = art.get("comments", [])
+                if isinstance(comments, list):
+                    parts.extend(str(c) for c in comments)
+                article_texts.append(" ".join(p for p in parts if p))
+            news_count = len(article_texts)
+            total_news_words = sum(len(t.split()) for t in article_texts)
+            avg_news_words = total_news_words / news_count if news_count else 0.0
+            stats["data_sources"]["news"] = {
+                "count": news_count,
+                "avg_word_length": avg_news_words,
+                "total_tokens": total_news_words,
+                "update_frequency": update_freq.get("news", "unknown"),
+                "platform": platform_map.get("news"),
+                "weight": weights.get("news", 1.0),
+                "last_3d_count": _default_last3(news_count),
+            }
 
         # On-chain source statistics
         block_count = len(blocks)
@@ -266,7 +278,9 @@ class DataCollector:
                     return fetch_evm_blocks(rpc, start_block, end_block)
 
             print("🔄 Fetching EVM chain data …")
-            evm_blocks = evm_fn()
+            evm_blocks = evm_fn() or []
+            if not evm_blocks:
+                print("[warn] no EVM block data fetched")
             result["evm_blocks"] = evm_blocks
             # EVM statistics are collected but not added to final stats dictionary
 

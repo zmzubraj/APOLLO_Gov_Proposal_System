@@ -17,6 +17,7 @@ import re
 import time
 from typing import List, Dict, Any
 
+import feedparser
 import requests
 from bs4 import BeautifulSoup
 
@@ -43,89 +44,85 @@ def _clean(text: str) -> str:
 # -----------------------------------------------------------------------------
 def fetch_x(limit: int = 50) -> List[str]:
     token = os.getenv("TWITTER_BEARER")
-    if not token:
+
+    # ------------------------------------------------------------------
+    # Official API
+    # ------------------------------------------------------------------
+    if token:
         try:
-            import snscrape.modules.twitter as sntwitter
-
-            msgs: list[str] = []
-            for i, tweet in enumerate(
-                sntwitter.TwitterUserScraper("Polkadot").get_items()
-            ):
-                if i >= limit:
-                    break
-                ts = tweet.date
-                if isinstance(ts, dt.datetime):
-                    if ts.tzinfo is None:
-                        ts = ts.replace(tzinfo=dt.UTC)
-                    else:
-                        ts = ts.astimezone(dt.UTC)
-                    if _within_cutoff(ts):
-                        msgs.append(_clean(tweet.content))
-                        try:
-                            for reply in sntwitter.TwitterTweetScraper(tweet.id).get_items():
-                                if getattr(reply, "inReplyToTweetId", None) == tweet.id:
-                                    rts = reply.date
-                                    if isinstance(rts, dt.datetime) and _within_cutoff(
-                                        rts.astimezone(dt.UTC)
-                                    ):
-                                        msgs.append(_clean(reply.content))
-                        except Exception:
-                            pass
-            return msgs
-        except Exception:
-            return []
-
-    try:
-        url = "https://api.twitter.com/2/users/by/username/polkadotnetwork"
-        resp = requests.get(
-            url, headers={"Authorization": f"Bearer {token}"}, timeout=10
-        )
-        user_id = resp.json().get("data", {}).get("id")
-        if not user_id:
-            return []
-
-        timeline = f"https://api.twitter.com/2/users/{user_id}/tweets"
-        params = {"max_results": min(limit, 100), "tweet.fields": "created_at"}
-        tw_resp = requests.get(
-            timeline,
-            headers={"Authorization": f"Bearer {token}"},
-            params=params,
-            timeout=10,
-        )
-        msgs: list[str] = []
-        for tw in tw_resp.json().get("data", [])[:limit]:
-            ts = dt.datetime.fromisoformat(tw["created_at"].replace("Z", "+00:00"))
-            if _within_cutoff(ts):
-                msgs.append(_clean(tw["text"]))
-                try:
-                    search_url = "https://api.twitter.com/2/tweets/search/recent"
-                    params = {
-                        "query": f"conversation_id:{tw['id']}",
-                        "tweet.fields": "created_at",
-                        "max_results": 100,
-                    }
-                    rep_resp = requests.get(
-                        search_url,
-                        headers={"Authorization": f"Bearer {token}"},
-                        params=params,
-                        timeout=10,
+            url = "https://api.twitter.com/2/users/by/username/polkadotnetwork"
+            resp = requests.get(
+                url, headers={"Authorization": f"Bearer {token}"}, timeout=10
+            )
+            user_id = resp.json().get("data", {}).get("id")
+            if user_id:
+                timeline = f"https://api.twitter.com/2/users/{user_id}/tweets"
+                params = {
+                    "max_results": min(limit, 100),
+                    "tweet.fields": "created_at",
+                }
+                tw_resp = requests.get(
+                    timeline,
+                    headers={"Authorization": f"Bearer {token}"},
+                    params=params,
+                    timeout=10,
+                )
+                msgs: list[str] = []
+                for tw in tw_resp.json().get("data", [])[:limit]:
+                    ts = dt.datetime.fromisoformat(
+                        tw["created_at"].replace("Z", "+00:00")
                     )
-                    for rep in rep_resp.json().get("data", []):
-                        if rep.get("id") == tw["id"]:
-                            continue
-                        rts = dt.datetime.fromisoformat(
-                            rep["created_at"].replace("Z", "+00:00")
-                        )
-                        if _within_cutoff(rts):
-                            msgs.append(_clean(rep.get("text", "")))
-                except Exception:
-                    pass
-        return msgs
+                    if _within_cutoff(ts):
+                        msgs.append(_clean(tw["text"]))
+                if msgs:
+                    return msgs
+        except Exception:
+            print("[warn] X API failed; falling back to scraping")
+
+    # ------------------------------------------------------------------
+    # RSS fallback via Nitter
+    # ------------------------------------------------------------------
+    try:
+        feed = feedparser.parse("https://nitter.net/PolkadotNetwork/rss")
+        msgs: list[str] = []
+        for entry in feed.entries[:limit]:
+            ts_tuple = getattr(entry, "published_parsed", None)
+            if not ts_tuple:
+                continue
+            ts = dt.datetime(*ts_tuple[:6], tzinfo=dt.UTC)
+            if _within_cutoff(ts):
+                msgs.append(_clean(entry.title))
+        if msgs:
+            return msgs
     except Exception:
-        # Return an empty list if the API response is malformed or the request
-        # fails (e.g. invalid token or rate limit).  Upstream code will log the
-        # failure but continue execution.
-        return []
+        pass
+
+    # ------------------------------------------------------------------
+    # Last resort: snscrape (if installed)
+    # ------------------------------------------------------------------
+    try:
+        import snscrape.modules.twitter as sntwitter
+
+        msgs: list[str] = []
+        for i, tweet in enumerate(
+            sntwitter.TwitterUserScraper("Polkadot").get_items()
+        ):
+            if i >= limit:
+                break
+            ts = tweet.date
+            if isinstance(ts, dt.datetime):
+                if ts.tzinfo is None:
+                    ts = ts.replace(tzinfo=dt.UTC)
+                else:
+                    ts = ts.astimezone(dt.UTC)
+                if _within_cutoff(ts):
+                    msgs.append(_clean(tweet.content))
+        if msgs:
+            return msgs
+    except Exception:
+        pass
+
+    return []
 
 
 # (Official account reference) :contentReference[oaicite:0]{index=0}
@@ -184,38 +181,71 @@ def fetch_forum(limit: int = 50) -> List[dict]:
         resp.raise_for_status()
         topics = resp.json().get("topic_list", {}).get("topics", [])[:limit]
     except Exception:
-        return []
+        topics = []
 
     results: list[dict] = []
-    for topic in topics:
-        slug = topic.get("slug")
-        topic_id = topic.get("id")
-        if slug is None or topic_id is None:
-            continue
-        try:
-            detail_resp = requests.get(
-                f"{BASE_FORUM_URL}/t/{slug}/{topic_id}.json", timeout=10
+    if topics:
+        for topic in topics:
+            slug = topic.get("slug")
+            topic_id = topic.get("id")
+            if slug is None or topic_id is None:
+                continue
+            try:
+                detail_resp = requests.get(
+                    f"{BASE_FORUM_URL}/t/{slug}/{topic_id}.json", timeout=10
+                )
+                detail_resp.raise_for_status()
+                data = detail_resp.json()
+            except Exception:
+                continue
+
+            posts = data.get("post_stream", {}).get("posts", [])
+            if not posts:
+                continue
+            details = _simple_post(posts[0])
+            comments = [_simple_post(p) for p in posts[1:]]
+            results.append(
+                {
+                    "title": data.get("title"),
+                    "details": details,
+                    "comments_replies": comments,
+                }
             )
-            detail_resp.raise_for_status()
-            data = detail_resp.json()
-        except Exception:
-            continue
+            time.sleep(0.2)  # polite delay
+        if results:
+            return results
 
-        posts = data.get("post_stream", {}).get("posts", [])
-        if not posts:
-            continue
-        details = _simple_post(posts[0])
-        comments = [_simple_post(p) for p in posts[1:]]
-        results.append(
-            {
-                "title": data.get("title"),
-                "details": details,
-                "comments_replies": comments,
-            }
-        )
-        time.sleep(0.2)  # polite delay
-
-    return results
+    # ------------------------------------------------------------------
+    # RSS fallback
+    # ------------------------------------------------------------------
+    try:
+        feed = feedparser.parse(f"{BASE_FORUM_URL}/latest.rss")
+        for entry in feed.entries[:limit]:
+            ts_tuple = getattr(entry, "published_parsed", None)
+            if not ts_tuple:
+                continue
+            ts = dt.datetime(*ts_tuple[:6], tzinfo=dt.UTC)
+            if not _within_cutoff(ts):
+                continue
+            content = _clean(
+                BeautifulSoup(entry.get("summary", ""), "html.parser").get_text(
+                    " ", strip=True
+                )
+            )
+            results.append(
+                {
+                    "title": entry.get("title"),
+                    "details": {
+                        "author": entry.get("author"),
+                        "created_at": ts.isoformat(),
+                        "content": content,
+                    },
+                    "comments_replies": [],
+                }
+            )
+        return results
+    except Exception:
+        return []
 
 
 # discourse JSON endpoint confirmed :contentReference[oaicite:1]{index=1}
@@ -278,6 +308,7 @@ def fetch_reddit(limit: int = 50) -> List[str]:
     """
 
     headers = {"User-Agent": "Mozilla/5.0"}
+    messages: list[str] = []
     try:
         resp = requests.get(
             "https://www.reddit.com/r/Polkadot/new.json",
@@ -287,51 +318,77 @@ def fetch_reddit(limit: int = 50) -> List[str]:
         )
         resp.raise_for_status()
         posts_json = resp.json()
+        for child in posts_json.get("data", {}).get("children", []):
+            post = child.get("data", {})
+            created = dt.datetime.fromtimestamp(
+                post.get("created_utc", 0), dt.UTC
+            )
+            if not _within_cutoff(created):
+                continue
+
+            title = _clean(html.unescape(post.get("title", "")))
+            if title:
+                messages.append(title)
+            body = _clean(html.unescape(post.get("selftext", "")))
+            if body:
+                messages.append(body)
+
+            post_id = post.get("id")
+            if not post_id:
+                continue
+
+            try:
+                cm_resp = requests.get(
+                    f"https://www.reddit.com/r/Polkadot/comments/{post_id}.json",
+                    headers=headers,
+                    timeout=10,
+                )
+                cm_resp.raise_for_status()
+                comments_json = cm_resp.json()
+            except Exception:
+                comments_json = []
+
+            # The second element holds the comment tree
+            try:
+                for c in comments_json[1]["data"]["children"]:
+                    body = c.get("data", {}).get("body")
+                    if body:
+                        messages.append(_clean(html.unescape(body)))
+            except Exception:
+                pass
+
+            # Polite delay to avoid hitting rate limits
+            time.sleep(2)
+
+        if messages:
+            return messages
+    except Exception:
+        print("[warn] Reddit JSON fetch failed; attempting RSS fallback")
+
+    # ------------------------------------------------------------------
+    # RSS fallback
+    # ------------------------------------------------------------------
+    try:
+        feed = feedparser.parse("https://www.reddit.com/r/Polkadot/.rss")
+        for entry in feed.entries[:limit]:
+            ts_tuple = getattr(entry, "published_parsed", None)
+            if not ts_tuple:
+                continue
+            ts = dt.datetime(*ts_tuple[:6], tzinfo=dt.UTC)
+            if not _within_cutoff(ts):
+                continue
+            title = _clean(html.unescape(entry.get("title", "")))
+            summary = _clean(
+                BeautifulSoup(entry.get("summary", ""), "html.parser").get_text(
+                    " ", strip=True
+                )
+            )
+            content = " ".join(filter(None, [title, summary]))
+            if content:
+                messages.append(content)
+        return messages
     except Exception:
         return []
-
-    messages: list[str] = []
-    for child in posts_json.get("data", {}).get("children", []):
-        post = child.get("data", {})
-        created = dt.datetime.fromtimestamp(post.get("created_utc", 0), dt.UTC)
-        if not _within_cutoff(created):
-            continue
-
-        title = _clean(html.unescape(post.get("title", "")))
-        if title:
-            messages.append(title)
-        body = _clean(html.unescape(post.get("selftext", "")))
-        if body:
-            messages.append(body)
-
-        post_id = post.get("id")
-        if not post_id:
-            continue
-
-        try:
-            cm_resp = requests.get(
-                f"https://www.reddit.com/r/Polkadot/comments/{post_id}.json",
-                headers=headers,
-                timeout=10,
-            )
-            cm_resp.raise_for_status()
-            comments_json = cm_resp.json()
-        except Exception:
-            comments_json = []
-
-        # The second element holds the comment tree
-        try:
-            for c in comments_json[1]["data"]["children"]:
-                body = c.get("data", {}).get("body")
-                if body:
-                    messages.append(_clean(html.unescape(body)))
-        except Exception:
-            pass
-
-        # Polite delay to avoid hitting rate limits
-        time.sleep(2)
-
-    return messages
 
 
 # subreddit reference :contentReference[oaicite:3]{index=3}
@@ -453,7 +510,10 @@ def collect_recent_messages() -> Dict[str, List[Any]]:
             if key not in seen:
                 deduped.append(t)
                 seen.add(key)
-        grouped[name] = deduped
+        if deduped:
+            grouped[name] = deduped
+        else:
+            print(f"[warn] no data collected for {name}; skipping")
 
     return grouped
 
