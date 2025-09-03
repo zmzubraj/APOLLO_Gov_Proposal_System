@@ -192,25 +192,6 @@ def main() -> None:
     )
     batch_id += 1
 
-    evm_text = json.dumps(evm_kpis)
-    evm_res = _analyse([evm_text])
-    evm_ctx_size = len(evm_text.encode("utf-8")) / 1024 if evm_text else 0.0
-    try:
-        ollama_api.embed_text(evm_text)
-        evm_embedded = True
-    except Exception:
-        evm_embedded = False
-    stats["sentiment_batches"].append(
-        {
-            "batch_id": batch_id,
-            "source": "evm_chain",
-            "ctx_size_kb": evm_ctx_size,
-            "sentiment": evm_res.get("sentiment", ""),
-            "confidence": evm_res.get("confidence", 0.0),
-            "embedded": evm_embedded,
-        }
-    )
-    batch_id += 1
     # chain_kpis = []
 
     print("🔄 Analysing governance history …")

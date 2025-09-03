@@ -50,4 +50,6 @@ def test_onchain_sentiment_included(monkeypatch, tmp_path):
 
     main.main()
 
-    assert any(b.get("source") == "onchain" for b in captured.get("batches", []))
+    batches = captured.get("batches", [])
+    assert any(b.get("source") == "onchain" for b in batches)
+    assert all(b.get("source") != "evm_chain" for b in batches)
