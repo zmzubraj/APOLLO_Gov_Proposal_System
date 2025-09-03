@@ -34,11 +34,18 @@ def _dummy_components():
         "monthly_counts": {},
         "top_keywords": [],
     }
-    return sentiment, news, chain, gov
+    evm = {
+        "daily_tx_count": {},
+        "daily_total_value_ETH": {},
+        "avg_tx_per_block": 0,
+        "avg_value_per_tx_ETH": 0,
+        "busiest_hour_utc": "",
+    }
+    return sentiment, news, chain, gov, evm
 
 
 def test_build_context_structure_dedup_and_summary(monkeypatch):
-    sentiment, news, chain, gov = _dummy_components()
+    sentiment, news, chain, gov, evm = _dummy_components()
     snippets = ["previous proposal", "previous proposal"]
     monkeypatch.setattr(ollama_api, "generate_completion", lambda _p, **_: "summary")
     monkeypatch.setattr(proposal_store, "record_context", lambda _c: None)
@@ -47,6 +54,7 @@ def test_build_context_structure_dedup_and_summary(monkeypatch):
         news,
         chain,
         gov,
+        evm,
         snippets,
         summarise_snippets=True,
     )
@@ -55,6 +63,7 @@ def test_build_context_structure_dedup_and_summary(monkeypatch):
         "sentiment",
         "news",
         "chain_kpis",
+        "evm_kpis",
         "governance_kpis",
         "trending_topics",
         "kb_snippets",
@@ -68,6 +77,7 @@ def test_build_context_structure_dedup_and_summary(monkeypatch):
     assert v.validate_news(ctx["news"])
     assert v.validate_chain_kpis(ctx["chain_kpis"])
     assert v.validate_governance_kpis(ctx["governance_kpis"])
+    assert v.validate_evm_kpis(ctx["evm_kpis"])
 
 
 def test_search_proposals_by_keyword(monkeypatch):
@@ -82,7 +92,7 @@ def test_search_proposals_by_keyword(monkeypatch):
 
 
 def test_record_context_persist(tmp_path, monkeypatch):
-    sentiment, news, chain, gov = _dummy_components()
+    sentiment, news, chain, gov, evm = _dummy_components()
     snippets = ["snippet"]
     monkeypatch.setattr(ollama_api, "generate_completion", lambda _p, **_: "summary")
     monkeypatch.setattr(proposal_store, "XLSX_PATH", tmp_path / "gov.xlsx")
@@ -91,6 +101,7 @@ def test_record_context_persist(tmp_path, monkeypatch):
         news,
         chain,
         gov,
+        evm,
         snippets,
         summarise_snippets=True,
     )
@@ -106,19 +117,23 @@ def test_record_context_persist(tmp_path, monkeypatch):
     assert stored["news"] == news
     assert stored["chain_kpis"] == chain
     assert stored["governance_kpis"] == gov
+    assert stored["evm_kpis"] == evm
     assert stored["trending_topics"] == []
     assert stored["kb_snippets"] == snippets
     assert stored["kb_summary"] == "summary"
 
 
 def test_component_weighting(monkeypatch):
-    sentiment, news, chain, gov = _dummy_components()
+    sentiment, news, chain, gov, evm = _dummy_components()
     sentiment["sentiment_score"] = 1
     chain["avg_tx_per_block"] = 10
     monkeypatch.setenv("DATA_WEIGHT_CHAT", "2")
     monkeypatch.setenv("DATA_WEIGHT_FORUM", "2")
     monkeypatch.setenv("DATA_WEIGHT_CHAIN", "0.5")
+    evm["avg_tx_per_block"] = 10
+    monkeypatch.setenv("DATA_WEIGHT_EVM", "0.5")
     monkeypatch.setattr(proposal_store, "record_context", lambda _c: None)
-    ctx = build_context(sentiment, news, chain, gov)
+    ctx = build_context(sentiment, news, chain, gov, evm)
     assert ctx["sentiment"]["sentiment_score"] == 2
     assert ctx["chain_kpis"]["avg_tx_per_block"] == 5
+    assert ctx["evm_kpis"]["avg_tx_per_block"] == 5

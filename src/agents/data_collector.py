@@ -65,6 +65,7 @@ class DataCollector:
             "news": "Hourly",
             "governance": "Every Run",
             "chain": "~6 sec",
+            "evm_chain": "~12 sec",
         }
         platform_map = {
             "chat": "X (@PolkadotNetwork), Reddit (r/Polkadot)",
@@ -89,6 +90,7 @@ class DataCollector:
             "forum": _env_weight("DATA_WEIGHT_FORUM"),
             "news": _env_weight("DATA_WEIGHT_NEWS"),
             "chain": _env_weight("DATA_WEIGHT_CHAIN"),
+            "evm_chain": _env_weight("DATA_WEIGHT_EVM"),
             "governance": _env_weight("DATA_WEIGHT_GOVERNANCE"),
         }
 
@@ -248,6 +250,7 @@ class DataCollector:
             "messages": messages,
             "news": news,
             "blocks": blocks,
+            "evm_blocks": [],
             "stats": stats,
             "trending_topics": trending_topics,
         }
@@ -265,6 +268,36 @@ class DataCollector:
                     return fetch_evm_blocks(rpc, start_block, end_block)
 
             print("🔄 Fetching EVM chain data …")
-            result["evm_blocks"] = evm_fn()
+            evm_blocks = evm_fn()
+            result["evm_blocks"] = evm_blocks
+
+            evm_block_count = len(evm_blocks)
+            tx_counts = [len(b.get("transactions", [])) for b in evm_blocks]
+            total_txs = sum(tx_counts)
+            avg_txs = total_txs / evm_block_count if evm_block_count else 0.0
+            evm_rpc = os.getenv("EVM_RPC_URL", "http://localhost:8545")
+            evm_doc = os.getenv(
+                "EVM_CHAIN_DOC_URL", "https://ethereum.org/en/developers/docs/"
+            )
+            last3 = {
+                (dt.date.today() - dt.timedelta(days=i)).isoformat(): 0 for i in range(3)
+            }
+            for blk in evm_blocks:
+                ts = blk.get("timestamp")
+                if ts:
+                    day = dt.datetime.fromtimestamp(ts, dt.UTC).date().isoformat()
+                    if day in last3:
+                        last3[day] += 1
+            stats["data_sources"]["evm_chain"] = {
+                "count": evm_block_count,
+                "avg_word_length": avg_txs,
+                "total_tokens": total_txs,
+                "update_frequency": update_freq.get("evm_chain", "unknown"),
+                "platform": evm_rpc,
+                "weight": weights.get("evm_chain", 1.0),
+                "rpc_url": evm_rpc,
+                "doc_url": evm_doc,
+                "last_3d_count": last3,
+            }
 
         return result

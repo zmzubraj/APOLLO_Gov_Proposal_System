@@ -42,6 +42,32 @@ def test_summarise_blocks_computes_metrics():
     assert result["busiest_hour_utc"] == "2024-01-01 01:00"
 
 
+def test_summarise_evm_blocks():
+    base = dt.datetime(2024, 1, 1, tzinfo=dt.UTC)
+    blocks = [
+        {
+            "timestamp": int(base.timestamp()),
+            "transactions": [
+                {"value": 2 * 10**18},
+                {"value": 1 * 10**18},
+            ],
+        },
+        {
+            "timestamp": int((base + dt.timedelta(hours=1)).timestamp()),
+            "transactions": [{"value": 0}],
+        },
+        {
+            "timestamp": int((base + dt.timedelta(days=1)).timestamp()),
+            "transactions": [{"value": 5 * 10**17}],
+        },
+    ]
+    res = blockchain_metrics.summarise_evm_blocks(blocks)
+    assert res["daily_tx_count"] == {"2024-01-01": 3, "2024-01-02": 1}
+    assert res["daily_total_value_ETH"] == {"2024-01-01": 3.0, "2024-01-02": 0.5}
+    assert res["avg_tx_per_block"] == pytest.approx(1.33, rel=1e-2)
+    assert res["avg_value_per_tx_ETH"] == pytest.approx(0.875, rel=1e-6)
+
+
 def test_summarise_news_handles_empty():
     assert news_analysis.summarise_news([]) == {
         "digest": [],

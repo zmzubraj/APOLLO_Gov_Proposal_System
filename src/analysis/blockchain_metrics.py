@@ -73,6 +73,52 @@ def summarise_blocks(blocks: List[Dict[str, Any]]) -> Dict[str, Any]:
     }
 
 
+def summarise_evm_blocks(blocks: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Summarise EVM blocks into simple KPIs."""
+    if not blocks:
+        return {
+            "daily_tx_count": {},
+            "daily_total_value_ETH": {},
+            "avg_tx_per_block": 0,
+            "avg_value_per_tx_ETH": 0,
+            "busiest_hour_utc": "",
+        }
+
+    daily_txs: dict[str, int] = defaultdict(int)
+    daily_value: dict[str, float] = defaultdict(float)
+    hourly_counter: Counter[str] = Counter()
+
+    total_tx, total_value, n_blocks = 0, 0.0, 0
+
+    for blk in blocks:
+        ts = dt.datetime.fromtimestamp(blk["timestamp"], dt.UTC)
+        day = ts.strftime("%Y-%m-%d")
+        hour_key = ts.strftime("%Y-%m-%d %H:00")
+
+        txs = blk.get("transactions", [])
+        value_eth = sum(int(tx.get("value", 0)) for tx in txs) / 10**18
+
+        daily_txs[day] += len(txs)
+        daily_value[day] += value_eth
+        hourly_counter[hour_key] += len(txs)
+
+        total_tx += len(txs)
+        total_value += value_eth
+        n_blocks += 1
+
+    avg_tx_per_block = round(total_tx / n_blocks, 2)
+    avg_value_per_tx = round(total_value / max(total_tx, 1), 6)
+    busiest_hour = hourly_counter.most_common(1)[0][0] if hourly_counter else ""
+
+    return {
+        "daily_tx_count": dict(daily_txs),
+        "daily_total_value_ETH": {d: round(v, 3) for d, v in daily_value.items()},
+        "avg_tx_per_block": avg_tx_per_block,
+        "avg_value_per_tx_ETH": avg_value_per_tx,
+        "busiest_hour_utc": busiest_hour,
+    }
+
+
 # ---------------------------------------------------------------------------
 # Convenience: load JSON dumped by blockchain_data_fetcher test-run
 # ---------------------------------------------------------------------------

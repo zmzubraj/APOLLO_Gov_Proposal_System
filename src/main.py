@@ -33,7 +33,7 @@ from data_processing.news_fetcher import fetch_and_summarise_news
 from data_processing.referenda_updater import update_referenda
 # from data_processing.blockchain_data_fetcher import fetch_recent_blocks
 from data_processing.blockchain_cache import get_recent_blocks_cached
-from analysis.blockchain_metrics import summarise_blocks
+from analysis.blockchain_metrics import summarise_blocks, summarise_evm_blocks
 from analysis.governance_analysis import get_governance_insights
 from agents.outcome_forecaster import forecast_outcomes
 from analysis.prediction_evaluator import compare_predictions
@@ -167,6 +167,8 @@ def main() -> None:
 
     blocks = data["blocks"]
     chain_kpis = summarise_blocks(blocks)
+    evm_blocks = data.get("evm_blocks", [])
+    evm_kpis = summarise_evm_blocks(evm_blocks)
     # Perform sentiment analysis + embedding on-chain KPIs
     chain_text = json.dumps(chain_kpis)
     chain_res = _analyse([chain_text])
@@ -186,6 +188,26 @@ def main() -> None:
             "sentiment": chain_res.get("sentiment", ""),
             "confidence": chain_res.get("confidence", 0.0),
             "embedded": chain_embedded,
+        }
+    )
+    batch_id += 1
+
+    evm_text = json.dumps(evm_kpis)
+    evm_res = _analyse([evm_text])
+    evm_ctx_size = len(evm_text.encode("utf-8")) / 1024 if evm_text else 0.0
+    try:
+        ollama_api.embed_text(evm_text)
+        evm_embedded = True
+    except Exception:
+        evm_embedded = False
+    stats["sentiment_batches"].append(
+        {
+            "batch_id": batch_id,
+            "source": "evm_chain",
+            "ctx_size_kb": evm_ctx_size,
+            "sentiment": evm_res.get("sentiment", ""),
+            "confidence": evm_res.get("confidence", 0.0),
+            "embedded": evm_embedded,
         }
     )
     batch_id += 1
@@ -213,6 +235,7 @@ def main() -> None:
             {},
             chain_kpis,
             gov_kpis,
+            evm_kpis,
             kb_query=query,
             trending_topics=trending_topics,
             summarise_snippets=True,
@@ -239,6 +262,7 @@ def main() -> None:
             news,
             chain_kpis,
             gov_kpis,
+            evm_kpis,
             kb_query=query,
             trending_topics=trending_topics,
             summarise_snippets=True,
@@ -260,7 +284,7 @@ def main() -> None:
         record_proposal(news_draft, None, stage="draft")
 
     chain_draft_info = draft_onchain_proposal(
-        chain_res, chain_kpis, gov_kpis, query, trending_topics
+        chain_res, chain_kpis, gov_kpis, evm_kpis, query, trending_topics
     )
     if chain_draft_info:
         proposal_drafts.append(chain_draft_info)
@@ -285,6 +309,7 @@ def main() -> None:
             news,
             chain_kpis,
             gov_kpis,
+            evm_kpis,
             kb_query=query,
             trending_topics=trending_topics,
             summarise_snippets=True,

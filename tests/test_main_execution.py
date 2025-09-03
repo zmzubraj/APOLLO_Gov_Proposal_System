@@ -28,7 +28,7 @@ def test_main_records_final_status(monkeypatch, tmp_path):
     monkeypatch.setattr(main, "get_governance_insights", lambda as_narrative=True: {})
     captured_kb = {}
 
-    def fake_build_context(sentiment, news, chain, gov, kb_snippets=None, kb_query=None, **_):
+    def fake_build_context(sentiment, news, chain, gov, evm=None, kb_snippets=None, kb_query=None, **_):
         captured_kb["query"] = kb_query
         return {}
 

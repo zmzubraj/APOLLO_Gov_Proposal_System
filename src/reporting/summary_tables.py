@@ -108,6 +108,7 @@ def print_data_sources_table(stats: Mapping[str, Mapping[str, Any]]) -> None:
         "news": "News Blogs",
         "governance": "Governance Docs",
         "chain": "Voting Histories",
+        "evm_chain": "EVM Blocks",
     }
     freq_map = {
         "daily": "Daily",
@@ -563,6 +564,7 @@ def draft_onchain_proposal(
     chain_res: Mapping[str, Any],
     chain_kpis: Mapping[str, Any],
     gov_kpis: Mapping[str, Any],
+    evm_kpis: Mapping[str, Any] | None,
     query: str,
     trending_topics: list[str] | None = None,
 ) -> dict[str, Any] | None:
@@ -576,6 +578,7 @@ def draft_onchain_proposal(
         {},
         chain_kpis,
         gov_kpis,
+        evm_kpis,
         kb_query=query,
         trending_topics=trending_topics,
         summarise_snippets=True,
