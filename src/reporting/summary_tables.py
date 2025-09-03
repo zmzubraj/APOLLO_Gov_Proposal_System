@@ -417,7 +417,6 @@ def print_sentiment_embedding_table(stats: Iterable[Mapping[str, Any]]) -> None:
         "CTX Size (KB)",
         "Sentiment",
         "Confidence",
-        "Flag",
         "Embedded in KB",
         "Avg. Src Confidence",
     ]
@@ -426,11 +425,11 @@ def print_sentiment_embedding_table(stats: Iterable[Mapping[str, Any]]) -> None:
     records: list[dict[str, Any]] = []
     src_conf_sum: dict[str, float] = {}
     src_conf_count: dict[str, int] = {}
-    total_ctx = 0.0
-    total_conf = 0.0
 
     for info in stats:
         source = str(info.get("source", "-"))
+        if source == "evm_chain":
+            continue
         confidence = float(info.get("confidence", 0.0) or 0.0)
         ctx_size = float(info.get("ctx_size_kb", 0.0) or 0.0)
 
@@ -447,8 +446,6 @@ def print_sentiment_embedding_table(stats: Iterable[Mapping[str, Any]]) -> None:
 
         src_conf_sum[source] = src_conf_sum.get(source, 0.0) + confidence
         src_conf_count[source] = src_conf_count.get(source, 0) + 1
-        total_ctx += ctx_size
-        total_conf += confidence
 
     if not records:
         print("No sentiment batches available")
@@ -461,35 +458,18 @@ def print_sentiment_embedding_table(stats: Iterable[Mapping[str, Any]]) -> None:
     rows = []
     for rec in records:
         avg_src_conf = avg_conf_per_source.get(rec["source"], 0.0)
-        flag = "⚠" if rec["confidence"] < 0.5 else ""
+        source_display = "On-chain" if rec["source"] == "onchain" else rec["source"]
         rows.append(
             [
-                rec["source"],
+                source_display,
                 rec["batch"],
                 f"{rec['ctx_size']:.1f}",
                 rec["sentiment"],
                 f"{rec['confidence']:.2f}",
-                flag,
                 rec["embedded"],
                 f"{avg_src_conf:.2f}",
             ]
         )
-
-    # Append a final row showing overall averages
-    overall_ctx_avg = total_ctx / len(records)
-    overall_conf_avg = total_conf / len(records)
-    rows.append(
-        [
-            "Overall",
-            "-",
-            f"{overall_ctx_avg:.1f}",
-            "-",
-            f"{overall_conf_avg:.2f}",
-            "",
-            "-",
-            f"{overall_conf_avg:.2f}",
-        ]
-    )
 
     print("\nTable: Sentiment Analysis and Knowledge Base Embedding")
     table = _format_table(headers, rows)
