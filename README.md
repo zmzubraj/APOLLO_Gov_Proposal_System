@@ -335,17 +335,34 @@ After `main.py` completes, APOLLO prints a prediction‑accuracy table comparing
 
 > **Prerequisite:** `data/input/PKD Governance Data.xlsx` must exist and include executed referenda (e.g., populate it via `python src/data_processing/referenda_updater.py`). Without this data the fallback accuracy report cannot be generated.
 
-### 9. Draft Ranking & Workbook Storage
+### 9. Draft Generation & Ranking
 
-For each data source (chat, forum, news, etc.) APOLLO drafts a proposal and
-forecasts its likelihood of approval. These drafts are ranked by the
-`approval_prob` produced by the forecasting step, and the highest‑scoring draft
-is selected as the main proposal. Every generated draft is still persisted in
-the governance workbook at `data/input/PKD Governance Data.xlsx` under the
-`Proposals` sheet with a `stage` of `draft`. The final chosen text is recorded
-again with `stage` set to `final`, and any on‑chain submission adds a
-`submission_id` with `stage` set to `submitted` so that all iterations remain
-auditable.
+APOLLO produces a proposal draft for **each data source** (chat, forum, news,
+on‑chain metrics, and historical governance data). The influence of each source
+is controlled by the `DATA_WEIGHT_*` environment variables:
+
+```bash
+DATA_WEIGHT_CHAT=0.25         # real-time chat sentiment
+DATA_WEIGHT_FORUM=0.25        # long-form forum posts
+DATA_WEIGHT_NEWS=0.10         # news articles
+DATA_WEIGHT_CHAIN=0.20        # on-chain metrics
+DATA_WEIGHT_GOVERNANCE=0.20   # past governance data
+```
+
+These weights typically sum to `1.0` and are applied when ranking drafts.
+
+1. **Collect & Draft:** For each platform, the pipeline gathers data, builds a
+   context, and generates a proposal draft with the LLM.
+2. **Forecast:** An approval probability is predicted for every draft.
+3. **Score & Rank:** A draft's `score` is computed as
+   `approval_prob * DATA_WEIGHT_*`, and the highest‑scoring draft above
+   `MIN_PASS_CONFIDENCE` becomes the main proposal.
+
+Every generated draft is stored in the governance workbook at
+`data/input/PKD Governance Data.xlsx` on the `Proposals` sheet with `stage`
+`draft`. The selected draft is written again with `stage` `final`, and any
+on‑chain submission adds a `submission_id` with `stage` `submitted` to maintain
+an audit trail of all iterations.
 
 ---
 
