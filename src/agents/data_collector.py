@@ -157,6 +157,8 @@ class DataCollector:
 
         article_texts: list[str] = []
         if news.get("articles"):
+            engagement = _engagement_factor(news.get("articles", []))
+            weights["news"] = weights.get("news", 1.0) * engagement
             for art in news.get("articles", []):
                 parts = [art.get("title", ""), art.get("body", "")]
                 comments = art.get("comments", [])
@@ -242,7 +244,10 @@ class DataCollector:
         }
 
         def _extract_trends(
-            msgs: Dict[str, list[Any]], weight_map: Dict[str, float]
+            msgs: Dict[str, list[Any]],
+            articles: list[str],
+            weight_map: Dict[str, float],
+            stats_dict: Dict[str, Any],
         ) -> list[str]:
             counter: Counter[str] = Counter()
             for src, items in msgs.items():
@@ -252,9 +257,17 @@ class DataCollector:
                     tokens = re.findall(r"\b\w+\b", text)
                     for a, b in zip(tokens, tokens[1:]):
                         counter[f"{a} {b}"] += w
-            return [phrase for phrase, _ in counter.most_common(5)]
+            if articles:
+                w = weight_map.get("news", 1.0)
+                for art in articles:
+                    tokens = re.findall(r"\b\w+\b", art.lower())
+                    for a, b in zip(tokens, tokens[1:]):
+                        counter[f"{a} {b}"] += w
+            top = counter.most_common(5)
+            stats_dict["trending_topics"] = {phrase: weight for phrase, weight in top}
+            return [phrase for phrase, _ in top]
 
-        trending_topics = _extract_trends(messages, weights)
+        trending_topics = _extract_trends(messages, article_texts, weights, stats)
 
         result = {
             "messages": messages,
