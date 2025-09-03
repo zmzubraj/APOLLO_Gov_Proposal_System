@@ -210,6 +210,12 @@ Create a `.env` file in the project root:
 # HISTORICAL_SAMPLE_SEED=1      # optional seed for sampling historical referenda
 # Minimum confidence to label a draft as passing
 MIN_PASS_CONFIDENCE=0.80
+
+# Optional EVM block collection
+ENABLE_EVM_FETCH=false         # set true to pull EVM blocks
+EVM_RPC_URL=https://mainnet.infura.io/v3/your_project_id
+EVM_START_BLOCK=0
+EVM_END_BLOCK=latest
 ```
 
 `SUBSTRATE_NODE_URL` should point to a Substrate RPC endpoint. Common choices
@@ -227,16 +233,22 @@ to allow nondeterministic selection. `MIN_PASS_CONFIDENCE` defines the approval
 probability threshold used to label draft proposals as "Pass" in the forecast
 summary table.
 
+When `ENABLE_EVM_FETCH` is set to `true`, APOLLO also pulls blocks from any
+EVM‑compatible chain specified by `EVM_RPC_URL`. `EVM_START_BLOCK` and
+`EVM_END_BLOCK` define the range of blocks to fetch (use `latest` to stream to
+the chain tip). Retrieved block data is added to pipeline outputs under the
+`"evm_blocks"` key alongside other collected datasets.
+
 #### Data Weighting System
 
 APOLLO merges sentiment, news, on‑chain metrics, and historical governance
-signals into a single context for the LLM. Each `DATA_WEIGHT_*` environment
-variable is a numeric multiplier that adjusts how strongly a given source
-affects that context. Values greater than `1` amplify a source, while values
-between `0` and `1` down‑weight it. `NEWS_LOOKBACK_DAYS` sets the recency window
-for RSS items (default `3` days) so only fresh articles influence proposal
-drafts. The example `.env` above shows one possible weighting split, but any
-combination can be used to suit local priorities.
+signals into a single context for the LLM. The `DATA_WEIGHT_*` environment
+variables determine how much influence each source has in that merge—raise a
+weight to emphasize a source or lower it to soften its impact. Values greater
+than `1` amplify a source, while values between `0` and `1` down‑weight it. The
+weights typically sum to `1`, but any combination can be used to suit local
+priorities. `NEWS_LOOKBACK_DAYS` sets the recency window for RSS items (default
+`3` days) so only fresh articles influence proposal drafts.
 
 ---
 
