@@ -119,6 +119,7 @@ def build_context(
     kb_snippets: list[str] | None = None,
     kb_query: str | None = None,
     *,
+    trending_topics: list[str] | None = None,
     dedup_snippets: bool = True,
     summarise_snippets: bool = False,
 ) -> Dict[str, Any]:
@@ -154,6 +155,7 @@ def build_context(
         "news": weighted_news,
         "chain_kpis": weighted_chain,
         "governance_kpis": weighted_gov,
+        "trending_topics": trending_topics or [],
         "kb_snippets": snippets,
         "kb_summary": summary,
         "kb_embedded": embedded,

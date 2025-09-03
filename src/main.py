@@ -110,6 +110,7 @@ def main() -> None:
     phase_times["ingestion_s"] = time.perf_counter() - t0
 
     msgs_by_source = data["messages"]
+    trending_topics = data.get("trending_topics", [])
     stats.setdefault("sentiment_batches", [])
 
     # ----------------------- Analysis + Prediction ------------------------
@@ -202,6 +203,7 @@ def main() -> None:
             chain_kpis,
             gov_kpis,
             kb_query=query,
+            trending_topics=trending_topics,
             summarise_snippets=True,
         )
         draft_text = _draft(ctx)
@@ -227,6 +229,7 @@ def main() -> None:
             chain_kpis,
             gov_kpis,
             kb_query=query,
+            trending_topics=trending_topics,
             summarise_snippets=True,
         )
         news_draft = _draft(ctx_news)
@@ -246,7 +249,7 @@ def main() -> None:
         record_proposal(news_draft, None, stage="draft")
 
     chain_draft_info = draft_onchain_proposal(
-        chain_res, chain_kpis, gov_kpis, query
+        chain_res, chain_kpis, gov_kpis, query, trending_topics
     )
     if chain_draft_info:
         proposal_drafts.append(chain_draft_info)
@@ -272,6 +275,7 @@ def main() -> None:
             chain_kpis,
             gov_kpis,
             kb_query=query,
+            trending_topics=trending_topics,
             summarise_snippets=True,
         )
         t_pred = time.perf_counter()

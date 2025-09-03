@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import datetime as dt
 import os
+import re
+from collections import Counter
 from typing import Any, Dict, Callable
 
 import pandas as pd
@@ -89,6 +91,28 @@ class DataCollector:
             "chain": _env_weight("DATA_WEIGHT_CHAIN"),
             "governance": _env_weight("DATA_WEIGHT_GOVERNANCE"),
         }
+
+        def _to_text(item: Any) -> str:
+            if isinstance(item, dict):
+                return flatten_forum_topic(item)
+            return str(item)
+
+        def _engagement_factor(items: list[Any]) -> float:
+            total = 0.0
+            count = 0
+            for it in items:
+                if isinstance(it, dict):
+                    likes = it.get("likes") or 0
+                    comments = it.get("comments") or 0
+                    try:
+                        total += float(likes) + float(comments)
+                        count += 1
+                    except (TypeError, ValueError):
+                        continue
+            if count == 0:
+                return 1.0
+            avg = total / count
+            return 1.0 + avg
         if stats is None:
             stats = {}
         stats.setdefault("data_sources", {})
@@ -102,13 +126,12 @@ class DataCollector:
 
         for source, texts in messages.items():
             count = len(texts)
-
-            def _to_text(item: Any) -> str:
-                if isinstance(item, dict):
-                    return flatten_forum_topic(item)
-                return str(item)
-
             text_snippets = [_to_text(t) for t in texts]
+
+            # Engagement-aware weighting
+            engagement = _engagement_factor(texts)
+            weights[source] = weights.get(source, 1.0) * engagement
+
             avg_words = (
                 sum(len(t.split()) for t in text_snippets) / count if count else 0.0
             )
@@ -217,11 +240,27 @@ class DataCollector:
             "last_3d_count": _default_last3(gov_count),
         }
 
+        def _extract_trends(
+            msgs: Dict[str, list[Any]], weight_map: Dict[str, float]
+        ) -> list[str]:
+            counter: Counter[str] = Counter()
+            for src, items in msgs.items():
+                w = weight_map.get(src, 1.0)
+                for item in items:
+                    text = _to_text(item).lower()
+                    tokens = re.findall(r"\b\w+\b", text)
+                    for a, b in zip(tokens, tokens[1:]):
+                        counter[f"{a} {b}"] += w
+            return [phrase for phrase, _ in counter.most_common(5)]
+
+        trending_topics = _extract_trends(messages, weights)
+
         result = {
             "messages": messages,
             "news": news,
             "blocks": blocks,
             "stats": stats,
+            "trending_topics": trending_topics,
         }
 
         enable_evm = os.getenv("ENABLE_EVM_FETCH", "false").lower() == "true"

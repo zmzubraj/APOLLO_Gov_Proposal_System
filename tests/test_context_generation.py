@@ -43,7 +43,12 @@ def test_build_context_structure_dedup_and_summary(monkeypatch):
     monkeypatch.setattr(ollama_api, "generate_completion", lambda _p, **_: "summary")
     monkeypatch.setattr(proposal_store, "record_context", lambda _c: None)
     ctx = build_context(
-        sentiment, news, chain, gov, snippets, summarise_snippets=True
+        sentiment,
+        news,
+        chain,
+        gov,
+        snippets,
+        summarise_snippets=True,
     )
     assert set(ctx.keys()) == {
         "timestamp_utc",
@@ -51,12 +56,14 @@ def test_build_context_structure_dedup_and_summary(monkeypatch):
         "news",
         "chain_kpis",
         "governance_kpis",
+        "trending_topics",
         "kb_snippets",
         "kb_summary",
         "kb_embedded",
     }
     assert ctx["kb_snippets"] == ["previous proposal"]
     assert ctx["kb_summary"] == "summary"
+    assert ctx["trending_topics"] == []
     assert v.validate_sentiment(ctx["sentiment"])
     assert v.validate_news(ctx["news"])
     assert v.validate_chain_kpis(ctx["chain_kpis"])
@@ -80,7 +87,12 @@ def test_record_context_persist(tmp_path, monkeypatch):
     monkeypatch.setattr(ollama_api, "generate_completion", lambda _p, **_: "summary")
     monkeypatch.setattr(proposal_store, "XLSX_PATH", tmp_path / "gov.xlsx")
     ctx = build_context(
-        sentiment, news, chain, gov, snippets, summarise_snippets=True
+        sentiment,
+        news,
+        chain,
+        gov,
+        snippets,
+        summarise_snippets=True,
     )
     from openpyxl import load_workbook
 
@@ -94,6 +106,7 @@ def test_record_context_persist(tmp_path, monkeypatch):
     assert stored["news"] == news
     assert stored["chain_kpis"] == chain
     assert stored["governance_kpis"] == gov
+    assert stored["trending_topics"] == []
     assert stored["kb_snippets"] == snippets
     assert stored["kb_summary"] == "summary"
 
