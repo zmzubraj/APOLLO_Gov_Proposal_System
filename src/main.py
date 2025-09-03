@@ -86,6 +86,7 @@ def main() -> None:
     except ollama_api.OllamaError as err:  # pragma: no cover - network dependent
         print(f"⚠️ {err}")
         llm_available = False
+    trending_topics: list[str] = []
 
     def _analyse(msgs: list[str]):
         if not llm_available:
@@ -106,6 +107,7 @@ def main() -> None:
     def _draft(ctx: dict[str, Any]):
         if not llm_available:
             return ""
+        ctx = {**ctx, "trending_topics": trending_topics}
         try:
             try:
                 return proposal_generator.draft(
