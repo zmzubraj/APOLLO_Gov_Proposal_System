@@ -265,6 +265,8 @@ def main() -> None:
         forecast = forecast_outcomes(ctx)
         prediction_time = time.perf_counter() - t_pred
         ctx["forecast"] = forecast
+        approval_prob = forecast.get("approval_prob", 0.0)
+        score = approval_prob * weights_by_source.get(source, 1.0)
         proposal_drafts.append(
             {
                 "source": source,
@@ -272,9 +274,16 @@ def main() -> None:
                 "context": ctx,
                 "forecast": forecast,
                 "prediction_time": prediction_time,
+                "score": score,
             }
         )
-        record_proposal(draft_text, None, stage="draft")
+        record_proposal(
+            draft_text,
+            None,
+            stage="draft",
+            source=source,
+            score=score,
+        )
 
     if news:
         sw_map_news = {
@@ -302,6 +311,9 @@ def main() -> None:
         news_forecast = forecast_outcomes(ctx_news)
         prediction_time = time.perf_counter() - t_pred
         ctx_news["forecast"] = news_forecast
+        approval_prob = news_forecast.get("approval_prob", 0.0)
+        news_weight = weights_by_source.get("news", 1.0)
+        score = approval_prob * news_weight
         proposal_drafts.append(
             {
                 "source": "news",
@@ -309,12 +321,25 @@ def main() -> None:
                 "context": ctx_news,
                 "forecast": news_forecast,
                 "prediction_time": prediction_time,
+                "score": score,
             }
         )
-        record_proposal(news_draft, None, stage="draft")
+        record_proposal(
+            news_draft,
+            None,
+            stage="draft",
+            source="news",
+            score=score,
+        )
 
     chain_draft_info = draft_onchain_proposal(
-        chain_res, chain_kpis, gov_kpis, evm_kpis, query, trending_topics
+        chain_res,
+        chain_kpis,
+        gov_kpis,
+        evm_kpis,
+        query,
+        trending_topics,
+        source_weight=weights_by_source.get("onchain", 1.0),
     )
     if chain_draft_info:
         proposal_drafts.append(chain_draft_info)
@@ -324,12 +349,12 @@ def main() -> None:
         proposal_drafts, MIN_PASS_CONFIDENCE
     )
 
-    # Select best draft (fallback to consolidated context if none)
-    if proposal_drafts:
-        best_draft = max(
-            proposal_drafts,
-            key=lambda d: d.get("forecast", {}).get("approval_prob", 0.0),
-        )
+    # Select best draft (fallback to consolidated context if none qualify)
+    eligible_drafts = [
+        d for d in proposal_drafts if d.get("score", 0.0) >= MIN_PASS_CONFIDENCE
+    ]
+    if eligible_drafts:
+        best_draft = max(eligible_drafts, key=lambda d: d.get("score", 0.0))
         context = best_draft["context"]
         forecast = best_draft["forecast"]
         proposal_text = best_draft["text"]
@@ -364,6 +389,8 @@ def main() -> None:
         prediction_time = time.perf_counter() - t_pred
         context["forecast"] = forecast
         proposal_text = _draft(context)
+        approval_prob = forecast.get("approval_prob", 0.0)
+        score = approval_prob * sent_w
         proposal_drafts.append(
             {
                 "source": "consolidated",
@@ -371,9 +398,16 @@ def main() -> None:
                 "context": context,
                 "forecast": forecast,
                 "prediction_time": prediction_time,
+                "score": score,
             }
         )
-        record_proposal(proposal_text, None, stage="draft")
+        record_proposal(
+            proposal_text,
+            None,
+            stage="draft",
+            source="consolidated",
+            score=score,
+        )
     try:
         df_pred = pd.DataFrame(
             [

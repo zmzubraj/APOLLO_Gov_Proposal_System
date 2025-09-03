@@ -97,6 +97,8 @@ def record_proposal(
     submission_id: str | None,
     *,
     stage: str | None = None,
+    source: str | None = None,
+    score: float | None = None,
 ) -> None:
     """Record a generated proposal and optional submission identifier.
 
@@ -111,6 +113,11 @@ def record_proposal(
         When provided this is persisted alongside the proposal text so that
         intermediate drafts or submissions can later be tracked. The argument
         is keyword-only to maintain backwards compatibility with existing calls.
+    source:
+        Optional origin of the proposal draft. When supplied this is stored
+        so that downstream analysis can attribute drafts to their source.
+    score:
+        Optional selection score associated with the draft.
     """
 
     row = {
@@ -120,6 +127,10 @@ def record_proposal(
     }
     if stage is not None:
         row["stage"] = stage
+    if source is not None:
+        row["source"] = source
+    if score is not None:
+        row["score"] = score
     _append_governance_entry("Proposals", row)
 
 

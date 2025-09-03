@@ -56,8 +56,10 @@ def test_selects_highest_approval_prob(monkeypatch, tmp_path):
     monkeypatch.setattr(main.ollama_api, "check_server", lambda: None)
 
     records = []
-    def fake_record_proposal(text, sid, stage=None):
+
+    def fake_record_proposal(text, sid, stage=None, **kwargs):
         records.append((text, sid, stage))
+
     monkeypatch.setattr(main, "record_proposal", fake_record_proposal)
 
     monkeypatch.setattr(main, "OUT_DIR", tmp_path)

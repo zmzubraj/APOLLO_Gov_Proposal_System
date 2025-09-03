@@ -547,6 +547,7 @@ def draft_onchain_proposal(
     evm_kpis: Mapping[str, Any] | None,
     query: str,
     trending_topics: list[str] | None = None,
+    source_weight: float = 1.0,
 ) -> dict[str, Any] | None:
     """Draft a proposal using only on-chain metrics."""
 
@@ -568,13 +569,22 @@ def draft_onchain_proposal(
     chain_forecast = forecast_outcomes(ctx_chain)
     prediction_time = time.perf_counter() - t_pred
     ctx_chain["forecast"] = chain_forecast
-    record_proposal(chain_draft, None, stage="draft")
+    approval_prob = chain_forecast.get("approval_prob", 0.0)
+    score = approval_prob * source_weight
+    record_proposal(
+        chain_draft,
+        None,
+        stage="draft",
+        source="onchain",
+        score=score,
+    )
     return {
         "source": "onchain",
         "text": chain_draft,
         "context": ctx_chain,
         "forecast": chain_forecast,
         "prediction_time": prediction_time,
+        "score": score,
     }
 
 
