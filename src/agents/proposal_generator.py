@@ -26,6 +26,11 @@ def _json_default(value: Any) -> str:
 
 def build_prompt(context: Dict[str, Any]) -> str:
     """Compose a single prompt for the LLM with all context JSON."""
+    topics = context.get("trending_topics", [])
+    topics_section = ""
+    if topics:
+        bullet_list = "\n".join(f"- {topic}" for topic in topics)
+        topics_section = f"Trending Topics:\n{bullet_list}\n\n"
     return (
         "You are an autonomous Polkadot governance agent. "
         "Using context derived from community chat, forum discussions, news "
@@ -37,6 +42,7 @@ def build_prompt(context: Dict[str, Any]) -> str:
         "Rationale: <brief reasoning referencing sentiment, risks and prior votes>\n"
         "Action: <specific on-chain steps>\n"
         "Expected Impact: <anticipated network effects>\n\n"
+        f"{topics_section}"
         f"=== CONTEXT (JSON) ===\n{json.dumps(context, indent=2, default=_json_default)}\n"
         "======================\n"
         "Return ONLY the proposal text, no additional commentary."
