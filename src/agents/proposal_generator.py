@@ -3,9 +3,24 @@ from __future__ import annotations
 
 import json
 import os
-from typing import Dict, Any
+from datetime import datetime
+from typing import Any, Dict
 
 from llm import ollama_api
+
+
+def _json_default(value: Any) -> str:
+    """Return a JSON-serialisable representation for ``value``.
+
+    Currently only :class:`datetime.datetime` objects require special handling,
+    which are converted to ISO 8601 strings. Any other non-serialisable type
+    raises ``TypeError`` so issues are surfaced early.
+    """
+
+    if isinstance(value, datetime):
+        return value.isoformat()
+    raise TypeError(f"Object of type {value.__class__.__name__} "
+                    "is not JSON serialisable")
 
 
 def build_prompt(context: Dict[str, Any]) -> str:
@@ -17,7 +32,7 @@ def build_prompt(context: Dict[str, Any]) -> str:
         "(3) aligns with historical governance patterns, and "
         "(4) is formatted for the 'Root' track including Title, Rationale, Action, "
         "and Expected Impact sections.\n\n"
-        f"=== CONTEXT (JSON) ===\n{json.dumps(context, indent=2)}\n"
+        f"=== CONTEXT (JSON) ===\n{json.dumps(context, indent=2, default=_json_default)}\n"
         "======================\n"
         "Return ONLY the proposal text, no JSON."
     )
