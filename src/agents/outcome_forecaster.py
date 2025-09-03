@@ -30,13 +30,24 @@ def _load_model() -> Optional[dict]:
         return None
 
 
-def _apply_model(model: dict, approval_rate: float, turnout: float) -> float:
-    """Apply a simple logistic model to produce approval probability."""
+def _apply_model(model: dict, features: Dict[str, float]) -> float:
+    """Apply a logistic model defined by ``model`` to ``features``.
+
+    Parameters
+    ----------
+    model:
+        Mapping containing ``intercept`` and ``coefficients`` (a mapping of
+        feature name to weight).
+    features:
+        Feature values keyed by name.  Any feature missing from the model's
+        coefficients is ignored so the helper is forward compatible with new
+        inputs.
+    """
 
     z = model.get("intercept", 0.0)
     coeffs = model.get("coefficients", {})
-    z += coeffs.get("approval_rate", 0.0) * approval_rate
-    z += coeffs.get("turnout", 0.0) * turnout
+    for name, value in features.items():
+        z += coeffs.get(name, 0.0) * value
     return float(1.0 / (1.0 + np.exp(-z)))
 
 
@@ -69,15 +80,38 @@ def forecast_outcomes(context: Dict) -> Dict[str, float]:
     approval_prob = float(max(0.0, min(1.0, approval_prob)))
     turnout_estimate = float(max(0.0, min(1.0, turnout_estimate)))
 
+    # Sentiment may be provided either directly or within a nested structure
+    sentiment_val = context.get("sentiment_score")
+    if sentiment_val is None:
+        sentiment_val = context.get("sentiment")
+        if isinstance(sentiment_val, dict):
+            sentiment_val = sentiment_val.get("sentiment_score") or sentiment_val.get("score")
+    sentiment = float(sentiment_val or 0.0)
+
+    trending_val = context.get("trend_score")
+    if trending_val is None:
+        trending_val = context.get("trending_score")
+    if trending_val is None:
+        trending_val = context.get("trending")
+        if isinstance(trending_val, dict):
+            trending_val = trending_val.get("score") or trending_val.get("trending_score")
+    trending = float(trending_val or 0.0)
+
     # Apply trained model if available
     model = _load_model()
     if model is not None:
         try:
-            approval_prob = _apply_model(model, approval_prob, turnout_estimate)
+            features = {
+                "approval_rate": approval_prob,
+                "turnout": turnout_estimate,
+                "sentiment": sentiment,
+                "trending": trending,
+            }
+            approval_prob = _apply_model(model, features)
         except Exception:
             pass
 
     return {
-        "approval_prob": approval_prob,
+        "approval_prob": float(max(0.0, min(1.0, approval_prob))),
         "turnout_estimate": turnout_estimate,
     }

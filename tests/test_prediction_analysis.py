@@ -21,7 +21,8 @@ def test_forecast_outcomes_fields_and_ranges(tmp_path, monkeypatch):
     df.to_excel(path, sheet_name="Referenda", index=False)
     monkeypatch.setattr(data_loader, "FILE_PATH", path)
 
-    result = forecast_outcomes({})
+    context = {"sentiment_score": 0.2, "trending_score": 0.1}
+    result = forecast_outcomes(context)
     assert set(result.keys()) == {"approval_prob", "turnout_estimate"}
     assert 0.0 <= result["approval_prob"] <= 1.0
     assert 0.0 <= result["turnout_estimate"] <= 1.0
@@ -29,10 +30,13 @@ def test_forecast_outcomes_fields_and_ranges(tmp_path, monkeypatch):
     model_path = Path(__file__).resolve().parents[1] / "models" / "referendum_model.json"
     with model_path.open() as f:
         model = json.load(f)
+    coeffs = model["coefficients"]
     z = (
         model["intercept"]
-        + model["coefficients"]["approval_rate"] * 0.5
-        + model["coefficients"]["turnout"] * 0.5
+        + coeffs.get("approval_rate", 0.0) * 0.5
+        + coeffs.get("turnout", 0.0) * 0.5
+        + coeffs.get("sentiment", 0.0) * 0.2
+        + coeffs.get("trending", 0.0) * 0.1
     )
     expected = 1 / (1 + np.exp(-z))
     assert round(result["approval_prob"], 3) == round(expected, 3)
