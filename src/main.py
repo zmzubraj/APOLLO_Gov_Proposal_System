@@ -80,26 +80,44 @@ def main() -> None:
     start = dt.datetime.now(dt.UTC)
     stats: dict[str, Any] = {}
     phase_times: dict[str, float] = {}
+    try:
+        ollama_api.check_server()
+        llm_available = True
+    except ollama_api.OllamaError as err:  # pragma: no cover - network dependent
+        print(f"⚠️ {err}")
+        llm_available = False
 
     def _analyse(msgs: list[str]):
+        if not llm_available:
+            return {}
         try:
-            return analyse_messages(
-                msgs,
-                temperature=SENTIMENT_TEMPERATURE,
-                max_tokens=SENTIMENT_MAX_TOKENS,
-            )
-        except TypeError:
-            return analyse_messages(msgs)
+            try:
+                return analyse_messages(
+                    msgs,
+                    temperature=SENTIMENT_TEMPERATURE,
+                    max_tokens=SENTIMENT_MAX_TOKENS,
+                )
+            except TypeError:
+                return analyse_messages(msgs)
+        except ollama_api.OllamaError as exc:  # pragma: no cover - network dependent
+            print(f"⚠️ Sentiment analysis failed: {exc}")
+            return {}
 
     def _draft(ctx: dict[str, Any]):
+        if not llm_available:
+            return ""
         try:
-            return proposal_generator.draft(
-                ctx,
-                temperature=PROPOSAL_TEMPERATURE,
-                max_tokens=PROPOSAL_MAX_TOKENS,
-            )
-        except TypeError:
-            return proposal_generator.draft(ctx)
+            try:
+                return proposal_generator.draft(
+                    ctx,
+                    temperature=PROPOSAL_TEMPERATURE,
+                    max_tokens=PROPOSAL_MAX_TOKENS,
+                )
+            except TypeError:
+                return proposal_generator.draft(ctx)
+        except ollama_api.OllamaError as exc:  # pragma: no cover - network dependent
+            print(f"⚠️ Proposal drafting failed: {exc}")
+            return ""
 
     # ------------------------------ Ingestion ------------------------------
     t0 = time.perf_counter()
@@ -142,10 +160,13 @@ def main() -> None:
             "message_size_kb",
             len(raw_text.encode("utf-8")) / 1024 if raw_text else 0.0,
         )
-        try:
-            ollama_api.embed_text(raw_text)
-            embedded = True
-        except Exception:
+        if llm_available:
+            try:
+                ollama_api.embed_text(raw_text)
+                embedded = True
+            except Exception:
+                embedded = False
+        else:
             embedded = False
         stats["sentiment_batches"].append(
             {
@@ -175,10 +196,13 @@ def main() -> None:
     chain_ctx_size = (
         len(chain_text.encode("utf-8")) / 1024 if chain_text else 0.0
     )
-    try:
-        ollama_api.embed_text(chain_text)
-        chain_embedded = True
-    except Exception:
+    if llm_available:
+        try:
+            ollama_api.embed_text(chain_text)
+            chain_embedded = True
+        except Exception:
+            chain_embedded = False
+    else:
         chain_embedded = False
     stats["sentiment_batches"].append(
         {
