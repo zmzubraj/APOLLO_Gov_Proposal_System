@@ -23,7 +23,9 @@ from bs4 import BeautifulSoup
 # -----------------------------------------------------------------------------
 # Utility
 # -----------------------------------------------------------------------------
-UTC_CUTOFF = dt.datetime.now(dt.UTC) - dt.timedelta(days=15)  # last 15 days
+# Derived once at import time using SOCIAL_LOOKBACK_DAYS (default 30)
+LOOKBACK_DAYS = int(os.getenv("SOCIAL_LOOKBACK_DAYS", "30"))
+UTC_CUTOFF = dt.datetime.now(dt.UTC) - dt.timedelta(days=LOOKBACK_DAYS)
 
 
 def _within_cutoff(ts: dt.datetime) -> bool:
@@ -39,7 +41,7 @@ def _clean(text: str) -> str:
 # 1. X / Twitter (@PolkadotNetwork)
 #    Requires a bearer token (X API v2) – set TWITTER_BEARER env var
 # -----------------------------------------------------------------------------
-def fetch_x() -> List[str]:
+def fetch_x(limit: int = 50) -> List[str]:
     token = os.getenv("TWITTER_BEARER")
     if not token:
         try:
@@ -49,7 +51,7 @@ def fetch_x() -> List[str]:
             for i, tweet in enumerate(
                 sntwitter.TwitterUserScraper("Polkadot").get_items()
             ):
-                if i >= 20:
+                if i >= limit:
                     break
                 ts = tweet.date
                 if isinstance(ts, dt.datetime):
@@ -73,7 +75,7 @@ def fetch_x() -> List[str]:
             return []
 
         timeline = f"https://api.twitter.com/2/users/{user_id}/tweets"
-        params = {"max_results": 20, "tweet.fields": "created_at"}
+        params = {"max_results": min(limit, 100), "tweet.fields": "created_at"}
         tw_resp = requests.get(
             timeline,
             headers={"Authorization": f"Bearer {token}"},
@@ -81,7 +83,7 @@ def fetch_x() -> List[str]:
             timeout=10,
         )
         msgs: list[str] = []
-        for tw in tw_resp.json().get("data", []):
+        for tw in tw_resp.json().get("data", [])[:limit]:
             ts = dt.datetime.fromisoformat(tw["created_at"].replace("Z", "+00:00"))
             if _within_cutoff(ts):
                 msgs.append(_clean(tw["text"]))
@@ -130,7 +132,7 @@ def flatten_forum_topic(topic: dict) -> str:
     return _clean(" ".join(p for p in parts if p))
 
 
-def fetch_forum(limit: int = 15) -> List[dict]:
+def fetch_forum(limit: int = 50) -> List[dict]:
     """Fetch latest Polkadot forum topics with comments.
 
     Returns a list of dictionaries with the following structure::
@@ -233,7 +235,7 @@ def fetch_cryptorank() -> List[str]:
 # 5. Reddit r/Polkadot
 #    Uses PRAW – requires REDDIT_CLIENT_ID, REDDIT_SECRET, REDDIT_USERAGENT
 # -----------------------------------------------------------------------------
-def fetch_reddit(limit: int = 20) -> List[str]:
+def fetch_reddit(limit: int = 50) -> List[str]:
     """Fetch recent r/Polkadot posts and their comments.
 
     Uses Reddit's public JSON endpoints so no credentials are required.  The
@@ -265,6 +267,9 @@ def fetch_reddit(limit: int = 20) -> List[str]:
         title = _clean(html.unescape(post.get("title", "")))
         if title:
             messages.append(title)
+        body = _clean(html.unescape(post.get("selftext", "")))
+        if body:
+            messages.append(body)
 
         post_id = post.get("id")
         if not post_id:
@@ -302,7 +307,7 @@ def fetch_reddit(limit: int = 20) -> List[str]:
 # -----------------------------------------------------------------------------
 # 6. Binance Square (API fetch)
 # -----------------------------------------------------------------------------
-def fetch_binance_square(limit: int = 30) -> List[str]:
+def fetch_binance_square(limit: int = 50) -> List[str]:
     """Fetch recent Binance Square posts and comments.
 
     The unofficial CMS endpoints exposed by Binance's web client provide
@@ -331,12 +336,9 @@ def fetch_binance_square(limit: int = 30) -> List[str]:
         for item in catalog.get("articles", []):
             if fetched >= limit:
                 break
-            content = "\n".join(
-                filter(None, [item.get("title", ""), item.get("brief", "")])
-            )
+            content = ""
             code = item.get("code")
-            if code and not content:
-                # fallback to detailed endpoint for full body
+            if code:
                 try:
                     d_url = (
                         "https://www.binance.com/bapi/composite/v1/public/cms/article/detail/query"
@@ -350,6 +352,10 @@ def fetch_binance_square(limit: int = 30) -> List[str]:
                     )
                 except Exception:
                     content = ""
+            if not content:
+                content = "\n".join(
+                    filter(None, [item.get("title", ""), item.get("brief", "")])
+                )
             if content:
                 posts.append(_clean(content))
 
