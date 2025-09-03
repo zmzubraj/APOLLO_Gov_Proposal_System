@@ -139,6 +139,10 @@ def main() -> None:
     phase_times["ingestion_s"] = time.perf_counter() - t0
 
     msgs_by_source = data["messages"]
+    weights_by_source = {
+        name: info.get("weight", 1.0)
+        for name, info in data.get("stats", {}).get("data_sources", {}).items()
+    }
     trending_topics = data.get("trending_topics", [])
     stats.setdefault("sentiment_batches", [])
 
@@ -235,6 +239,16 @@ def main() -> None:
     for source, msgs in msgs_by_source.items():
         if source == "news":
             continue
+        sw_map = {
+            "sentiment": {"source": source, "weight": weights_by_source.get(source, 1.0)},
+            "news": {"source": "news", "weight": weights_by_source.get("news", 1.0)},
+            "chain_kpis": {"source": "onchain", "weight": weights_by_source.get("onchain", 1.0)},
+            "governance_kpis": {
+                "source": "governance",
+                "weight": weights_by_source.get("governance", 1.0),
+            },
+            "evm_kpis": {"source": "evm", "weight": weights_by_source.get("evm", 1.0)},
+        }
         ctx = build_context(
             sentiments_by_source.get(source, {}),
             {},
@@ -244,6 +258,7 @@ def main() -> None:
             kb_query=query,
             trending_topics=trending_topics,
             summarise_snippets=True,
+            source_weight=sw_map,
         )
         draft_text = _draft(ctx)
         t_pred = time.perf_counter()
@@ -262,6 +277,15 @@ def main() -> None:
         record_proposal(draft_text, None, stage="draft")
 
     if news:
+        sw_map_news = {
+            "news": {"source": "news", "weight": weights_by_source.get("news", 1.0)},
+            "chain_kpis": {"source": "onchain", "weight": weights_by_source.get("onchain", 1.0)},
+            "governance_kpis": {
+                "source": "governance",
+                "weight": weights_by_source.get("governance", 1.0),
+            },
+            "evm_kpis": {"source": "evm", "weight": weights_by_source.get("evm", 1.0)},
+        }
         ctx_news = build_context(
             {},
             news,
@@ -271,6 +295,7 @@ def main() -> None:
             kb_query=query,
             trending_topics=trending_topics,
             summarise_snippets=True,
+            source_weight=sw_map_news,
         )
         news_draft = _draft(ctx_news)
         t_pred = time.perf_counter()
@@ -309,6 +334,20 @@ def main() -> None:
         forecast = best_draft["forecast"]
         proposal_text = best_draft["text"]
     else:
+        sent_w = (
+            weights_by_source.get("chat", 1.0)
+            + weights_by_source.get("forum", 1.0)
+        ) / 2
+        sw_map_cons = {
+            "sentiment": {"source": "combined", "weight": sent_w},
+            "news": {"source": "news", "weight": weights_by_source.get("news", 1.0)},
+            "chain_kpis": {"source": "onchain", "weight": weights_by_source.get("onchain", 1.0)},
+            "governance_kpis": {
+                "source": "governance",
+                "weight": weights_by_source.get("governance", 1.0),
+            },
+            "evm_kpis": {"source": "evm", "weight": weights_by_source.get("evm", 1.0)},
+        }
         context = build_context(
             sentiment,
             news,
@@ -318,6 +357,7 @@ def main() -> None:
             kb_query=query,
             trending_topics=trending_topics,
             summarise_snippets=True,
+            source_weight=sw_map_cons,
         )
         t_pred = time.perf_counter()
         forecast = forecast_outcomes(context)

@@ -113,11 +113,17 @@ def test_record_context_persist(tmp_path, monkeypatch):
     # header then one row
     assert rows[0] == ("timestamp", "context_json")
     stored = json.loads(rows[1][1])
-    assert stored["sentiment"] == sentiment
-    assert stored["news"] == news
-    assert stored["chain_kpis"] == chain
-    assert stored["governance_kpis"] == gov
-    assert stored["evm_kpis"] == evm
+    def _strip_meta(section):
+        sec = stored[section].copy()
+        sec.pop("source", None)
+        sec.pop("weight", None)
+        return sec
+
+    assert _strip_meta("sentiment") == sentiment
+    assert _strip_meta("news") == news
+    assert _strip_meta("chain_kpis") == chain
+    assert _strip_meta("governance_kpis") == gov
+    assert _strip_meta("evm_kpis") == evm
     assert stored["trending_topics"] == []
     assert stored["kb_snippets"] == snippets
     assert stored["kb_summary"] == "summary"

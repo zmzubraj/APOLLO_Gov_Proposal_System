@@ -15,7 +15,7 @@ def test_post_raises_ollama_error(monkeypatch):
 def test_generate_completion_builds_payload(monkeypatch):
     captured = {}
 
-    def fake_post(url, payload):
+    def fake_post(url, payload, **kwargs):
         captured["url"] = url
         captured["payload"] = payload
         return {"response": "answer  "}
@@ -37,7 +37,7 @@ def test_generate_completion_builds_payload(monkeypatch):
 
 
 def test_embed_text_uses_post(monkeypatch):
-    def fake_post(url, payload):
+    def fake_post(url, payload, **kwargs):
         assert url == ollama_api.EMBED_URL
         assert payload == {"model": "m", "prompt": "text"}
         return {"embedding": [0.1, 0.2]}
