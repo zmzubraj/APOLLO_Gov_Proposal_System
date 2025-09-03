@@ -52,6 +52,9 @@ def test_selects_highest_approval_prob(monkeypatch, tmp_path):
     monkeypatch.setattr(main, "execute_proposal", lambda url, pk: {"extrinsic_hash": "0xexec", "block_hash": "0xblock"})
     monkeypatch.setattr(main, "record_execution_result", lambda **kwargs: None)
 
+    # Avoid network calls to the local Ollama server
+    monkeypatch.setattr(main.ollama_api, "check_server", lambda: None)
+
     records = []
     def fake_record_proposal(text, sid, stage=None):
         records.append((text, sid, stage))

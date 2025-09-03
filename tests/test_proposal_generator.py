@@ -49,3 +49,17 @@ def test_draft_strips_preamble_and_validates_sections():
     for heading in ["Title:", "Rationale:", "Action:", "Expected Impact:"]:
         assert heading in result
     assert "Here is your proposal" not in result
+
+
+def test_draft_returns_raw_when_missing_sections():
+    context = {}
+    raw = "No structured output provided"
+
+    with patch(
+        "src.agents.proposal_generator.ollama_api.generate_completion",
+        return_value=raw,
+    ):
+        result = proposal_generator.draft(context)
+
+    # When headings are missing, the raw text should be returned unchanged
+    assert result == raw
