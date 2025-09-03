@@ -2,6 +2,8 @@
   "intercept": -0.4,
   "coefficients": {
     "approval_rate": 0.8,
-    "turnout": 0.2
+    "turnout": 0.2,
+    "sentiment": 0.0,
+    "trending": 0.0
   }
 }

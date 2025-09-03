@@ -61,7 +61,12 @@ def ensure_workbook() -> "Workbook":
 def _append_row(sheet: str, row: Dict[str, Any]) -> None:
     """Append ``row`` to ``sheet`` within the governance workbook."""
 
-    wb = ensure_workbook()
+    try:
+        wb = ensure_workbook()
+    except ImportError:
+        raise
+    except Exception:
+        return
     ws = wb[sheet] if sheet in wb.sheetnames else wb.create_sheet(sheet)
 
     header = [cell.value for cell in ws[1]] if ws.max_row else []

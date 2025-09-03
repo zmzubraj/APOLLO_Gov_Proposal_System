@@ -165,8 +165,11 @@ def build_context(
         "kb_embedded": embedded,
     }
 
-    # Persist for audit trail
-    proposal_store.record_context(context)
+    # Persist for audit trail – ignore failures from missing dependencies
+    try:
+        proposal_store.record_context(context)
+    except Exception:
+        pass
     # Retrieve and merge historical proposals based on trending topics
     historical = proposal_store.retrieve_recent(trending_topics or [])
     if historical:
