@@ -290,10 +290,22 @@ python src/analysis/governance_analysis.py
 
 ### 5. Train the Referendum Outcome Forecaster
 
-```bash
-python src/analysis/train_forecaster.py
-```
-- Fits a logistic regression model on historical referendum data and saves parameters to `models/referendum_model.json`.
+Refresh the referendum forecasting model after you have collected and
+aggregated governance data:
+
+1. Ensure `data/input/PKD Governance Data.xlsx` contains executed
+   referenda. Populate it via
+   `python src/data_processing/referenda_updater.py` if necessary.
+2. Run the training script:
+
+   ```bash
+   python src/analysis/train_forecaster.py
+   ```
+
+   The script fits a logistic regression model and writes the parameters
+   to `models/referendum_model.json`.
+3. Replace or commit the updated `models/referendum_model.json` to use the
+   new model in subsequent forecasts.
 
 ### 6. Run the Main Pipeline
 
