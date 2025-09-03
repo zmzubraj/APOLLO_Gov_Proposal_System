@@ -25,7 +25,7 @@ def test_draft_uses_build_prompt_and_ollama():
         model="gemma3:4b",
         temperature=0.3,
         max_tokens=4096,
-        timeout=240.0,
+        timeout=360.0,
     )
     assert result == sample
 

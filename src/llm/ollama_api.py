@@ -25,7 +25,7 @@ EMBED_URL = f"{OLLAMA_HOST.rstrip('/')}/api/embeddings"
 DEFAULT_MODEL = os.getenv("OLLAMA_MODEL", "gemma3:4b")
 
 # Requests timeout (seconds)
-DEFAULT_TIMEOUT = float(os.getenv("OLLAMA_TIMEOUT", "240"))
+DEFAULT_TIMEOUT = float(os.getenv("OLLAMA_TIMEOUT", "360"))
 
 
 # -----------------------------------------------------------------------------

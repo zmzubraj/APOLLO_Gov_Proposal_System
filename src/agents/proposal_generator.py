@@ -89,7 +89,7 @@ def draft(
     timeout = (
         timeout
         if timeout is not None
-        else float(os.getenv("PROPOSAL_TIMEOUT", os.getenv("OLLAMA_TIMEOUT", "240")))
+        else float(os.getenv("PROPOSAL_TIMEOUT", os.getenv("OLLAMA_TIMEOUT", "360")))
     )
     prompt = build_prompt(context_dict)
     raw = ollama_api.generate_completion(

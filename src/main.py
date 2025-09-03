@@ -56,13 +56,13 @@ PROJECT_ROOT = pathlib.Path(__file__).resolve().parents[1]  # src/..
 OUT_DIR = PROJECT_ROOT / "data" / "output" / "generated_proposals"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 load_dotenv()
-MIN_PASS_CONFIDENCE = float(os.getenv("MIN_PASS_CONFIDENCE", "0.80"))
-SENTIMENT_TEMPERATURE = float(os.getenv("SENTIMENT_TEMPERATURE", "0.1"))
-SENTIMENT_MAX_TOKENS = int(os.getenv("SENTIMENT_MAX_TOKENS", "1028"))
+MIN_PASS_CONFIDENCE = float(os.getenv("MIN_PASS_CONFIDENCE", "0.50"))
+SENTIMENT_TEMPERATURE = float(os.getenv("SENTIMENT_TEMPERATURE", "0.2"))
+SENTIMENT_MAX_TOKENS = int(os.getenv("SENTIMENT_MAX_TOKENS", "2048"))
 PROPOSAL_TEMPERATURE = float(os.getenv("PROPOSAL_TEMPERATURE", "0.3"))
 PROPOSAL_MAX_TOKENS = int(os.getenv("PROPOSAL_MAX_TOKENS", "4096"))
 NEWS_TEMPERATURE = float(os.getenv("NEWS_TEMPERATURE", "0.2"))
-NEWS_MAX_TOKENS = int(os.getenv("NEWS_MAX_TOKENS", "256"))
+NEWS_MAX_TOKENS = int(os.getenv("NEWS_MAX_TOKENS", "1024"))
 
 
 def _refresh_workbook() -> None:
