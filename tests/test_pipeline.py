@@ -27,6 +27,13 @@ def test_validators_pass_on_dummy():
         "avg_fee_per_tx_DOT": 0,
         "busiest_hour_utc": "",
     }
+    evm = {
+        "daily_tx_count": {},
+        "daily_total_value_ETH": {},
+        "avg_tx_per_block": 0,
+        "avg_value_per_tx_ETH": 0,
+        "busiest_hour_utc": "",
+    }
     gov = {
         "total_referenda": 1,
         "executed_pct": 50,
@@ -42,6 +49,7 @@ def test_validators_pass_on_dummy():
     assert v.validate_news(news)
     assert v.validate_chain_kpis(chain)
     assert v.validate_governance_kpis(gov)
+    assert v.validate_evm_kpis(evm)
 
 
 def test_stored_proposals_influence_context(tmp_path, monkeypatch):
@@ -63,5 +71,5 @@ def test_stored_proposals_influence_context(tmp_path, monkeypatch):
     monkeypatch.setattr(ollama_api, "embed_text", fake_embed)
     monkeypatch.setattr(proposal_store, "record_context", lambda _c: None)
 
-    ctx = build_context({}, {}, {}, {}, kb_query="staking")
+    ctx = build_context({}, {}, {}, {}, {}, kb_query="staking")
     assert any("Increase staking rewards" in s for s in ctx["kb_snippets"])

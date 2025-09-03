@@ -75,3 +75,18 @@ def validate_governance_kpis(d: Dict[str, Any]) -> bool:
     _require_keys(d, expected, "governance_kpis")
     return True
 
+
+def validate_evm_kpis(d: Dict[str, Any]) -> bool:
+    _require_keys(
+        d,
+        {
+            "daily_tx_count",
+            "daily_total_value_ETH",
+            "avg_tx_per_block",
+            "avg_value_per_tx_ETH",
+            "busiest_hour_utc",
+        },
+        "evm_kpis",
+    )
+    return True
+
