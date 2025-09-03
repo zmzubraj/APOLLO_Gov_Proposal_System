@@ -68,6 +68,7 @@ def draft(
     context_dict: Dict[str, Any],
     temperature: float | None = None,
     max_tokens: int | None = None,
+    timeout: float | None = None,
 ) -> str:
     """Return a proposal generated from ``context_dict``.
 
@@ -85,6 +86,11 @@ def draft(
         if max_tokens is not None
         else int(os.getenv("PROPOSAL_MAX_TOKENS", "4096"))
     )
+    timeout = (
+        timeout
+        if timeout is not None
+        else float(os.getenv("PROPOSAL_TIMEOUT", os.getenv("OLLAMA_TIMEOUT", "240")))
+    )
     prompt = build_prompt(context_dict)
     raw = ollama_api.generate_completion(
         prompt=prompt,
@@ -92,6 +98,7 @@ def draft(
         model="gemma3:4b",
         temperature=temperature,
         max_tokens=max_tokens,
+        timeout=timeout,
     )
     try:
         return postprocess_draft(raw)
