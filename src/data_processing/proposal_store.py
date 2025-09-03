@@ -59,7 +59,7 @@ def ensure_workbook() -> "Workbook":
 
 
 def _append_row(sheet: str, row: Dict[str, Any]) -> None:
-    """Append a dictionary ``row`` to ``sheet`` creating workbook/sheet if needed."""
+    """Append ``row`` to ``sheet`` within the governance workbook."""
 
     wb = ensure_workbook()
     ws = wb[sheet] if sheet in wb.sheetnames else wb.create_sheet(sheet)
@@ -79,6 +79,12 @@ def _append_row(sheet: str, row: Dict[str, Any]) -> None:
 
     ws.append([row.get(col, "") for col in header])
     wb.save(XLSX_PATH)
+
+
+def _append_governance_entry(sheet: str, row: Dict[str, Any]) -> None:
+    """Convenience wrapper to persist rows to ``PKD Governance Data.xlsx``."""
+
+    _append_row(sheet, row)
 
 
 def record_proposal(
@@ -109,7 +115,7 @@ def record_proposal(
     }
     if stage is not None:
         row["stage"] = stage
-    _append_row("Proposals", row)
+    _append_governance_entry("Proposals", row)
 
 
 def record_execution_result(
@@ -159,7 +165,7 @@ def record_execution_result(
     }
     if proposal_row is not None:
         row["proposal_row"] = proposal_row
-    _append_row("ExecutionResults", row)
+    _append_governance_entry("ExecutionResults", row)
 
     if referendum_index is not None:
         try:

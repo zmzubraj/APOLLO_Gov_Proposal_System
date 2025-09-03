@@ -47,10 +47,8 @@ from execution.governor_interface import (
     submit_preimage,
     submit_proposal,
 )
-from data_processing.proposal_store import (
-    record_proposal,
-    record_execution_result,
-)
+from data_processing import proposal_store
+from data_processing.proposal_store import record_proposal, record_execution_result
 
 
 # --- main.py  (top of file) -----------------------------------------------
@@ -65,6 +63,19 @@ PROPOSAL_TEMPERATURE = float(os.getenv("PROPOSAL_TEMPERATURE", "0.3"))
 PROPOSAL_MAX_TOKENS = int(os.getenv("PROPOSAL_MAX_TOKENS", "4096"))
 NEWS_TEMPERATURE = float(os.getenv("NEWS_TEMPERATURE", "0.2"))
 NEWS_MAX_TOKENS = int(os.getenv("NEWS_MAX_TOKENS", "256"))
+
+
+def _refresh_workbook() -> None:
+    """Re-ingest the governance workbook before running the pipeline."""
+    try:
+        proposal_store.ensure_workbook()
+        proposal_store.load_proposals()
+        proposal_store.load_execution_results()
+        proposal_store.load_contexts()
+    except Exception:
+        # Workbook ingestion failures should not block pipeline execution
+        pass
+
 def main() -> None:
     start = dt.datetime.now(dt.UTC)
     stats: dict[str, Any] = {}
@@ -440,5 +451,6 @@ def main() -> None:
     print_timing_benchmarks_table(stats.get("timings", []))
 
 if __name__ == "__main__":
+    _refresh_workbook()
     main()
 

@@ -163,4 +163,8 @@ def build_context(
 
     # Persist for audit trail
     proposal_store.record_context(context)
+    # Retrieve and merge historical proposals based on trending topics
+    historical = proposal_store.retrieve_recent(trending_topics or [])
+    if historical:
+        context["historical_proposals"] = historical
     return context
