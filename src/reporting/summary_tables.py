@@ -234,7 +234,7 @@ def evaluate_historical_predictions(sample_size: int = 5) -> list[dict[str, Any]
     except Exception:
         return []
 
-    if df is None or df.empty:
+    if df is None or getattr(df, "empty", True):
         return []
 
     col_map = {c.lower().replace(" ", "_"): c for c in df.columns}
