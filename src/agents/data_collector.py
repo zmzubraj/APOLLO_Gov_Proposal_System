@@ -1,6 +1,7 @@
 """Centralised data collection utilities."""
 from __future__ import annotations
 
+import datetime as dt
 import os
 from typing import Any, Dict, Callable
 
@@ -85,6 +86,14 @@ class DataCollector:
         if stats is None:
             stats = {}
         stats.setdefault("data_sources", {})
+
+        def _default_last3(count: int) -> dict[str, int]:
+            today = dt.date.today()
+            return {
+                (today - dt.timedelta(days=i)).isoformat(): (count if i == 0 else 0)
+                for i in range(3)
+            }
+
         for source, texts in messages.items():
             count = len(texts)
 
@@ -105,6 +114,7 @@ class DataCollector:
                 "update_frequency": update_freq.get(source, "unknown"),
                 "platform": platform_map.get(source),
                 "weight": weights.get(source, 1.0),
+                "last_3d_count": _default_last3(count),
             }
 
         print("🔄 Fetching news …")
@@ -124,6 +134,7 @@ class DataCollector:
             "update_frequency": update_freq.get("news", "unknown"),
             "platform": platform_map.get("news"),
             "weight": weights.get("news", 1.0),
+            "last_3d_count": _default_last3(news_count),
         }
 
         print("🔄 Fetching on-chain data …")
@@ -141,7 +152,19 @@ class DataCollector:
             else 0.0
         )
         rpc_url = os.getenv("SUBSTRATE_RPC", SUBSTRATE_RPC)
+        doc_url = os.getenv(
+            "CHAIN_DOC_URL", "https://wiki.polkadot.network/docs"
+        )
         total_tokens = int(block_count * avg_extrinsics)
+        last3 = {
+            (dt.date.today() - dt.timedelta(days=i)).isoformat(): 0 for i in range(3)
+        }
+        for blk in blocks:
+            ts = blk.get("block_timestamp")
+            if ts:
+                day = dt.datetime.fromtimestamp(ts, dt.UTC).date().isoformat()
+                if day in last3:
+                    last3[day] += 1
         stats["data_sources"]["chain"] = {
             "count": block_count,
             "avg_word_length": avg_extrinsics,
@@ -149,6 +172,9 @@ class DataCollector:
             "update_frequency": update_freq.get("chain", "unknown"),
             "platform": rpc_url,
             "weight": weights.get("chain", 1.0),
+            "rpc_url": rpc_url,
+            "doc_url": doc_url,
+            "last_3d_count": last3,
         }
 
         # Governance workbook statistics
@@ -183,6 +209,7 @@ class DataCollector:
             "update_frequency": update_freq.get("governance", "unknown"),
             "platform": platform_map.get("governance"),
             "weight": weights.get("governance", 1.0),
+            "last_3d_count": _default_last3(gov_count),
         }
 
         result = {

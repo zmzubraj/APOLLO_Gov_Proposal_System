@@ -84,16 +84,19 @@ def print_data_sources_table(stats: Mapping[str, Mapping[str, Any]]) -> None:
     stats:
         Mapping of source type to a dictionary containing at least the keys
         ``count``, ``avg_word_length`` and ``update_frequency``. Optional keys
-        ``platform`` or ``url`` may be supplied for display under the
-        ``Platform/URL`` column, and ``total_tokens`` may be provided. When
-        ``total_tokens`` is absent it is estimated as ``count * avg_word_length``.
+        ``rpc_url``/``platform`` or ``url`` may be supplied for display under the
+        ``RPC/URL`` column, ``doc_url`` for the ``Doc`` column and
+        ``last_3d_count`` for the recent per-day counts. ``total_tokens`` may be
+        provided; when absent it is estimated as ``count * avg_word_length``.
         Missing values are represented by ``-``.
     """
 
     headers = [
         "Source Type",
-        "Platform/URL",
+        "RPC/URL",
+        "Doc",
         "# Documents",
+        "Last 3 Days",
         "Avg. Length (words)",
         "Total token (Data volume)",
         "Update Frequency",
@@ -120,8 +123,22 @@ def print_data_sources_table(stats: Mapping[str, Mapping[str, Any]]) -> None:
 
     rows = []
     for source, info in stats.items():
-        platform = info.get("platform") or info.get("url") or "-"
+        rpc_url = (
+            info.get("rpc_url")
+            or info.get("platform")
+            or info.get("url")
+            or "-"
+        )
+        doc = info.get("doc_url", "-")
         count = info.get("count", 0)
+        last3_raw = info.get("last_3d_count")
+        if isinstance(last3_raw, dict):
+            dates = [
+                (dt.date.today() - dt.timedelta(days=i)).isoformat() for i in range(3)
+            ]
+            last3_str = ", ".join(str(int(last3_raw.get(d, 0))) for d in dates)
+        else:
+            last3_str = "-"
         avg_len = int(info.get("avg_word_length", 0) or 0)
         total = int(info.get("total_tokens") or count * avg_len)
         freq_raw = str(info.get("update_frequency", "-"))
@@ -129,8 +146,10 @@ def print_data_sources_table(stats: Mapping[str, Mapping[str, Any]]) -> None:
         rows.append(
             [
                 source_map.get(source, source),
-                platform,
+                rpc_url,
+                doc,
                 count,
+                last3_str,
                 avg_len,
                 total,
                 freq,
