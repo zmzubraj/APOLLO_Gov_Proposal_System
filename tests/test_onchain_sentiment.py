@@ -1,7 +1,7 @@
 import types, sys
 
 
-def test_chain_sentiment_included(monkeypatch, tmp_path):
+def test_onchain_sentiment_included(monkeypatch, tmp_path):
     pandas_module = types.ModuleType("pandas")
     pandas_module.DataFrame = type("DataFrame", (), {})
     pandas_module.read_excel = lambda *a, **k: pandas_module.DataFrame()
@@ -50,4 +50,4 @@ def test_chain_sentiment_included(monkeypatch, tmp_path):
 
     main.main()
 
-    assert any(b.get("source") == "chain" for b in captured.get("batches", []))
+    assert any(b.get("source") == "onchain" for b in captured.get("batches", []))

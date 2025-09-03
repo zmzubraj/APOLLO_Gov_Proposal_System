@@ -183,7 +183,7 @@ def main() -> None:
     stats["sentiment_batches"].append(
         {
             "batch_id": batch_id,
-            "source": "chain",
+            "source": "onchain",
             "ctx_size_kb": chain_ctx_size,
             "sentiment": chain_res.get("sentiment", ""),
             "confidence": chain_res.get("confidence", 0.0),

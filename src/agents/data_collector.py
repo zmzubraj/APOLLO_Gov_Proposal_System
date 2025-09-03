@@ -64,8 +64,7 @@ class DataCollector:
             "forum": "Daily",
             "news": "Hourly",
             "governance": "Every Run",
-            "chain": "~6 sec",
-            "evm_chain": "~12 sec",
+            "onchain": "~6 sec",
         }
         platform_map = {
             "chat": "X (@PolkadotNetwork), Reddit (r/Polkadot)",
@@ -89,8 +88,7 @@ class DataCollector:
             "chat": _env_weight("DATA_WEIGHT_CHAT"),
             "forum": _env_weight("DATA_WEIGHT_FORUM"),
             "news": _env_weight("DATA_WEIGHT_NEWS"),
-            "chain": _env_weight("DATA_WEIGHT_CHAIN"),
-            "evm_chain": _env_weight("DATA_WEIGHT_EVM"),
+            "onchain": _env_weight("DATA_WEIGHT_CHAIN"),
             "governance": _env_weight("DATA_WEIGHT_GOVERNANCE"),
         }
 
@@ -186,13 +184,13 @@ class DataCollector:
                 day = dt.datetime.fromtimestamp(ts, dt.UTC).date().isoformat()
                 if day in last3:
                     last3[day] += 1
-        stats["data_sources"]["chain"] = {
+        stats["data_sources"]["onchain"] = {
             "count": block_count,
             "avg_word_length": avg_extrinsics,
             "total_tokens": total_extrinsics,
-            "update_frequency": update_freq.get("chain", "unknown"),
+            "update_frequency": update_freq.get("onchain", "unknown"),
             "platform": rpc_url,
-            "weight": weights.get("chain", 1.0),
+            "weight": weights.get("onchain", 1.0),
             "rpc_url": rpc_url,
             "doc_url": doc_url,
             "last_3d_count": last3,
@@ -270,34 +268,6 @@ class DataCollector:
             print("🔄 Fetching EVM chain data …")
             evm_blocks = evm_fn()
             result["evm_blocks"] = evm_blocks
-
-            evm_block_count = len(evm_blocks)
-            tx_counts = [len(b.get("transactions", [])) for b in evm_blocks]
-            total_txs = sum(tx_counts)
-            avg_txs = total_txs / evm_block_count if evm_block_count else 0.0
-            evm_rpc = os.getenv("EVM_RPC_URL", "http://localhost:8545")
-            evm_doc = os.getenv(
-                "EVM_CHAIN_DOC_URL", "https://ethereum.org/en/developers/docs/"
-            )
-            last3 = {
-                (dt.date.today() - dt.timedelta(days=i)).isoformat(): 0 for i in range(3)
-            }
-            for blk in evm_blocks:
-                ts = blk.get("timestamp")
-                if ts:
-                    day = dt.datetime.fromtimestamp(ts, dt.UTC).date().isoformat()
-                    if day in last3:
-                        last3[day] += 1
-            stats["data_sources"]["evm_chain"] = {
-                "count": evm_block_count,
-                "avg_word_length": avg_txs,
-                "total_tokens": total_txs,
-                "update_frequency": update_freq.get("evm_chain", "unknown"),
-                "platform": evm_rpc,
-                "weight": weights.get("evm_chain", 1.0),
-                "rpc_url": evm_rpc,
-                "doc_url": evm_doc,
-                "last_3d_count": last3,
-            }
+            # EVM statistics are collected but not added to final stats dictionary
 
         return result
