@@ -164,13 +164,13 @@ These commands install core libraries, including Web3 and Ethereum tooling.
 - Download and install Ollama: https://ollama.com/download
 - Start the Ollama server:
   ```bash
-  ollama server
+  ollama serve
   ```
-- Pull a model:
+- Manage models:
   ```bash
-  ollama pull gemma3:4b
-  # or
-  ollama pull deepseek-r1:1.5b
+  ollama pull gemma3:4b      # download Gemma 3 4B
+  ollama rm deepseek-r1:1.5b # optional: remove an unused model
+  ollama list                # list available models
   ```
 - Test the LLM API:
   ```bash
@@ -217,6 +217,12 @@ EVM_RPC_URL=https://mainnet.infura.io/v3/your_project_id
 EVM_START_BLOCK=0
 EVM_END_BLOCK=latest
 ```
+
+See [docs/environment_variables.md](docs/environment_variables.md) for a full description of every variable and its default role.
+
+**Optional EVM chain support:** Set `ENABLE_EVM_FETCH=true` and provide an `EVM_RPC_URL` to pull blocks from an Ethereum-compatible chain. `EVM_START_BLOCK` and `EVM_END_BLOCK` bound the collection range.
+
+**Per-source weighting controls:** The `DATA_WEIGHT_*` variables tune how chat, forum, news, on-chain, and governance data influence proposal ranking. Ensure the weights sum to `1.0`.
 
 `SUBSTRATE_NODE_URL` should point to a Substrate RPC endpoint. Common choices
 include `wss://rpc.polkadot.io` for Polkadot mainnet or
