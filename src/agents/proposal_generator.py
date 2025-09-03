@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from datetime import datetime
 from typing import Any, Dict
 
@@ -27,15 +28,40 @@ def build_prompt(context: Dict[str, Any]) -> str:
     """Compose a single prompt for the LLM with all context JSON."""
     return (
         "You are an autonomous Polkadot governance agent. "
-        "Draft a concise OpenGov proposal that (1) addresses current community "
-        "sentiment and risks, (2) references recent on-chain activity, "
-        "(3) aligns with historical governance patterns, and "
-        "(4) is formatted for the 'Root' track including Title, Rationale, Action, "
-        "and Expected Impact sections.\n\n"
+        "Using context derived from community chat, forum discussions, news "
+        "reports, on-chain metrics and historical referenda, draft a concise "
+        "OpenGov proposal for the 'Root' track. Reference these sources where "
+        "relevant.\n\n"
+        "Fill out the following template and return only the completed text:\n"
+        "Title: <short heading>\n"
+        "Rationale: <brief reasoning referencing sentiment, risks and prior votes>\n"
+        "Action: <specific on-chain steps>\n"
+        "Expected Impact: <anticipated network effects>\n\n"
         f"=== CONTEXT (JSON) ===\n{json.dumps(context, indent=2, default=_json_default)}\n"
         "======================\n"
-        "Return ONLY the proposal text, no JSON."
+        "Return ONLY the proposal text, no additional commentary."
     )
+
+
+def postprocess_draft(text: str) -> str:
+    """Strip preamble and validate mandatory section headings.
+
+    Removes any introductory phrases appearing before the ``Title:`` heading and
+    ensures all required headings (Title, Rationale, Action, Expected Impact)
+    are present at the start of lines.
+    """
+
+    idx = text.lower().find("title:")
+    if idx == -1:
+        raise ValueError("Missing 'Title:' section")
+    cleaned = text[idx:].lstrip()
+
+    headings = ["Title:", "Rationale:", "Action:", "Expected Impact:"]
+    for heading in headings:
+        if not re.search(rf"^{heading}", cleaned, flags=re.MULTILINE):
+            raise ValueError(f"Missing '{heading}' section")
+
+    return cleaned
 
 
 def draft(
@@ -60,10 +86,11 @@ def draft(
         else int(os.getenv("PROPOSAL_MAX_TOKENS", "4096"))
     )
     prompt = build_prompt(context_dict)
-    return ollama_api.generate_completion(
+    raw = ollama_api.generate_completion(
         prompt=prompt,
         system="You are Polkadot-Gov-Agent v1.",
         model="gemma3:4b",
         temperature=temperature,
         max_tokens=max_tokens,
     )
+    return postprocess_draft(raw)
