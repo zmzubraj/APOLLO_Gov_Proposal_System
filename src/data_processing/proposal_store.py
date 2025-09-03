@@ -98,6 +98,8 @@ def record_proposal(
     *,
     stage: str | None = None,
     source: str | None = None,
+    forecast_confidence: float | None = None,
+    source_weight: float | None = None,
     score: float | None = None,
 ) -> None:
     """Record a generated proposal and optional submission identifier.
@@ -116,6 +118,11 @@ def record_proposal(
     source:
         Optional origin of the proposal draft. When supplied this is stored
         so that downstream analysis can attribute drafts to their source.
+    forecast_confidence:
+        Optional confidence score output by the forecasting model.
+    source_weight:
+        Optional weight assigned to the draft's source when computing the
+        final selection score.
     score:
         Optional selection score associated with the draft.
     """
@@ -129,6 +136,10 @@ def record_proposal(
         row["stage"] = stage
     if source is not None:
         row["source"] = source
+    if forecast_confidence is not None:
+        row["forecast_confidence"] = forecast_confidence
+    if source_weight is not None:
+        row["source_weight"] = source_weight
     if score is not None:
         row["score"] = score
     _append_governance_entry("Proposals", row)

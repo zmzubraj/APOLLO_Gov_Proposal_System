@@ -282,6 +282,8 @@ def main() -> None:
             None,
             stage="draft",
             source=source,
+            forecast_confidence=approval_prob,
+            source_weight=weights_by_source.get(source, 1.0),
             score=score,
         )
 
@@ -329,6 +331,8 @@ def main() -> None:
             None,
             stage="draft",
             source="news",
+            forecast_confidence=approval_prob,
+            source_weight=news_weight,
             score=score,
         )
 
@@ -358,6 +362,10 @@ def main() -> None:
         context = best_draft["context"]
         forecast = best_draft["forecast"]
         proposal_text = best_draft["text"]
+        approval_prob = forecast.get("approval_prob", 0.0)
+        final_source = best_draft.get("source", "")
+        final_source_weight = weights_by_source.get(final_source, 1.0)
+        score = best_draft.get("score", approval_prob * final_source_weight)
     else:
         sent_w = (
             weights_by_source.get("chat", 1.0)
@@ -390,6 +398,8 @@ def main() -> None:
         context["forecast"] = forecast
         proposal_text = _draft(context)
         approval_prob = forecast.get("approval_prob", 0.0)
+        final_source = "consolidated"
+        final_source_weight = sent_w
         score = approval_prob * sent_w
         proposal_drafts.append(
             {
@@ -406,6 +416,8 @@ def main() -> None:
             None,
             stage="draft",
             source="consolidated",
+            forecast_confidence=approval_prob,
+            source_weight=sent_w,
             score=score,
         )
     try:
@@ -461,8 +473,24 @@ def main() -> None:
             submission_id = None
             referendum_index = 0
 
-    record_proposal(proposal_text, None, stage="final")
-    record_proposal(proposal_text, submission_id, stage="submitted")
+    record_proposal(
+        proposal_text,
+        None,
+        stage="final",
+        source=final_source,
+        forecast_confidence=approval_prob,
+        source_weight=final_source_weight,
+        score=score,
+    )
+    record_proposal(
+        proposal_text,
+        submission_id,
+        stage="submitted",
+        source=final_source,
+        forecast_confidence=approval_prob,
+        source_weight=final_source_weight,
+        score=score,
+    )
     if submission_id:
         print(f"🔗 Proposal submitted → {submission_id}")
         try:

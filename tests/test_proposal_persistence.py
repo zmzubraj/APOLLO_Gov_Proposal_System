@@ -39,3 +39,20 @@ def test_stage_column_added_if_missing(tmp_path, monkeypatch):
     df = pd.read_excel(temp_xlsx, sheet_name="Proposals", dtype=str)
     assert "stage" in df.columns
     assert df.loc[df["submission_id"] == "222", "stage"].iat[0] == "draft"
+
+
+def test_additional_fields_persist(tmp_path, monkeypatch):
+    temp_xlsx = tmp_path / "store.xlsx"
+    monkeypatch.setattr(proposal_store, "XLSX_PATH", temp_xlsx)
+
+    proposal_store.record_proposal(
+        "Extra fields", submission_id="S1", stage="draft", source="chat",
+        forecast_confidence=0.8, source_weight=0.5
+    )
+
+    df = pd.read_excel(temp_xlsx, sheet_name="Proposals")
+
+    row = df.loc[0]
+    assert row["source"] == "chat"
+    assert row["forecast_confidence"] == 0.8
+    assert row["source_weight"] == 0.5
