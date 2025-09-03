@@ -132,14 +132,12 @@ class DataCollector:
             engagement = _engagement_factor(texts)
             weights[source] = weights.get(source, 1.0) * engagement
 
-            avg_words = (
-                sum(len(t.split()) for t in text_snippets) / count if count else 0.0
-            )
-            total_tokens = int(count * avg_words)
+            total_words = sum(len(t.split()) for t in text_snippets)
+            avg_words = total_words / count if count else 0.0
             stats["data_sources"][source] = {
                 "count": count,
                 "avg_word_length": avg_words,
-                "total_tokens": total_tokens,
+                "total_tokens": total_words,
                 "update_frequency": update_freq.get(source, "unknown"),
                 "platform": platform_map.get(source),
                 "weight": weights.get(source, 1.0),
@@ -154,14 +152,12 @@ class DataCollector:
                 parts.extend(str(c) for c in comments)
             article_texts.append(" ".join(p for p in parts if p))
         news_count = len(article_texts)
-        avg_news_words = (
-            sum(len(t.split()) for t in article_texts) / news_count if news_count else 0.0
-        )
-        total_tokens = int(news_count * avg_news_words)
+        total_news_words = sum(len(t.split()) for t in article_texts)
+        avg_news_words = total_news_words / news_count if news_count else 0.0
         stats["data_sources"]["news"] = {
             "count": news_count,
             "avg_word_length": avg_news_words,
-            "total_tokens": total_tokens,
+            "total_tokens": total_news_words,
             "update_frequency": update_freq.get("news", "unknown"),
             "platform": platform_map.get("news"),
             "weight": weights.get("news", 1.0),
@@ -170,20 +166,15 @@ class DataCollector:
 
         # On-chain source statistics
         block_count = len(blocks)
-        avg_extrinsics = (
-            sum(
-                b.get("extrinsics_count", len(b.get("extrinsics", [])))
-                for b in blocks
-            )
-            / block_count
-            if block_count
-            else 0.0
-        )
+        extrinsic_counts = [
+            b.get("extrinsics_count", len(b.get("extrinsics", []))) for b in blocks
+        ]
+        total_extrinsics = sum(extrinsic_counts)
+        avg_extrinsics = total_extrinsics / block_count if block_count else 0.0
         rpc_url = os.getenv("SUBSTRATE_RPC", SUBSTRATE_RPC)
         doc_url = os.getenv(
             "CHAIN_DOC_URL", "https://wiki.polkadot.network/docs"
         )
-        total_tokens = int(block_count * avg_extrinsics)
         last3 = {
             (dt.date.today() - dt.timedelta(days=i)).isoformat(): 0 for i in range(3)
         }
@@ -196,7 +187,7 @@ class DataCollector:
         stats["data_sources"]["chain"] = {
             "count": block_count,
             "avg_word_length": avg_extrinsics,
-            "total_tokens": total_tokens,
+            "total_tokens": total_extrinsics,
             "update_frequency": update_freq.get("chain", "unknown"),
             "platform": rpc_url,
             "weight": weights.get("chain", 1.0),
@@ -218,15 +209,13 @@ class DataCollector:
                     if not isinstance(df, pd.DataFrame) or df.empty:
                         continue
                     for _, row in df.iterrows():
-                        text = " ".join(
-                            str(v) for v in row.dropna().astype(str)
-                        )
+                        text = " ".join(str(v) for v in row.dropna().astype(str))
                         if text.strip():
                             docs.append(text)
                 gov_count = len(docs)
                 if gov_count:
-                    gov_avg = sum(len(t.split()) for t in docs) / gov_count
-                    gov_total = int(gov_count * gov_avg)
+                    gov_total = sum(len(t.split()) for t in docs)
+                    gov_avg = gov_total / gov_count
             except Exception:
                 pass
 
