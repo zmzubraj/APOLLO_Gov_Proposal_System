@@ -83,11 +83,34 @@ def _fetch_semantic_snippets(query: str, limit: int = 5) -> Tuple[list[str], boo
     return [text for _, text in scored[:limit]], True
 
 
-def _summarise(snippets: list[str]) -> str:
+def _summarise(
+    snippets: list[str],
+    *,
+    temperature: float | None = None,
+    max_tokens: int | None = None,
+    timeout: float | None = None,
+) -> str:
     """Summarise ``snippets`` using the LLM with a naive fallback."""
     prompt = "Summarise the following snippets:\n" + "\n".join(snippets)
+    temperature = (
+        temperature
+        if temperature is not None
+        else float(os.getenv("SUMMARY_TEMPERATURE", "0.2"))
+    )
+    max_tokens = (
+        max_tokens
+        if max_tokens is not None
+        else int(os.getenv("SUMMARY_MAX_TOKENS", "1024"))
+    )
+    timeout = (
+        timeout
+        if timeout is not None
+        else float(os.getenv("SUMMARY_TIMEOUT", os.getenv("OLLAMA_TIMEOUT", "240")))
+    )
     try:
-        return ollama_api.generate_completion(prompt)
+        return ollama_api.generate_completion(
+            prompt, temperature=temperature, max_tokens=max_tokens, timeout=timeout
+        )
     except Exception:
         return " ".join(snippets)[:500]
 
