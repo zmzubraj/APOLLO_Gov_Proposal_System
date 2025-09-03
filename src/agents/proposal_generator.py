@@ -93,4 +93,9 @@ def draft(
         temperature=temperature,
         max_tokens=max_tokens,
     )
-    return postprocess_draft(raw)
+    try:
+        return postprocess_draft(raw)
+    except ValueError:
+        # If the model returns an unexpected format, fall back to the raw text
+        # rather than raising and terminating the pipeline.
+        return raw.strip()
