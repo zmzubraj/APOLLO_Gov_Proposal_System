@@ -13,6 +13,7 @@ from __future__ import annotations
 from typing import List, Dict, Any
 import os
 import datetime as dt
+import logging
 import feedparser, requests
 from bs4 import BeautifulSoup
 from llm.ollama_api import generate_completion, OllamaError
@@ -26,6 +27,12 @@ RSS_FEEDS = [
 ]
 LOOKBACK_DAYS = int(os.getenv("NEWS_LOOKBACK_DAYS", 30))
 MAX_ARTICLES = 50
+MIN_ARTICLES = 20
+ADDITIONAL_FEEDS = [
+    "https://news.google.com/rss/search?q=polkadot",
+]
+
+logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = """
 Return ONLY minified JSON with two keys:
@@ -46,13 +53,24 @@ def _parse_entry(entry) -> Dict[str, Any]:
 
 
 def _collect_recent_items(lookback_days: int = LOOKBACK_DAYS) -> List[Dict[str, Any]]:
+    """Collect recent RSS entries, expanding the search when coverage is low."""
+
+    def _gather(feeds: List[str], cutoff: dt.datetime) -> List[dict]:
+        gathered: list[dict] = []
+        for url in feeds:
+            for e in feedparser.parse(url).entries:
+                it = _parse_entry(e)
+                if it["published"] >= cutoff:
+                    gathered.append(it)
+        return gathered
+
     cutoff = dt.datetime.now(dt.UTC) - dt.timedelta(days=lookback_days)
-    items: list[dict] = []
-    for url in RSS_FEEDS:
-        for e in feedparser.parse(url).entries:
-            it = _parse_entry(e)
-            if it["published"] >= cutoff:
-                items.append(it)
+    items = _gather(RSS_FEEDS, cutoff)
+
+    if len(items) < MIN_ARTICLES:
+        cutoff = dt.datetime.now(dt.UTC) - dt.timedelta(days=lookback_days * 2)
+        items.extend(_gather(RSS_FEEDS + ADDITIONAL_FEEDS, cutoff))
+
     # unique by title
     seen, uniq = set(), []
     for it in sorted(items, key=lambda x: x["published"], reverse=True):
@@ -61,6 +79,12 @@ def _collect_recent_items(lookback_days: int = LOOKBACK_DAYS) -> List[Dict[str, 
             seen.add(it["title"])
             if len(uniq) >= MAX_ARTICLES:
                 break
+
+    if len(uniq) < MIN_ARTICLES:
+        logger.warning(
+            "Only %d recent articles found; expected at least %d", len(uniq), MIN_ARTICLES
+        )
+
     return uniq
 
 
