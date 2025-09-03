@@ -419,29 +419,89 @@ def print_sentiment_embedding_table(stats: Iterable[Mapping[str, Any]]) -> None:
         Iterable of dictionaries each describing one sentiment analysis batch
         with the keys ``batch_id``, ``ctx_size_kb`` (CTX size in KB),
         ``sentiment``, ``confidence`` and ``embedded`` specifying if the batch
-        was stored in the KB.
+        was stored in the KB.  A ``source`` key may optionally specify the
+        originating data source (e.g. ``chat`` or ``chain``).
     """
 
     headers = [
+        "Source",
         "Batch ID",
         "CTX Size (KB)",
         "Sentiment",
         "Confidence",
+        "Flag",
         "Embedded in KB",
+        "Avg. Src Confidence",
     ]
 
-    rows = []
-    for info in stats:
-        batch = info.get("batch_id", "-")
-        size = f"{info.get('ctx_size_kb', 0.0):.1f}"
-        sent = info.get("sentiment", "-")
-        conf = f"{info.get('confidence', 0.0):.2f}"
-        embedded = "Yes" if info.get("embedded") else "No"
-        rows.append([batch, size, sent, conf, embedded])
+    # First pass: collect records and aggregate confidence per source
+    records: list[dict[str, Any]] = []
+    src_conf_sum: dict[str, float] = {}
+    src_conf_count: dict[str, int] = {}
+    total_ctx = 0.0
+    total_conf = 0.0
 
-    if not rows:
+    for info in stats:
+        source = str(info.get("source", "-"))
+        confidence = float(info.get("confidence", 0.0) or 0.0)
+        ctx_size = float(info.get("ctx_size_kb", 0.0) or 0.0)
+
+        records.append(
+            {
+                "source": source,
+                "batch": info.get("batch_id", "-"),
+                "ctx_size": ctx_size,
+                "sentiment": info.get("sentiment", "-"),
+                "confidence": confidence,
+                "embedded": "Yes" if info.get("embedded") else "No",
+            }
+        )
+
+        src_conf_sum[source] = src_conf_sum.get(source, 0.0) + confidence
+        src_conf_count[source] = src_conf_count.get(source, 0) + 1
+        total_ctx += ctx_size
+        total_conf += confidence
+
+    if not records:
         print("No sentiment batches available")
         return
+
+    avg_conf_per_source = {
+        src: (src_conf_sum[src] / src_conf_count[src]) for src in src_conf_sum
+    }
+
+    rows = []
+    for rec in records:
+        avg_src_conf = avg_conf_per_source.get(rec["source"], 0.0)
+        flag = "⚠" if rec["confidence"] < 0.5 else ""
+        rows.append(
+            [
+                rec["source"],
+                rec["batch"],
+                f"{rec['ctx_size']:.1f}",
+                rec["sentiment"],
+                f"{rec['confidence']:.2f}",
+                flag,
+                rec["embedded"],
+                f"{avg_src_conf:.2f}",
+            ]
+        )
+
+    # Append a final row showing overall averages
+    overall_ctx_avg = total_ctx / len(records)
+    overall_conf_avg = total_conf / len(records)
+    rows.append(
+        [
+            "Overall",
+            "-",
+            f"{overall_ctx_avg:.1f}",
+            "-",
+            f"{overall_conf_avg:.2f}",
+            "",
+            "-",
+            f"{overall_conf_avg:.2f}",
+        ]
+    )
 
     print("\nTable: Sentiment Analysis and Knowledge Base Embedding")
     table = _format_table(headers, rows)
