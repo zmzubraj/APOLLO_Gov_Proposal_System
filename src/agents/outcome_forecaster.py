@@ -97,6 +97,43 @@ def forecast_outcomes(context: Dict) -> Dict[str, float]:
             trending_val = trending_val.get("score") or trending_val.get("trending_score")
     trending = float(trending_val or 0.0)
 
+    # Additional contextual features
+    proposal_text = context.get("proposal_text")
+    if proposal_text is None:
+        proposal = context.get("proposal")
+        if isinstance(proposal, dict):
+            proposal_text = proposal.get("text") or proposal.get("proposal_text")
+    try:
+        proposal_length = float(len(str(proposal_text).split())) if proposal_text else 0.0
+    except Exception:
+        proposal_length = 0.0
+
+    weight_val = context.get("engagement_weight")
+    if weight_val is None:
+        weight_val = context.get("sentiment", {})
+        if isinstance(weight_val, dict):
+            weight_val = weight_val.get("weight")
+    engagement_weight = float(weight_val or 0.0)
+
+    turnout_trend = 0.0
+    try:
+        if not df.empty:
+            if "Voted_percentage" in df.columns:
+                turnouts = df["Voted_percentage"].astype(float) / 100.0
+            elif {"Participants", "Eligible_DOT"}.issubset(df.columns):
+                turnouts = (
+                    df["Participants"].astype(float)
+                    / df["Eligible_DOT"].replace(0, pd.NA).astype(float)
+                ).fillna(0)
+            else:
+                turnouts = pd.Series([], dtype=float)
+            if len(turnouts) >= 2:
+                recent = turnouts.tail(min(5, len(turnouts)))
+                x = np.arange(len(recent))
+                turnout_trend = float(np.polyfit(x, recent, 1)[0])
+    except Exception:
+        turnout_trend = 0.0
+
     # Apply trained model if available
     model = _load_model()
     if model is not None:
@@ -106,6 +143,9 @@ def forecast_outcomes(context: Dict) -> Dict[str, float]:
                 "turnout": turnout_estimate,
                 "sentiment": sentiment,
                 "trending": trending,
+                "proposal_length": proposal_length,
+                "engagement_weight": engagement_weight,
+                "turnout_trend": turnout_trend,
             }
             approval_prob = _apply_model(model, features)
         except Exception:

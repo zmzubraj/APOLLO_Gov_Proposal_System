@@ -4,6 +4,9 @@
     "approval_rate": 0.8,
     "turnout": 0.2,
     "sentiment": 0.0,
-    "trending": 0.0
+    "trending": 0.0,
+    "proposal_length": 0.0,
+    "engagement_weight": 0.0,
+    "turnout_trend": 0.0
   }
 }
