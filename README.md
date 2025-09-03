@@ -41,7 +41,7 @@ APOLLO’s modular architecture is deployable on any blockchain supporting on-ch
 
 - **LLM-Based Analysis:** Uses open-source LLMs (e.g., Gemma3:4B, Deepseek R1:1.5B) via Ollama for summarization, classification, and proposal generation.
 - **Retrieval-Augmented Knowledge Base:** Stores governance data in an Excel workbook (`data/input/PKD Governance Data.xlsx`, auto-generated if missing) for retrieval-augmented generation (RAG). See [docs/workbook_structure.md](docs/workbook_structure.md) for worksheet details.
-- **Predictive Outcome Forecasting:** Baseline statistics-driven model estimates approval probability and voter turnout from historical referenda.
+- **Predictive Outcome Forecasting:** Trainable logistic model (see `src/analysis/train_forecaster.py`) estimates approval probability and voter turnout from historical referenda.
 - **Community Broadcast & Submission:** Connectors push proposal summaries to Discord, Telegram, and Twitter with optional Substrate proposal submission.
 - **Chain-Agnostic Design:** Integrates with Polkadot’s OpenGov pallet; easily adaptable to other platforms.
 - **Modular Pipeline:** Separate modules for data collection, analysis, LLM inference, and on-chain logging.
@@ -282,7 +282,14 @@ python src/analysis/governance_analysis.py
 ```
 - Computes historical KPIs and outputs summaries.
 
-### 5. Run the Main Pipeline
+### 5. Train the Referendum Outcome Forecaster
+
+```bash
+python src/analysis/train_forecaster.py
+```
+- Fits a logistic regression model on historical referendum data and saves parameters to `models/referendum_model.json`.
+
+### 6. Run the Main Pipeline
 
 ```bash
 python src/main.py
@@ -291,7 +298,7 @@ python src/main.py
 
 > **Tip:** The first run may take longer due to model downloads and embedding builds. Subsequent runs are faster.
 
-### 6. Post Summaries to Community Platforms
+### 7. Post Summaries to Community Platforms
 
 ```python
 from src.execution.discord_bot import post_summary as discord_post
@@ -304,13 +311,13 @@ twitter_post("Example proposal summary")
 ```
 - Sends a text summary to Discord, Telegram, and Twitter using the configured credentials. For community sentiment, APOLLO also monitors X/Twitter, the Polkadot Forum, CryptoRank, Binance Square, and Reddit's r/Polkadot via `src/data_processing/social_media_scraper.py`. Set `TWITTER_BEARER` to use the official X API; the other sources rely on public endpoints and require no additional credentials.
 
-### 7. Review Prediction Accuracy
+### 8. Review Prediction Accuracy
 
 After `main.py` completes, APOLLO prints a prediction‑accuracy table comparing forecasted outcomes with actual referendum results. It also prints a draft forecast table listing each generated draft, its predicted outcome, confidence, runtime and margin of error. When no current evaluations are available, the system samples five historical executed referenda to populate this table.
 
 > **Prerequisite:** `data/input/PKD Governance Data.xlsx` must exist and include executed referenda (e.g., populate it via `python src/data_processing/referenda_updater.py`). Without this data the fallback accuracy report cannot be generated.
 
-### 8. Draft Ranking & Workbook Storage
+### 9. Draft Ranking & Workbook Storage
 
 For each data source (chat, forum, news, etc.) APOLLO drafts a proposal and
 forecasts its likelihood of approval. These drafts are ranked by the
@@ -346,6 +353,7 @@ apollo-governance/
 │   │   ├── blockchain_metrics.py
 │   │   ├── governance_analysis.py
 │   │   ├── prediction_evaluator.py
+│   │   ├── train_forecaster.py
 │   │   └── …
 │   ├── data_processing/
 │   │   ├── proposal_store.py
