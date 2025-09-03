@@ -146,6 +146,7 @@ def build_context(
     trending_topics: list[str] | None = None,
     dedup_snippets: bool = True,
     summarise_snippets: bool = False,
+    source_weight: Dict[str, Dict[str, float]] | None = None,
 ) -> Dict[str, Any]:
     """Consolidate disparate inputs into a single context dictionary."""
 
@@ -160,28 +161,40 @@ def build_context(
         snippets = _dedup(snippets)
     summary = _summarise(snippets) if summarise_snippets and snippets else ""
 
-    # Apply weights to each component
-    chat_w = _env_weight("DATA_WEIGHT_CHAT")
-    forum_w = _env_weight("DATA_WEIGHT_FORUM")
-    sentiment_w = (chat_w + forum_w) / 2
-    news_w = _env_weight("DATA_WEIGHT_NEWS")
-    chain_w = _env_weight("DATA_WEIGHT_CHAIN")
-    gov_w = _env_weight("DATA_WEIGHT_GOVERNANCE")
-    evm_w = _env_weight("DATA_WEIGHT_EVM")
+    source_weight = source_weight or {}
 
-    weighted_sentiment = _apply_weight(sentiment, sentiment_w)
-    weighted_news = _apply_weight(news, news_w)
-    weighted_chain = _apply_weight(chain_kpis, chain_w)
-    weighted_evm = _apply_weight(evm_kpis or {}, evm_w)
-    weighted_gov = _apply_weight(gov_kpis, gov_w)
+    def _info(key: str, default_source: str, env_var: str) -> tuple[str, float]:
+        info = source_weight.get(key, {}) if isinstance(source_weight, dict) else {}
+        src = info.get("source", default_source) if isinstance(info, dict) else default_source
+        w = info.get("weight") if isinstance(info, dict) else None
+        if w is None:
+            if key == "sentiment":
+                chat_w = _env_weight("DATA_WEIGHT_CHAT")
+                forum_w = _env_weight("DATA_WEIGHT_FORUM")
+                w = (chat_w + forum_w) / 2
+            else:
+                w = _env_weight(env_var)
+        return src, w
+
+    def _wrap(data: Any, src: str, w: float) -> Dict[str, Any]:
+        weighted = _apply_weight(data, w)
+        if isinstance(weighted, dict):
+            return {"source": src, "weight": w, **weighted}
+        return {"source": src, "weight": w, "value": weighted}
+
+    sent_src, sent_w = _info("sentiment", "sentiment", "DATA_WEIGHT_CHAT")
+    news_src, news_w = _info("news", "news", "DATA_WEIGHT_NEWS")
+    chain_src, chain_w = _info("chain_kpis", "onchain", "DATA_WEIGHT_CHAIN")
+    evm_src, evm_w = _info("evm_kpis", "evm", "DATA_WEIGHT_EVM")
+    gov_src, gov_w = _info("governance_kpis", "governance", "DATA_WEIGHT_GOVERNANCE")
 
     context = {
         "timestamp_utc": utc_now_iso(),
-        "sentiment": weighted_sentiment,
-        "news": weighted_news,
-        "chain_kpis": weighted_chain,
-        "evm_kpis": weighted_evm,
-        "governance_kpis": weighted_gov,
+        "sentiment": _wrap(sentiment, sent_src, sent_w),
+        "news": _wrap(news, news_src, news_w),
+        "chain_kpis": _wrap(chain_kpis, chain_src, chain_w),
+        "evm_kpis": _wrap(evm_kpis or {}, evm_src, evm_w),
+        "governance_kpis": _wrap(gov_kpis, gov_src, gov_w),
         "trending_topics": trending_topics or [],
         "kb_snippets": snippets,
         "kb_summary": summary,
