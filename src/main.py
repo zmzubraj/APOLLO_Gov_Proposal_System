@@ -65,6 +65,13 @@ NEWS_TEMPERATURE = float(os.getenv("NEWS_TEMPERATURE", "0.2"))
 NEWS_MAX_TOKENS = int(os.getenv("NEWS_MAX_TOKENS", "1024"))
 
 
+def _json_default(obj: Any) -> str:
+    """JSON serialiser for objects not serialisable by default."""
+    if isinstance(obj, (dt.datetime, dt.date)):
+        return obj.isoformat()
+    raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")
+
+
 def _refresh_workbook() -> None:
     """Re-ingest the governance workbook before running the pipeline."""
     try:
@@ -197,7 +204,7 @@ def main() -> None:
     evm_blocks = data.get("evm_blocks", [])
     evm_kpis = summarise_evm_blocks(evm_blocks)
     # Perform sentiment analysis + embedding on-chain KPIs
-    chain_text = json.dumps(chain_kpis)
+    chain_text = json.dumps(chain_kpis, default=_json_default)
     chain_res = _analyse([chain_text])
     chain_ctx_size = (
         len(chain_text.encode("utf-8")) / 1024 if chain_text else 0.0
@@ -444,7 +451,9 @@ def main() -> None:
     if not stats["prediction_eval"]:
         stats["prediction_eval"] = evaluate_historical_predictions()
     timestamp = dt.datetime.now(dt.UTC).strftime("%Y%m%d-%H%M%S")
-    (OUT_DIR / f"context_{timestamp}.json").write_text(json.dumps(context, indent=2))
+    (OUT_DIR / f"context_{timestamp}.json").write_text(
+        json.dumps(context, indent=2, default=_json_default)
+    )
     phase_times["analysis_prediction_s"] = time.perf_counter() - t1
 
     # -------------------------- Draft + Sign ------------------------------
@@ -564,7 +573,9 @@ def main() -> None:
         )
         existing.append(run_timings)
         timings_history = existing[-3:]
-        timings_path.write_text(json.dumps(timings_history, indent=2))
+        timings_path.write_text(
+            json.dumps(timings_history, indent=2, default=_json_default)
+        )
     except Exception:
         timings_history = [run_timings]
     stats["timings"] = timings_history
