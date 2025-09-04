@@ -83,6 +83,32 @@ def _refresh_workbook() -> None:
         # Workbook ingestion failures should not block pipeline execution
         pass
 
+
+def _save_proposal_artifact(
+    text: str,
+    source: str,
+    context: dict[str, Any],
+    forecast: dict[str, Any],
+    *,
+    final: bool = False,
+) -> None:
+    """Persist proposal details to JSON for auditability."""
+    timestamp = dt.datetime.now(dt.UTC).strftime("%Y%m%d-%H%M%S-%f")
+    snippet = context.get("kb_summary") or " ".join(context.get("kb_snippets", [])[:1])
+    payload = {
+        "text": text,
+        "source": source,
+        "context_snippet": snippet,
+        "forecast": forecast,
+    }
+    (OUT_DIR / f"draft_{source}_{timestamp}.json").write_text(
+        json.dumps(payload, indent=2, default=_json_default)
+    )
+    if final:
+        (OUT_DIR / f"proposal_{timestamp}.json").write_text(
+            json.dumps(payload, indent=2, default=_json_default)
+        )
+
 def main() -> None:
     start = dt.datetime.now(dt.UTC)
     stats: dict[str, Any] = {}
@@ -294,6 +320,12 @@ def main() -> None:
             source_weight=weights_by_source.get(source, 1.0),
             score=score,
         )
+        _save_proposal_artifact(
+            draft_text,
+            source,
+            ctx,
+            forecast,
+        )
 
     if news:
         sw_map_news = {
@@ -342,6 +374,12 @@ def main() -> None:
             forecast_confidence=approval_prob,
             source_weight=news_weight,
             score=score,
+        )
+        _save_proposal_artifact(
+            news_draft,
+            "news",
+            ctx_news,
+            news_forecast,
         )
 
     chain_draft_info = draft_onchain_proposal(
@@ -429,6 +467,12 @@ def main() -> None:
             score=score,
             sheet="DraftedProposals",
         )
+        _save_proposal_artifact(
+            proposal_text,
+            "consolidated",
+            context,
+            forecast,
+        )
     try:
         df_pred = pd.DataFrame(
             [
@@ -494,6 +538,13 @@ def main() -> None:
         score=score,
         sheet="Proposal",
     )
+    _save_proposal_artifact(
+        proposal_text,
+        final_source,
+        context,
+        forecast,
+        final=True,
+    )
     record_proposal(
         proposal_text,
         submission_id,
@@ -503,6 +554,12 @@ def main() -> None:
         source_weight=final_source_weight,
         score=score,
         sheet="Proposal",
+    )
+    _save_proposal_artifact(
+        proposal_text,
+        final_source,
+        context,
+        forecast,
     )
     if submission_id:
         print(f"🔗 Proposal submitted → {submission_id}")
