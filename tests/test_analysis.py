@@ -68,6 +68,14 @@ def test_summarise_evm_blocks():
     assert res["avg_value_per_tx_ETH"] == pytest.approx(0.875, rel=1e-6)
 
 
+def test_summarise_combined_blocks():
+    sub_blocks = [{"block_timestamp": 0, "extrinsics_count": 1, "total_fee": 0}]
+    evm_blocks = [{"timestamp": 0, "transactions": []}]
+    combined = blockchain_metrics.summarise_combined_blocks(sub_blocks, evm_blocks)
+    assert "daily_tx_count" in combined
+    assert "evm_daily_tx_count" in combined
+
+
 def test_summarise_news_handles_empty():
     assert news_analysis.summarise_news([]) == {
         "digest": [],

@@ -24,7 +24,6 @@ def test_selects_highest_approval_prob(monkeypatch, tmp_path):
     monkeypatch.setattr(main, "analyse_messages", lambda msgs: {})
     monkeypatch.setattr(main, "fetch_and_summarise_news", lambda: {})
     monkeypatch.setattr(main, "get_recent_blocks_cached", lambda: [])
-    monkeypatch.setattr(main, "summarise_blocks", lambda blocks: {})
     monkeypatch.setattr(main, "update_referenda", lambda max_new: None)
     monkeypatch.setattr(main, "get_governance_insights", lambda as_narrative=True: {})
     monkeypatch.setattr(main, "compare_predictions", lambda df: {"prediction_eval": []})
@@ -38,13 +37,16 @@ def test_selects_highest_approval_prob(monkeypatch, tmp_path):
         return ctx
 
     monkeypatch.setattr(main, "build_context", fake_build_context)
+    import src.reporting.summary_tables as summary_tables
+    monkeypatch.setattr(summary_tables, "build_context", fake_build_context)
+    monkeypatch.setattr(summary_tables.proposal_generator, "draft", lambda ctx: f"Proposal {ctx.get('id', 0)}")
 
     def fake_forecast(ctx):
         prob = 0.1 if ctx["id"] == 0 else 0.9
         return {"approval_prob": prob, "turnout_estimate": 0.0}
 
     monkeypatch.setattr(main, "forecast_outcomes", fake_forecast)
-    monkeypatch.setattr(main.proposal_generator, "draft", lambda ctx: f"Proposal {ctx['id']}")
+    monkeypatch.setattr(main.proposal_generator, "draft", lambda ctx: f"Proposal {ctx.get('id', 0)}")
     monkeypatch.setattr(main, "broadcast_proposal", lambda text: None)
     monkeypatch.setattr(main, "submit_preimage", lambda url, pk, data: {"preimage_hash": "0xpre"})
     monkeypatch.setattr(main, "submit_proposal", lambda url, pk, h, track: {"extrinsic_hash": "0xsub", "referendum_index": 1, "is_success": True})

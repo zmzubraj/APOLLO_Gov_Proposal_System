@@ -139,7 +139,6 @@ def build_context(
     news: Dict[str, Any],
     chain_kpis: Dict[str, Any],
     gov_kpis: Dict[str, Any],
-    evm_kpis: Dict[str, Any] | None = None,
     kb_snippets: list[str] | None = None,
     kb_query: str | None = None,
     *,
@@ -185,7 +184,6 @@ def build_context(
     sent_src, sent_w = _info("sentiment", "sentiment", "DATA_WEIGHT_CHAT")
     news_src, news_w = _info("news", "news", "DATA_WEIGHT_NEWS")
     chain_src, chain_w = _info("chain_kpis", "onchain", "DATA_WEIGHT_CHAIN")
-    evm_src, evm_w = _info("evm_kpis", "evm", "DATA_WEIGHT_EVM")
     gov_src, gov_w = _info("governance_kpis", "governance", "DATA_WEIGHT_GOVERNANCE")
 
     context = {
@@ -193,7 +191,6 @@ def build_context(
         "sentiment": _wrap(sentiment, sent_src, sent_w),
         "news": _wrap(news, news_src, news_w),
         "chain_kpis": _wrap(chain_kpis, chain_src, chain_w),
-        "evm_kpis": _wrap(evm_kpis or {}, evm_src, evm_w),
         "governance_kpis": _wrap(gov_kpis, gov_src, gov_w),
         "trending_topics": trending_topics or [],
         "kb_snippets": snippets,

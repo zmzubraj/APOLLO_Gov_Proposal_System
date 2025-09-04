@@ -24,7 +24,6 @@ def test_onchain_sentiment_included(monkeypatch, tmp_path):
     monkeypatch.setattr(main, "analyse_messages", lambda msgs: {"sentiment": "Neutral", "confidence": 0.5})
     monkeypatch.setattr(main, "fetch_and_summarise_news", lambda: {})
     monkeypatch.setattr(main, "get_recent_blocks_cached", lambda: [{"block_timestamp": 0, "extrinsics_count": 0, "total_fee": 0}])
-    monkeypatch.setattr(main, "summarise_blocks", lambda blocks: {"foo": "bar"})
     monkeypatch.setattr(main, "update_referenda", lambda max_new: None)
     monkeypatch.setattr(main, "get_governance_insights", lambda as_narrative=True: {})
     monkeypatch.setattr(main, "build_context", lambda *a, **k: {})

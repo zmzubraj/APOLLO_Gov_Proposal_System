@@ -54,8 +54,6 @@ def test_pipeline_skips_empty_source(empty_fetcher, skipped_source, monkeypatch,
     monkeypatch.setattr(main, "analyse_messages", lambda msgs: {"sentiment": "Neutral", "confidence": 1, "message_size_kb": 1})
     monkeypatch.setattr(main, "forecast_outcomes", lambda ctx: {"approval_prob": 0.9})
     monkeypatch.setattr(main, "build_context", lambda *a, **k: {})
-    monkeypatch.setattr(main, "summarise_blocks", lambda blocks: {})
-    monkeypatch.setattr(main, "summarise_evm_blocks", lambda blocks: {})
     monkeypatch.setattr(main, "update_referenda", lambda max_new: None)
     monkeypatch.setattr(main, "get_governance_insights", lambda as_narrative=True: {})
     monkeypatch.setattr(main, "draft_onchain_proposal", lambda *a, **k: None)

@@ -19,6 +19,7 @@ from data_processing.blockchain_cache import (
     SUBSTRATE_RPC,
 )
 from data_processing.evm_data_fetcher import fetch_evm_blocks
+from analysis.blockchain_metrics import summarise_blocks, summarise_evm_blocks
 from data_processing.proposal_store import ROOT, XLSX_PATH
 
 
@@ -311,14 +312,8 @@ class DataCollector:
 
         trending_topics = _extract_trends(messages, article_texts, weights, stats)
 
-        result = {
-            "messages": messages,
-            "news": news,
-            "blocks": blocks,
-            "evm_blocks": [],
-            "stats": stats,
-            "trending_topics": trending_topics,
-        }
+        block_summary = summarise_blocks(blocks)
+        evm_blocks: list = []
 
         enable_evm = os.getenv("ENABLE_EVM_FETCH", "false").lower() == "true"
         if enable_evm:
@@ -336,7 +331,16 @@ class DataCollector:
             evm_blocks = evm_fn() or []
             if not evm_blocks:
                 print("[warn] no EVM block data fetched")
-            result["evm_blocks"] = evm_blocks
-            # EVM statistics are collected but not added to final stats dictionary
+            evm_summary = summarise_evm_blocks(evm_blocks)
+            block_summary.update({f"evm_{k}": v for k, v in evm_summary.items()})
+
+        result = {
+            "messages": messages,
+            "news": news,
+            "blocks": block_summary,
+            "evm_blocks": evm_blocks,
+            "stats": stats,
+            "trending_topics": trending_topics,
+        }
 
         return result

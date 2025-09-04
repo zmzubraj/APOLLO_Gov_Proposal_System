@@ -25,6 +25,7 @@ web3_module.Web3 = object
 sys.modules.setdefault("web3", web3_module)
 
 from agents.data_collector import DataCollector
+from analysis.blockchain_metrics import summarise_blocks
 
 
 def test_collect_skips_empty_sources():
@@ -41,4 +42,5 @@ def test_collect_skips_empty_sources():
 
     # Empty news and block fetchers should yield empty structures
     assert data["news"] == {}
-    assert data["blocks"] == []
+    expected = summarise_blocks([])
+    assert data["blocks"] == expected
