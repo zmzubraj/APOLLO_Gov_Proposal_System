@@ -16,6 +16,7 @@ from __future__ import annotations
 import csv, time, datetime as dt, pathlib, os, requests
 from typing import List, Dict
 
+import numpy as np
 import pandas as pd
 from bs4 import BeautifulSoup
 from substrateinterface import SubstrateInterface
@@ -58,6 +59,59 @@ to_iso  = (
     else ""
 )
 strip_h = lambda h: BeautifulSoup(h, "html.parser").get_text(" ", strip=True)
+
+
+def load_historical_rates() -> Dict[str, float]:
+    """Return historical approval and turnout statistics.
+
+    The data is read from the Referenda sheet of ``XLSX_PATH``.  The function
+    returns a mapping containing ``approval_rate`` (fraction of executed
+    referenda), ``turnout`` (mean participation rate) and ``turnout_trend``
+    (slope of the most recent participation values).
+
+    Any failure to read or process the workbook results in an exception so
+    callers may gracefully fall back to defaults.
+    """
+
+    if not XLSX_PATH.exists():  # pragma: no cover - external file may be absent
+        raise FileNotFoundError("Referenda workbook missing")
+
+    df = pd.read_excel(XLSX_PATH, sheet_name="Referenda")
+    if df.empty:
+        raise ValueError("Referenda sheet empty")
+
+    # Approval rate from historical outcomes
+    approval_rate = 0.0
+    if "Status" in df.columns:
+        approval_rate = (
+            df["Status"].astype(str).str.lower().eq("executed").mean()
+        )
+
+    # Average turnout
+    turnout = 0.0
+    turnouts = pd.Series([], dtype=float)
+    if "Voted_percentage" in df.columns:
+        turnouts = df["Voted_percentage"].astype(float) / 100.0
+    elif {"Participants", "Eligible_DOT"}.issubset(df.columns):
+        turnouts = (
+            df["Participants"].astype(float)
+            / df["Eligible_DOT"].replace(0, pd.NA).astype(float)
+        ).fillna(0.0)
+    if not turnouts.empty:
+        turnout = float(turnouts.mean())
+
+    # Trend in turnout (slope of recent participation values)
+    turnout_trend = 0.0
+    if len(turnouts) >= 2:
+        recent = turnouts.tail(min(5, len(turnouts)))
+        x = np.arange(len(recent))
+        turnout_trend = float(np.polyfit(x, recent, 1)[0])
+
+    return {
+        "approval_rate": float(approval_rate),
+        "turnout": float(turnout),
+        "turnout_trend": float(turnout_trend),
+    }
 
 
 # ───────────────────── Subscan helpers ─────────────────────────────────

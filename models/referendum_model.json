@@ -3,10 +3,12 @@
   "coefficients": {
     "approval_rate": 0.8,
     "turnout": 0.2,
-    "sentiment": 0.0,
+    "sentiment": 0.3,
     "trending": 0.0,
     "proposal_length": 0.0,
     "engagement_weight": 0.0,
-    "turnout_trend": 0.0
+    "turnout_trend": 0.0,
+    "source_sentiment_avg": 0.1,
+    "comment_turnout_trend": 0.05
   }
 }

@@ -6,12 +6,11 @@ from typing import Dict, Optional
 
 import json
 import numpy as np
-import pandas as pd
 
 try:  # Prefer absolute import so tests can patch via ``src.data_processing``
-    from src.data_processing.data_loader import load_governance_data
+    from src.data_processing import referenda_updater
 except Exception:  # pragma: no cover
-    from data_processing.data_loader import load_governance_data
+    from data_processing import referenda_updater
 
 
 MODEL_PATH = Path(__file__).resolve().parents[2] / "models" / "referendum_model.json"
@@ -53,27 +52,15 @@ def _apply_model(model: dict, features: Dict[str, float]) -> float:
 
 def forecast_outcomes(context: Dict) -> Dict[str, float]:
     """Return naive forecasts for upcoming referendum outcomes."""
-    try:
-        df = load_governance_data(sheet_name="Referenda")
-    except Exception:
-        df = pd.DataFrame()
 
     approval_prob = 0.5
     turnout_estimate = 0.0
-
+    turnout_trend = 0.0
     try:
-        if not df.empty:
-            if "Status" in df.columns and len(df):
-                approved = df["Status"].astype(str).str.lower().eq("executed").sum()
-                approval_prob = approved / len(df)
-            if "Voted_percentage" in df.columns:
-                turnout_estimate = df["Voted_percentage"].astype(float).mean() / 100.0
-            elif {"Participants", "Eligible_DOT"}.issubset(df.columns):
-                turnout_estimate = (
-                    (df["Participants"].astype(float) / df["Eligible_DOT"].replace(0, pd.NA))
-                    .fillna(0)
-                    .mean()
-                )
+        stats = referenda_updater.load_historical_rates()
+        approval_prob = stats.get("approval_rate", approval_prob)
+        turnout_estimate = stats.get("turnout", turnout_estimate)
+        turnout_trend = stats.get("turnout_trend", turnout_trend)
     except Exception:
         pass
 
@@ -88,6 +75,17 @@ def forecast_outcomes(context: Dict) -> Dict[str, float]:
             sentiment_val = sentiment_val.get("sentiment_score") or sentiment_val.get("score")
     sentiment = float(sentiment_val or 0.0)
 
+    # Per-source sentiment averages
+    src_sent = context.get("source_sentiments") or context.get("sentiment_sources")
+    source_sentiment_avg = 0.0
+    if isinstance(src_sent, dict) and src_sent:
+        try:
+            vals = [float(v) for v in src_sent.values()]
+            if vals:
+                source_sentiment_avg = float(np.mean(vals))
+        except Exception:
+            source_sentiment_avg = 0.0
+
     trending_val = context.get("trend_score")
     if trending_val is None:
         trending_val = context.get("trending_score")
@@ -96,6 +94,14 @@ def forecast_outcomes(context: Dict) -> Dict[str, float]:
         if isinstance(trending_val, dict):
             trending_val = trending_val.get("score") or trending_val.get("trending_score")
     trending = float(trending_val or 0.0)
+
+    # Turnout trends from historical comments
+    comment_trend_val = context.get("comment_turnout_trend")
+    if comment_trend_val is None:
+        comment_trend_val = context.get("turnout_trends")
+        if isinstance(comment_trend_val, dict):
+            comment_trend_val = comment_trend_val.get("comments") or comment_trend_val.get("comment")
+    comment_turnout_trend = float(comment_trend_val or 0.0)
 
     # Additional contextual features
     proposal_text = context.get("proposal_text")
@@ -115,25 +121,6 @@ def forecast_outcomes(context: Dict) -> Dict[str, float]:
             weight_val = weight_val.get("weight")
     engagement_weight = float(weight_val or 0.0)
 
-    turnout_trend = 0.0
-    try:
-        if not df.empty:
-            if "Voted_percentage" in df.columns:
-                turnouts = df["Voted_percentage"].astype(float) / 100.0
-            elif {"Participants", "Eligible_DOT"}.issubset(df.columns):
-                turnouts = (
-                    df["Participants"].astype(float)
-                    / df["Eligible_DOT"].replace(0, pd.NA).astype(float)
-                ).fillna(0)
-            else:
-                turnouts = pd.Series([], dtype=float)
-            if len(turnouts) >= 2:
-                recent = turnouts.tail(min(5, len(turnouts)))
-                x = np.arange(len(recent))
-                turnout_trend = float(np.polyfit(x, recent, 1)[0])
-    except Exception:
-        turnout_trend = 0.0
-
     # Apply trained model if available
     model = _load_model()
     if model is not None:
@@ -146,6 +133,8 @@ def forecast_outcomes(context: Dict) -> Dict[str, float]:
                 "proposal_length": proposal_length,
                 "engagement_weight": engagement_weight,
                 "turnout_trend": turnout_trend,
+                "source_sentiment_avg": source_sentiment_avg,
+                "comment_turnout_trend": comment_turnout_trend,
             }
             approval_prob = _apply_model(model, features)
         except Exception:

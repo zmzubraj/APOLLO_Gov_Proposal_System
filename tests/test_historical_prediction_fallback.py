@@ -1,5 +1,6 @@
 import pandas as pd
 from src.reporting.summary_tables import evaluate_historical_predictions
+from src.data_processing import referenda_updater
 
 
 def test_historical_prediction_fallback(monkeypatch):
@@ -17,7 +18,9 @@ def test_historical_prediction_fallback(monkeypatch):
         "src.reporting.summary_tables.load_governance_data", lambda sheet_name="Referenda": df
     )
     monkeypatch.setattr(
-        "src.agents.outcome_forecaster.load_governance_data", lambda sheet_name="Referenda": df
+        referenda_updater,
+        "load_historical_rates",
+        lambda: {"approval_rate": 0.5, "turnout": 0.5, "turnout_trend": 0.0},
     )
 
     # Ensure deterministic sampling
