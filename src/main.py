@@ -63,6 +63,7 @@ PROPOSAL_TEMPERATURE = float(os.getenv("PROPOSAL_TEMPERATURE", "0.3"))
 PROPOSAL_MAX_TOKENS = int(os.getenv("PROPOSAL_MAX_TOKENS", "4096"))
 NEWS_TEMPERATURE = float(os.getenv("NEWS_TEMPERATURE", "0.2"))
 NEWS_MAX_TOKENS = int(os.getenv("NEWS_MAX_TOKENS", "1024"))
+VERBOSE = os.getenv("VERBOSE", "0").lower() in {"1", "true", "yes"}
 
 
 def _json_default(obj: Any) -> str:
@@ -109,10 +110,12 @@ def _save_proposal_artifact(
             json.dumps(payload, indent=2, default=_json_default)
         )
 
-def main() -> None:
+def main(verbose: bool | None = None) -> None:
     start = dt.datetime.now(dt.UTC)
     stats: dict[str, Any] = {}
     phase_times: dict[str, float] = {}
+    if verbose is None:
+        verbose = VERBOSE
     try:
         ollama_api.check_server()
         llm_available = True
@@ -391,6 +394,15 @@ def main() -> None:
         proposal_drafts, MIN_PASS_CONFIDENCE
     )
 
+    if verbose:
+        print("\nDraft scores:")
+        for d in proposal_drafts:
+            approval = d.get("forecast", {}).get("approval_prob", 0.0)
+            print(
+                f"  {d.get('source', '')}: score={d.get('score', 0.0):.3f} "
+                f"(approval {approval:.2%})"
+            )
+
     # Select best draft (fallback to consolidated context if none qualify)
     eligible_drafts = [
         d for d in proposal_drafts if d.get("score", 0.0) >= MIN_PASS_CONFIDENCE
@@ -631,7 +643,8 @@ def main() -> None:
 
     duration = (dt.datetime.now(dt.UTC) - start).total_seconds()
     print(
-        f"\n✅ Proposal saved → {OUT_DIR / f'proposal_{timestamp}.txt'}   "
+        f"\n✅ Proposal saved → {OUT_DIR / f'proposal_{timestamp}.txt'} "
+        f"[source: {final_source}, approval {approval_prob:.2%}] "
         f"(pipeline took {duration:.1f}s)\n"
     )
     print("----------\n" + proposal_text + "\n----------")
@@ -645,6 +658,14 @@ def main() -> None:
     print_timing_benchmarks_table(stats.get("timings", []))
 
 if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Run proposal pipeline")
+    parser.add_argument(
+        "-v", "--verbose", action="store_true", help="Show draft scores"
+    )
+    args = parser.parse_args()
+
     _refresh_workbook()
-    main()
+    main(verbose=args.verbose or VERBOSE)
 
