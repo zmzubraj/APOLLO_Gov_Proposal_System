@@ -114,7 +114,6 @@ def main() -> None:
     def _draft(ctx: dict[str, Any]):
         if not llm_available:
             return ""
-        ctx = {**ctx, "trending_topics": trending_topics}
         try:
             try:
                 return proposal_generator.draft(

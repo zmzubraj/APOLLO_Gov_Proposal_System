@@ -3,6 +3,20 @@ from unittest.mock import patch
 from src.agents import proposal_generator
 
 
+def test_build_prompt_omits_trending_topics_by_default(monkeypatch):
+    monkeypatch.delenv("PROPOSAL_INCLUDE_TOPICS", raising=False)
+    context = {"trending_topics": ["x"], "foo": "bar"}
+    prompt = proposal_generator.build_prompt(context)
+    assert "Trending Topics:" not in prompt
+
+
+def test_build_prompt_includes_trending_topics_when_enabled(monkeypatch):
+    monkeypatch.setenv("PROPOSAL_INCLUDE_TOPICS", "1")
+    context = {"trending_topics": ["a", "b"], "foo": "bar"}
+    prompt = proposal_generator.build_prompt(context)
+    assert "Trending Topics:" in prompt
+
+
 def test_draft_uses_build_prompt_and_ollama():
     context = {"foo": "bar"}
     expected_prompt = proposal_generator.build_prompt(context)
