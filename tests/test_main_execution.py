@@ -1,5 +1,5 @@
 def test_main_records_final_status(monkeypatch, tmp_path):
-    import types, sys
+    import types, sys, json
     # Stub heavy dependencies before importing main
     pandas_module = types.ModuleType("pandas")
     pandas_module.DataFrame = type("DataFrame", (), {})
@@ -86,6 +86,12 @@ def test_main_records_final_status(monkeypatch, tmp_path):
     monkeypatch.setenv("GOVERNANCE_TRACK", "root")
 
     main.main()
+
+    # The final proposal artifact should include the full context
+    proposal_files = list(tmp_path.glob("proposal_*.json"))
+    assert proposal_files, "No final proposal artifact generated"
+    payload = json.loads(proposal_files[0].read_text())
+    assert "context" in payload
 
     assert recorded == {
         "status": "Executed",
