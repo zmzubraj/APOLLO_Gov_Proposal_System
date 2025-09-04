@@ -2,6 +2,7 @@ import types
 import sys
 import importlib
 import types
+import json
 import pytest
 
 
@@ -100,6 +101,12 @@ def test_pipeline_skips_empty_source(empty_fetcher, skipped_source, monkeypatch,
         monkeypatch.setattr(main, "get_recent_blocks_cached", lambda: [])
 
     main.main()
+
+    # Ensure the draft JSON includes the full context
+    draft_files = list(tmp_path.glob("draft_*.json"))
+    assert draft_files, "No draft artifact generated"
+    payload = json.loads(draft_files[0].read_text())
+    assert "context" in payload
 
     assert skipped_source not in recorded_sources
     # At least one proposal draft should exist from remaining data

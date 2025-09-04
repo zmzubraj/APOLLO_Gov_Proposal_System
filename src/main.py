@@ -103,6 +103,7 @@ def _save_proposal_artifact(
         "text": text,
         "source": source,
         "context_snippet": snippet,
+        "context": context,
         "forecast": forecast,
     }
     (OUT_DIR / f"draft_{source}_{timestamp}.json").write_text(
