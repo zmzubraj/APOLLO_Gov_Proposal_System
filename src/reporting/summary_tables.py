@@ -549,6 +549,8 @@ def draft_onchain_proposal(
     *,
     old_referenda: Mapping[str, Any] | None = None,
     source_weight: float = 1.0,
+    source_sentiments: Mapping[str, float] | None = None,
+    comment_turnout_trend: float | None = None,
 ) -> dict[str, Any] | None:
     """Draft a proposal using only on-chain metrics."""
 
@@ -565,6 +567,10 @@ def draft_onchain_proposal(
         summarise_snippets=True,
         old_referenda=old_referenda,
     )
+    if source_sentiments:
+        ctx_chain["source_sentiments"] = dict(source_sentiments)
+    if comment_turnout_trend is not None:
+        ctx_chain["comment_turnout_trend"] = comment_turnout_trend
     chain_draft = proposal_generator.draft(ctx_chain)
     t_pred = time.perf_counter()
     chain_forecast = forecast_outcomes(ctx_chain)

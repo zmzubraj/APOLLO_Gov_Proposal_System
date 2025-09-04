@@ -262,12 +262,18 @@ def main(verbose: bool | None = None) -> None:
     print("🔄 Analysing governance history …")
     update_referenda(max_new=1500)  # refresh knowledge-base quickly
     gov_kpis = get_governance_insights(as_narrative=True)
-    old_ref_snippets = load_recent_executed_referenda()
+    old_ref_snippets, comment_turnout_trend = load_recent_executed_referenda()
     old_ref_res = _analyse(old_ref_snippets) if old_ref_snippets else {}
 
     # Bundle context via agent including semantic KB retrieval
     keywords = gov_kpis.get("top_keywords", []) if isinstance(gov_kpis, dict) else []
     query = " ".join(keywords[:3])
+
+    # Aggregate per-source sentiment scores for forecasting
+    source_sentiments = {
+        name: float(info.get("sentiment_score") or 0.0)
+        for name, info in sentiments_by_source.items()
+    }
 
     # ------------------------------------------------------------------
     # Draft a proposal per source using only that source's data combined
@@ -298,6 +304,8 @@ def main(verbose: bool | None = None) -> None:
             source_weight=sw_map,
             old_referenda=old_ref_res,
         )
+        ctx["source_sentiments"] = source_sentiments
+        ctx["comment_turnout_trend"] = comment_turnout_trend
         draft_text = _draft(ctx)
         t_pred = time.perf_counter()
         forecast = forecast_outcomes(ctx)
@@ -351,6 +359,8 @@ def main(verbose: bool | None = None) -> None:
             source_weight=sw_map_news,
             old_referenda=old_ref_res,
         )
+        ctx_news["source_sentiments"] = source_sentiments
+        ctx_news["comment_turnout_trend"] = comment_turnout_trend
         news_draft = _draft(ctx_news)
         t_pred = time.perf_counter()
         news_forecast = forecast_outcomes(ctx_news)
@@ -385,17 +395,20 @@ def main(verbose: bool | None = None) -> None:
             news_forecast,
         )
 
-    chain_draft_info = draft_onchain_proposal(
-        chain_res,
-        chain_kpis,
-        gov_kpis,
-        query,
-        trending_topics,
-        old_referenda=old_ref_res,
-        source_weight=weights_by_source.get("onchain", 1.0),
-    )
-    if chain_draft_info:
-        proposal_drafts.append(chain_draft_info)
+    if chain_kpis and any(bool(v) for v in chain_kpis.values()):
+        chain_draft_info = draft_onchain_proposal(
+            chain_res,
+            chain_kpis,
+            gov_kpis,
+            query,
+            trending_topics,
+            old_referenda=old_ref_res,
+            source_weight=weights_by_source.get("onchain", 1.0),
+            source_sentiments=source_sentiments,
+            comment_turnout_trend=comment_turnout_trend,
+        )
+        if chain_draft_info:
+            proposal_drafts.append(chain_draft_info)
 
     stats["drafts"] = proposal_drafts
     stats["draft_predictions"] = summarise_draft_predictions(
@@ -449,6 +462,8 @@ def main(verbose: bool | None = None) -> None:
             source_weight=sw_map_cons,
             old_referenda=old_ref_res,
         )
+        context["source_sentiments"] = source_sentiments
+        context["comment_turnout_trend"] = comment_turnout_trend
         t_pred = time.perf_counter()
         forecast = forecast_outcomes(context)
         prediction_time = time.perf_counter() - t_pred
