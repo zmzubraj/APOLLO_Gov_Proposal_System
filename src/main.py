@@ -30,7 +30,10 @@ from reporting.summary_tables import (
 )
 from agents.sentiment_analyser import analyse_messages
 from data_processing.news_fetcher import fetch_and_summarise_news
-from data_processing.referenda_updater import update_referenda
+from data_processing.referenda_updater import (
+    update_referenda,
+    load_recent_executed_referenda,
+)
 # from data_processing.blockchain_data_fetcher import fetch_recent_blocks
 from data_processing.blockchain_cache import get_recent_blocks_cached
 # Chain KPIs are pre-summarised by the data collector
@@ -259,6 +262,8 @@ def main(verbose: bool | None = None) -> None:
     print("🔄 Analysing governance history …")
     update_referenda(max_new=1500)  # refresh knowledge-base quickly
     gov_kpis = get_governance_insights(as_narrative=True)
+    old_ref_snippets = load_recent_executed_referenda()
+    old_ref_res = _analyse(old_ref_snippets) if old_ref_snippets else {}
 
     # Bundle context via agent including semantic KB retrieval
     keywords = gov_kpis.get("top_keywords", []) if isinstance(gov_kpis, dict) else []
@@ -291,6 +296,7 @@ def main(verbose: bool | None = None) -> None:
             trending_topics=trending_topics,
             summarise_snippets=True,
             source_weight=sw_map,
+            old_referenda=old_ref_res,
         )
         draft_text = _draft(ctx)
         t_pred = time.perf_counter()
@@ -343,6 +349,7 @@ def main(verbose: bool | None = None) -> None:
             trending_topics=trending_topics,
             summarise_snippets=True,
             source_weight=sw_map_news,
+            old_referenda=old_ref_res,
         )
         news_draft = _draft(ctx_news)
         t_pred = time.perf_counter()
@@ -384,6 +391,7 @@ def main(verbose: bool | None = None) -> None:
         gov_kpis,
         query,
         trending_topics,
+        old_referenda=old_ref_res,
         source_weight=weights_by_source.get("onchain", 1.0),
     )
     if chain_draft_info:
@@ -439,6 +447,7 @@ def main(verbose: bool | None = None) -> None:
             trending_topics=trending_topics,
             summarise_snippets=True,
             source_weight=sw_map_cons,
+            old_referenda=old_ref_res,
         )
         t_pred = time.perf_counter()
         forecast = forecast_outcomes(context)

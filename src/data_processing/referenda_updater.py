@@ -114,6 +114,69 @@ def load_historical_rates() -> Dict[str, float]:
     }
 
 
+def load_recent_executed_referenda(limit: int = 5) -> list[str]:
+    """Return comment snippets from recent executed referenda.
+
+    The ``Referenda`` sheet of :data:`XLSX_PATH` is inspected for rows whose
+    ``Status`` is ``Executed``.  For the most recent entries (ordered by
+    ``End`` timestamp when available) a short text snippet is constructed
+    combining the referendum ID, title and content.  Missing workbooks,
+    sheets or columns yield an empty list so callers may fall back to
+    default behaviour during tests.
+
+    Parameters
+    ----------
+    limit:
+        Maximum number of snippets to return.
+
+    Returns
+    -------
+    list[str]
+        Snippets in the form ``"Referendum <id> - <title> - <content>"``.
+    """
+
+    if not XLSX_PATH.exists():
+        return []
+    try:
+        df = pd.read_excel(XLSX_PATH, sheet_name="Referenda")
+    except Exception:
+        return []
+    if not hasattr(df, "empty") or df.empty:
+        return []
+
+    status_col = df.get("Status")
+    if status_col is None or not hasattr(status_col, "astype"):
+        return []
+    executed = df[status_col.astype(str).str.lower() == "executed"]
+    if executed.empty:
+        return []
+
+    if "End" in executed.columns:
+        executed = executed.sort_values("End", ascending=False)
+    elif "Start" in executed.columns:
+        executed = executed.sort_values("Start", ascending=False)
+
+    snippets: list[str] = []
+    for _, row in executed.head(limit).iterrows():
+        parts: list[str] = []
+        ref_id = row.get("Referendum_ID")
+        if pd.notna(ref_id):
+            try:
+                parts.append(f"Referendum {int(ref_id)}")
+            except Exception:
+                parts.append(str(ref_id))
+        title = str(row.get("Title", "")).strip()
+        if title:
+            parts.append(title)
+        content = str(row.get("Content", "")).strip()
+        if content and content != "/":
+            parts.append(content)
+        snippet = " - ".join(parts).strip()
+        if snippet:
+            snippets.append(snippet)
+    return snippets
+
+
 # ───────────────────── Subscan helpers ─────────────────────────────────
 def subscan_detail(idx: int) -> dict | None:
     try:
