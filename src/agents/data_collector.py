@@ -249,21 +249,63 @@ class DataCollector:
             weight_map: Dict[str, float],
             stats_dict: Dict[str, Any],
         ) -> list[str]:
+            # Filter out common stop words and HTML/CSS related terms
+            stop_words = set(
+                "the of a to and in for on with by is are be at it this that as from".split()
+            )
+            html_terms = {
+                "style",
+                "element",
+                "node",
+                "div",
+                "span",
+                "html",
+                "body",
+                "head",
+                "script",
+                "class",
+                "id",
+                "section",
+                "css",
+            }
+
+            def _valid_token(tok: str) -> bool:
+                return tok.isalpha() and tok not in stop_words and tok not in html_terms
+
             counter: Counter[str] = Counter()
+            raw_counter: Counter[str] = Counter()
+
+            # Helper to update counters from a list of tokens
+            def _count_tokens(tokens: list[str], weight: float) -> None:
+                for a, b in zip(tokens, tokens[1:]):
+                    if _valid_token(a) and _valid_token(b):
+                        phrase = f"{a} {b}"
+                        counter[phrase] += weight
+                        raw_counter[phrase] += 1
+
             for src, items in msgs.items():
                 w = weight_map.get(src, 1.0)
                 for item in items:
                     text = _to_text(item).lower()
-                    tokens = re.findall(r"\b\w+\b", text)
-                    for a, b in zip(tokens, tokens[1:]):
-                        counter[f"{a} {b}"] += w
+                    tokens_all = re.findall(r"\b\w+\b", text)
+                    tokens = [t for t in tokens_all if t.isalpha()]
+                    _count_tokens(tokens, w)
+
             if articles:
                 w = weight_map.get("news", 1.0)
                 for art in articles:
-                    tokens = re.findall(r"\b\w+\b", art.lower())
-                    for a, b in zip(tokens, tokens[1:]):
-                        counter[f"{a} {b}"] += w
-            top = counter.most_common(5)
+                    tokens_all = re.findall(r"\b\w+\b", art.lower())
+                    tokens = [t for t in tokens_all if t.isalpha()]
+                    _count_tokens(tokens, w)
+
+            min_freq = 2
+            candidates = [
+                (phrase, counter[phrase])
+                for phrase, cnt in raw_counter.items()
+                if cnt >= min_freq
+            ]
+            candidates.sort(key=lambda x: x[1], reverse=True)
+            top = candidates[:5]
             stats_dict["trending_topics"] = {phrase: weight for phrase, weight in top}
             return [phrase for phrase, _ in top]
 
