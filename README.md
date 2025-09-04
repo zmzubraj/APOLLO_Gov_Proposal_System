@@ -364,6 +364,13 @@ Every generated draft is stored in the governance workbook at
 on‑chain submission adds a `submission_id` with `stage` `submitted` to maintain
 an audit trail of all iterations.
 
+In addition to the workbook, the pipeline now serialises each call to
+`record_proposal` as JSON under `data/output/generated_proposals/`. Drafts are
+saved as `draft_<source>_<ts>.json`, while the final chosen proposal is also
+persisted as `proposal_<ts>.json`. These files capture the proposal text,
+originating source, a context snippet, and its forecast for easy offline
+inspection.
+
 ---
 
 ## 6. Directory Structure
