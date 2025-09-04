@@ -1,4 +1,5 @@
 import json
+import json
 from pathlib import Path
 
 import numpy as np
@@ -17,6 +18,8 @@ def test_training_improves_accuracy():
             "Eligible_DOT": [100, 100, 100, 100],
             "sentiment_score": [0.8, -0.7, 0.6, -0.5],
             "trend_score": [0.7, -0.6, 0.5, -0.4],
+            "source_sentiment_avg": [0.8, -0.7, 0.6, -0.5],
+            "comment_turnout_trend": [0.7, -0.6, 0.5, -0.4],
             "Status": ["Executed", "Rejected", "Executed", "Rejected"],
         }
     )
@@ -33,6 +36,8 @@ def test_training_improves_accuracy():
             "turnout": 0.5,
             "sentiment": s,
             "trending": t,
+            "source_sentiment_avg": s,
+            "comment_turnout_trend": t,
         }
         for s, t in zip(df["sentiment_score"], df["trend_score"])
     ]

@@ -24,10 +24,12 @@ def _prepare_features(df: pd.DataFrame) -> Tuple[pd.DataFrame, np.ndarray, List[
 
     ``approval_rate``  – ayes divided by total voted DOT
     ``turnout``        – participants divided by eligible DOT
-    ``sentiment``      – sentiment score from sentiment analysis (column name
-                         ``sentiment_score`` or ``sentiment``)
-    ``trending``       – trending topic metric (column ``trend_score`` or
-                         ``trending_score``)
+    ``sentiment``            – sentiment score from sentiment analysis (column
+                                name ``sentiment_score`` or ``sentiment``)
+    ``trending``             – trending topic metric (column ``trend_score`` or
+                                ``trending_score``)
+    ``source_sentiment_avg`` – pre-computed average sentiment across sources
+    ``comment_turnout_trend``– turnout trend derived from historical comments
     """
 
     df = df.copy()
@@ -61,12 +63,24 @@ def _prepare_features(df: pd.DataFrame) -> Tuple[pd.DataFrame, np.ndarray, List[
         trending = pd.Series(0.0, index=df.index)
     trending = trending.astype(float).fillna(0.0)
 
+    source_avg = df.get("source_sentiment_avg")
+    if source_avg is None:
+        source_avg = pd.Series(0.0, index=df.index)
+    source_avg = source_avg.astype(float).fillna(0.0)
+
+    comment_trend = df.get("comment_turnout_trend")
+    if comment_trend is None:
+        comment_trend = pd.Series(0.0, index=df.index)
+    comment_trend = comment_trend.astype(float).fillna(0.0)
+
     features = pd.DataFrame(
         {
             "approval_rate": approval_rate,
             "turnout": turnout,
             "sentiment": sentiment,
             "trending": trending,
+            "source_sentiment_avg": source_avg,
+            "comment_turnout_trend": comment_trend,
         }
     )
     return features, y.to_numpy(), list(features.columns)
