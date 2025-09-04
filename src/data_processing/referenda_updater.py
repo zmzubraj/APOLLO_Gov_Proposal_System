@@ -114,50 +114,75 @@ def load_historical_rates() -> Dict[str, float]:
     }
 
 
-def load_recent_executed_referenda(limit: int = 5) -> list[str]:
-    """Return comment snippets from recent executed referenda.
+def load_recent_executed_referenda(limit: int = 5) -> tuple[list[str], float]:
+    """Return snippets and comment/turnout trend from recent executed referenda.
 
     The ``Referenda`` sheet of :data:`XLSX_PATH` is inspected for rows whose
-    ``Status`` is ``Executed``.  For the most recent entries (ordered by
-    ``End`` timestamp when available) a short text snippet is constructed
-    combining the referendum ID, title and content.  Missing workbooks,
-    sheets or columns yield an empty list so callers may fall back to
-    default behaviour during tests.
+    ``Status`` is ``Executed``. For the most recent entries (ordered by ``End``
+    timestamp when available) a short text snippet is constructed combining the
+    referendum ID, title and content.  Additionally, a simple trend value is
+    calculated relating the number of comments to the voter turnout of those
+    referenda.  Missing workbooks, sheets or columns yield empty results so
+    callers may fall back to default behaviour during tests.
 
     Parameters
     ----------
     limit:
-        Maximum number of snippets to return.
+        Maximum number of rows to inspect.
 
     Returns
     -------
-    list[str]
-        Snippets in the form ``"Referendum <id> - <title> - <content>"``.
+    tuple[list[str], float]
+        A pair of ``(snippets, comment_turnout_trend)``.  ``snippets`` contains
+        items in the form ``"Referendum <id> - <title> - <content>"`` and
+        ``comment_turnout_trend`` is the slope of a linear fit between comment
+        counts and turnout (0.0 when unavailable).
     """
 
     if not XLSX_PATH.exists():
-        return []
+        return [], 0.0
     try:
         df = pd.read_excel(XLSX_PATH, sheet_name="Referenda")
     except Exception:
-        return []
+        return [], 0.0
     if not hasattr(df, "empty") or df.empty:
-        return []
+        return [], 0.0
 
     status_col = df.get("Status")
     if status_col is None or not hasattr(status_col, "astype"):
-        return []
+        return [], 0.0
     executed = df[status_col.astype(str).str.lower() == "executed"]
     if executed.empty:
-        return []
+        return [], 0.0
 
     if "End" in executed.columns:
         executed = executed.sort_values("End", ascending=False)
     elif "Start" in executed.columns:
         executed = executed.sort_values("Start", ascending=False)
 
+    recent = executed.head(limit)
+
+    # Compute correlation between comment counts and turnout
+    comment_turnout_trend = 0.0
+    comments = pd.Series([], dtype=float)
+    if "Comments" in recent.columns:
+        comments = pd.to_numeric(recent["Comments"], errors="coerce").fillna(0.0)
+    turnouts = pd.Series([], dtype=float)
+    if "Voted_percentage" in recent.columns:
+        turnouts = pd.to_numeric(recent["Voted_percentage"], errors="coerce").fillna(0.0) / 100.0
+    elif {"Participants", "Eligible_DOT"}.issubset(recent.columns):
+        turnouts = (
+            pd.to_numeric(recent["Participants"], errors="coerce")
+            / pd.to_numeric(recent["Eligible_DOT"], errors="coerce").replace(0, pd.NA)
+        ).fillna(0.0)
+    if len(comments) >= 2 and len(turnouts) >= 2:
+        try:
+            comment_turnout_trend = float(np.polyfit(comments, turnouts, 1)[0])
+        except Exception:
+            comment_turnout_trend = 0.0
+
     snippets: list[str] = []
-    for _, row in executed.head(limit).iterrows():
+    for _, row in recent.iterrows():
         parts: list[str] = []
         ref_id = row.get("Referendum_ID")
         if pd.notna(ref_id):
@@ -174,7 +199,7 @@ def load_recent_executed_referenda(limit: int = 5) -> list[str]:
         snippet = " - ".join(parts).strip()
         if snippet:
             snippets.append(snippet)
-    return snippets
+    return snippets, float(comment_turnout_trend)
 
 
 # ───────────────────── Subscan helpers ─────────────────────────────────
