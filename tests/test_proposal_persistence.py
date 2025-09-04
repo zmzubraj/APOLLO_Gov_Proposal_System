@@ -10,7 +10,7 @@ def test_record_proposal_persists(tmp_path, monkeypatch):
         "Test proposal text", submission_id="ABC123", stage="draft"
     )
 
-    df = pd.read_excel(temp_xlsx, sheet_name="Proposals")
+    df = pd.read_excel(temp_xlsx, sheet_name="DraftedProposals")
 
     assert len(df) == 1
     assert df.loc[0, "proposal_text"] == "Test proposal text"
@@ -28,7 +28,7 @@ def test_stage_column_added_if_missing(tmp_path, monkeypatch):
 
     wb = Workbook()
     ws = wb.active
-    ws.title = "Proposals"
+    ws.title = "DraftedProposals"
     ws.append(["timestamp", "proposal_text", "submission_id"])
     ws.append(["t1", "Old", "111"])
     wb.save(temp_xlsx)
@@ -36,7 +36,7 @@ def test_stage_column_added_if_missing(tmp_path, monkeypatch):
 
     proposal_store.record_proposal("New", submission_id="222", stage="draft")
 
-    df = pd.read_excel(temp_xlsx, sheet_name="Proposals", dtype=str)
+    df = pd.read_excel(temp_xlsx, sheet_name="DraftedProposals", dtype=str)
     assert "stage" in df.columns
     assert df.loc[df["submission_id"] == "222", "stage"].iat[0] == "draft"
 
@@ -50,7 +50,7 @@ def test_additional_fields_persist(tmp_path, monkeypatch):
         forecast_confidence=0.8, source_weight=0.5
     )
 
-    df = pd.read_excel(temp_xlsx, sheet_name="Proposals")
+    df = pd.read_excel(temp_xlsx, sheet_name="DraftedProposals")
 
     row = df.loc[0]
     assert row["source"] == "chat"

@@ -595,7 +595,7 @@ def summarise_draft_predictions(
 
     The provided ``drafts`` list may be empty if no drafts were generated in the
     current run.  In that case, this function falls back to the persisted
-    ``Proposals`` worksheet and produces forecasts for any rows marked with a
+    ``DraftedProposals`` worksheet and produces forecasts for any rows marked with a
     ``stage`` of ``draft``.
     """
 

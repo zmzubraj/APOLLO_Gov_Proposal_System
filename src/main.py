@@ -427,6 +427,7 @@ def main() -> None:
             forecast_confidence=approval_prob,
             source_weight=sent_w,
             score=score,
+            sheet="DraftedProposals",
         )
     try:
         df_pred = pd.DataFrame(
@@ -491,6 +492,7 @@ def main() -> None:
         forecast_confidence=approval_prob,
         source_weight=final_source_weight,
         score=score,
+        sheet="Proposal",
     )
     record_proposal(
         proposal_text,
@@ -500,6 +502,7 @@ def main() -> None:
         forecast_confidence=approval_prob,
         source_weight=final_source_weight,
         score=score,
+        sheet="Proposal",
     )
     if submission_id:
         print(f"🔗 Proposal submitted → {submission_id}")

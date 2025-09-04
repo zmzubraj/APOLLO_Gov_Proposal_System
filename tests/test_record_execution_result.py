@@ -46,6 +46,6 @@ def test_execution_result_links_to_proposal(tmp_path, monkeypatch):
     import pandas as pd
 
     df_exec = pd.read_excel(temp_xlsx, sheet_name="ExecutionResults")
-    df_prop = pd.read_excel(temp_xlsx, sheet_name="Proposals")
+    df_prop = pd.read_excel(temp_xlsx, sheet_name="Proposal")
     submitted_row = df_prop.index[df_prop["submission_id"] == "SID"][0] + 2
     assert int(df_exec.loc[0, "proposal_row"]) == submitted_row
