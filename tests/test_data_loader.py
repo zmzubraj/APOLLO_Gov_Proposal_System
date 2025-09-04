@@ -19,7 +19,8 @@ def test_missing_workbook_returns_all_empty(monkeypatch, tmp_path):
 
     assert set(data.keys()) == {
         "Referenda",
-        "Proposals",
+        "DraftedProposals",
+        "Proposal",
         "ExecutionResults",
         "Context",
     }

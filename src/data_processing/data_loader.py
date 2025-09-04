@@ -35,7 +35,13 @@ def load_governance_data(sheet_name=None):
         if sheet_name is None:
             return {
                 s: pd.DataFrame()
-                for s in ("Referenda", "Proposals", "ExecutionResults", "Context")
+                for s in (
+                    "Referenda",
+                    "DraftedProposals",
+                    "Proposal",
+                    "ExecutionResults",
+                    "Context",
+                )
             }
         # Requested sheet (including "Context") should yield an empty DataFrame
         return pd.DataFrame()
@@ -58,9 +64,12 @@ def load_first_sheet() -> pd.DataFrame:
 
 
 def load_proposals() -> pd.DataFrame:
-    """Return the ``Proposals`` worksheet as a DataFrame (empty if missing)."""
+    """Return proposal worksheets as a single DataFrame (empty if missing)."""
     try:
-        return load_governance_data(sheet_name="Proposals")
+        df = load_governance_data(sheet_name=["DraftedProposals", "Proposal"])
+        if isinstance(df, dict):
+            return pd.concat(df.values(), ignore_index=True)
+        return df
     except Exception:
         return pd.DataFrame()
 

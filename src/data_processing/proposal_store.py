@@ -24,7 +24,7 @@ def ensure_workbook() -> "Workbook":
     an informative :class:`ImportError` is raised after emitting a warning.
     When a new workbook is created, the default "Sheet" is removed and the
     workbook is saved containing exactly the sheets
-    "Referenda", "Proposals", "Context", and "ExecutionResults".
+    "Referenda", "DraftedProposals", "Proposal", "Context", and "ExecutionResults".
     """
 
     try:
@@ -42,7 +42,13 @@ def ensure_workbook() -> "Workbook":
     if "Sheet" in wb.sheetnames:
         wb.remove(wb["Sheet"])
 
-    required = ["Referenda", "Proposals", "Context", "ExecutionResults"]
+    required = [
+        "Referenda",
+        "DraftedProposals",
+        "Proposal",
+        "Context",
+        "ExecutionResults",
+    ]
 
     for name in required:
         if name not in wb.sheetnames:
@@ -86,8 +92,28 @@ def _append_row(sheet: str, row: Dict[str, Any]) -> None:
     wb.save(XLSX_PATH)
 
 
-def _append_governance_entry(sheet: str, row: Dict[str, Any]) -> None:
-    """Convenience wrapper to persist rows to ``PKD Governance Data.xlsx``."""
+def _append_governance_entry(sheet: str | None, row: Dict[str, Any]) -> None:
+    """Convenience wrapper to persist rows to ``PKD Governance Data.xlsx``.
+
+    If ``sheet`` is ``None`` the destination is chosen based on ``row['stage']``:
+    draft rows go to ``DraftedProposals`` while ``final``/``submitted`` rows go
+    to ``Proposal``.  This keeps existing callers backward compatible while
+    still allowing explicit sheet routing when needed.
+    """
+
+    stage = (row.get("stage") or "").lower()
+    if sheet is None:
+        if stage == "draft":
+            sheet = "DraftedProposals"
+        elif stage in {"final", "submitted"}:
+            sheet = "Proposal"
+        else:
+            sheet = "DraftedProposals"
+    elif sheet == "Proposals":
+        if stage == "draft":
+            sheet = "DraftedProposals"
+        elif stage in {"final", "submitted"}:
+            sheet = "Proposal"
 
     _append_row(sheet, row)
 
@@ -101,6 +127,7 @@ def record_proposal(
     forecast_confidence: float | None = None,
     source_weight: float | None = None,
     score: float | None = None,
+    sheet: str | None = None,
 ) -> None:
     """Record a generated proposal and optional submission identifier.
 
@@ -125,6 +152,10 @@ def record_proposal(
         final selection score.
     score:
         Optional selection score associated with the draft.
+    sheet:
+        Optional explicit sheet name.  When omitted, the sheet is determined
+        from ``stage`` with drafts stored in ``DraftedProposals`` and
+        final/submitted entries stored in ``Proposal``.
     """
 
     row = {
@@ -142,7 +173,7 @@ def record_proposal(
         row["source_weight"] = source_weight
     if score is not None:
         row["score"] = score
-    _append_governance_entry("Proposals", row)
+    _append_governance_entry(sheet, row)
 
 
 def record_execution_result(
@@ -162,8 +193,8 @@ def record_execution_result(
     proposal_row: int | None = None
     if submission_id:
         wb = ensure_workbook()
-        if "Proposals" in wb.sheetnames:
-            ws = wb["Proposals"]
+        if "Proposal" in wb.sheetnames:
+            ws = wb["Proposal"]
             header = [cell.value for cell in ws[1]]
             try:
                 sub_col = header.index("submission_id") + 1
@@ -216,15 +247,25 @@ def record_context(context_dict: Dict[str, Any]) -> None:
 
 
 def load_proposals():
-    """Read the ``Proposals`` sheet as a DataFrame (empty if unavailable)."""
+    """Read proposal sheets as a DataFrame (empty if unavailable).
+
+    Both ``DraftedProposals`` and ``Proposal`` sheets are loaded and
+    concatenated if present, providing a unified view of all proposals.
+    """
     import pandas as pd
 
     if not XLSX_PATH.exists():
         return pd.DataFrame()
-    try:
-        return pd.read_excel(XLSX_PATH, sheet_name="Proposals")
-    except Exception:
-        return pd.DataFrame()
+
+    dfs = []
+    for name in ("DraftedProposals", "Proposal"):
+        try:
+            dfs.append(pd.read_excel(XLSX_PATH, sheet_name=name))
+        except Exception:
+            continue
+    if dfs:
+        return pd.concat(dfs, ignore_index=True)
+    return pd.DataFrame()
 
 
 def load_execution_results():
@@ -254,10 +295,10 @@ def load_contexts():
 def retrieve_recent(topics: list[str], limit_per_topic: int = 3) -> list[str]:
     """Return recent proposal/context snippets mentioning any of ``topics``.
 
-    Searches both the ``Proposals`` and ``Context`` sheets for entries
-    containing any of the provided topics (case-insensitive) and returns the
-    most recent snippets. Results are limited to ``limit_per_topic`` per topic
-    and returned in no particular order.
+    Searches the ``DraftedProposals``, ``Proposal`` and ``Context`` sheets for
+    entries containing any of the provided topics (case-insensitive) and
+    returns the most recent snippets. Results are limited to ``limit_per_topic``
+    per topic and returned in no particular order.
     """
 
     if not topics:
