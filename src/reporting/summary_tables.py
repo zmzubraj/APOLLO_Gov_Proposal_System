@@ -546,6 +546,8 @@ def draft_onchain_proposal(
     gov_kpis: Mapping[str, Any],
     query: str,
     trending_topics: list[str] | None = None,
+    *,
+    old_referenda: Mapping[str, Any] | None = None,
     source_weight: float = 1.0,
 ) -> dict[str, Any] | None:
     """Draft a proposal using only on-chain metrics."""
@@ -561,6 +563,7 @@ def draft_onchain_proposal(
         kb_query=query,
         trending_topics=trending_topics,
         summarise_snippets=True,
+        old_referenda=old_referenda,
     )
     chain_draft = proposal_generator.draft(ctx_chain)
     t_pred = time.perf_counter()

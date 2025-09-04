@@ -142,6 +142,7 @@ def build_context(
     kb_snippets: list[str] | None = None,
     kb_query: str | None = None,
     *,
+    old_referenda: Dict[str, Any] | None = None,
     trending_topics: list[str] | None = None,
     dedup_snippets: bool = True,
     summarise_snippets: bool = False,
@@ -185,6 +186,7 @@ def build_context(
     news_src, news_w = _info("news", "news", "DATA_WEIGHT_NEWS")
     chain_src, chain_w = _info("chain_kpis", "onchain", "DATA_WEIGHT_CHAIN")
     gov_src, gov_w = _info("governance_kpis", "governance", "DATA_WEIGHT_GOVERNANCE")
+    old_src, old_w = _info("old_referenda", "old_referenda", "DATA_WEIGHT_OLD_REFERENDA")
 
     context = {
         "timestamp_utc": utc_now_iso(),
@@ -197,6 +199,9 @@ def build_context(
         "kb_summary": summary,
         "kb_embedded": embedded,
     }
+
+    if old_referenda:
+        context["old_referenda"] = _wrap(old_referenda, old_src, old_w)
 
     # Persist for audit trail – ignore failures from missing dependencies
     try:
