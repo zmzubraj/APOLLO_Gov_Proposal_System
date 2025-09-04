@@ -66,7 +66,6 @@ def test_main_submits(monkeypatch, capsys):
     monkeypatch.setattr(main, "fetch_and_summarise_news", lambda: {})
     monkeypatch.setattr(main, "update_referenda", lambda max_new=500: None)
     monkeypatch.setattr(main, "get_recent_blocks_cached", lambda: [])
-    monkeypatch.setattr(main, "summarise_blocks", lambda blocks: {})
     monkeypatch.setattr(main, "get_governance_insights", lambda as_narrative=True: {})
     monkeypatch.setattr(main.proposal_generator, "draft", lambda context: "proposal text")
     monkeypatch.setattr(main, "build_context", lambda *a, **k: {})

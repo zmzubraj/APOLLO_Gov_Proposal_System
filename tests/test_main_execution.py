@@ -23,12 +23,11 @@ def test_main_records_final_status(monkeypatch, tmp_path):
     monkeypatch.setattr(main, "analyse_messages", lambda msgs: {})
     monkeypatch.setattr(main, "fetch_and_summarise_news", lambda: {})
     monkeypatch.setattr(main, "get_recent_blocks_cached", lambda: [])
-    monkeypatch.setattr(main, "summarise_blocks", lambda blocks: {})
     monkeypatch.setattr(main, "update_referenda", lambda max_new: None)
     monkeypatch.setattr(main, "get_governance_insights", lambda as_narrative=True: {})
     captured_kb = {}
 
-    def fake_build_context(sentiment, news, chain, gov, evm=None, kb_snippets=None, kb_query=None, **_):
+    def fake_build_context(sentiment, news, chain, gov, kb_snippets=None, kb_query=None, **_):
         captured_kb["query"] = kb_query
         return {}
 

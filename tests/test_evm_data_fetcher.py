@@ -47,7 +47,7 @@ def test_data_collector_optional_evm(monkeypatch):
 
     def dummy_evm_fn():
         called["called"] = True
-        return [{"number": 1}]
+        return [{"timestamp": 0, "transactions": []}]
 
     monkeypatch.setenv("ENABLE_EVM_FETCH", "true")
     data = DataCollector.collect(
@@ -57,4 +57,4 @@ def test_data_collector_optional_evm(monkeypatch):
         evm_fn=dummy_evm_fn,
     )
     assert called["called"] is True
-    assert data["evm_blocks"] == [{"number": 1}]
+    assert "evm_daily_tx_count" in data["blocks"]

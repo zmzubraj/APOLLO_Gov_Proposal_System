@@ -119,6 +119,22 @@ def summarise_evm_blocks(blocks: List[Dict[str, Any]]) -> Dict[str, Any]:
     }
 
 
+def summarise_combined_blocks(
+    substrate_blocks: List[Dict[str, Any]],
+    evm_blocks: List[Dict[str, Any]],
+) -> Dict[str, Any]:
+    """Return a single KPI dict for Substrate and EVM block data.
+
+    The Substrate KPIs retain their original keys while EVM metrics are
+    prefixed with ``"evm_"`` to avoid collisions.
+    """
+
+    summary = summarise_blocks(substrate_blocks)
+    evm_summary = summarise_evm_blocks(evm_blocks)
+    summary.update({f"evm_{k}": v for k, v in evm_summary.items()})
+    return summary
+
+
 # ---------------------------------------------------------------------------
 # Convenience: load JSON dumped by blockchain_data_fetcher test-run
 # ---------------------------------------------------------------------------

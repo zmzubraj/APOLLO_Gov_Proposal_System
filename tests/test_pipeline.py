@@ -71,5 +71,5 @@ def test_stored_proposals_influence_context(tmp_path, monkeypatch):
     monkeypatch.setattr(ollama_api, "embed_text", fake_embed)
     monkeypatch.setattr(proposal_store, "record_context", lambda _c: None)
 
-    ctx = build_context({}, {}, {}, {}, {}, kb_query="staking")
+    ctx = build_context({}, {}, {}, {}, kb_query="staking")
     assert any("Increase staking rewards" in s for s in ctx["kb_snippets"])

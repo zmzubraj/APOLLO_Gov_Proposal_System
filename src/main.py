@@ -33,7 +33,7 @@ from data_processing.news_fetcher import fetch_and_summarise_news
 from data_processing.referenda_updater import update_referenda
 # from data_processing.blockchain_data_fetcher import fetch_recent_blocks
 from data_processing.blockchain_cache import get_recent_blocks_cached
-from analysis.blockchain_metrics import summarise_blocks, summarise_evm_blocks
+# Chain KPIs are pre-summarised by the data collector
 from analysis.governance_analysis import get_governance_insights
 from agents.outcome_forecaster import forecast_outcomes
 from analysis.prediction_evaluator import compare_predictions
@@ -224,10 +224,7 @@ def main() -> None:
 
     news = data["news"]
 
-    blocks = data["blocks"]
-    chain_kpis = summarise_blocks(blocks)
-    evm_blocks = data.get("evm_blocks", [])
-    evm_kpis = summarise_evm_blocks(evm_blocks)
+    chain_kpis = data["blocks"]
     # Perform sentiment analysis + embedding on-chain KPIs
     chain_text = json.dumps(chain_kpis, default=_json_default)
     chain_res = _analyse([chain_text])
@@ -281,14 +278,12 @@ def main() -> None:
                 "source": "governance",
                 "weight": weights_by_source.get("governance", 1.0),
             },
-            "evm_kpis": {"source": "evm", "weight": weights_by_source.get("evm", 1.0)},
         }
         ctx = build_context(
             sentiments_by_source.get(source, {}),
             {},
             chain_kpis,
             gov_kpis,
-            evm_kpis,
             kb_query=query,
             trending_topics=trending_topics,
             summarise_snippets=True,
@@ -335,14 +330,12 @@ def main() -> None:
                 "source": "governance",
                 "weight": weights_by_source.get("governance", 1.0),
             },
-            "evm_kpis": {"source": "evm", "weight": weights_by_source.get("evm", 1.0)},
         }
         ctx_news = build_context(
             {},
             news,
             chain_kpis,
             gov_kpis,
-            evm_kpis,
             kb_query=query,
             trending_topics=trending_topics,
             summarise_snippets=True,
@@ -386,7 +379,6 @@ def main() -> None:
         chain_res,
         chain_kpis,
         gov_kpis,
-        evm_kpis,
         query,
         trending_topics,
         source_weight=weights_by_source.get("onchain", 1.0),
@@ -425,14 +417,12 @@ def main() -> None:
                 "source": "governance",
                 "weight": weights_by_source.get("governance", 1.0),
             },
-            "evm_kpis": {"source": "evm", "weight": weights_by_source.get("evm", 1.0)},
         }
         context = build_context(
             sentiment,
             news,
             chain_kpis,
             gov_kpis,
-            evm_kpis,
             kb_query=query,
             trending_topics=trending_topics,
             summarise_snippets=True,
