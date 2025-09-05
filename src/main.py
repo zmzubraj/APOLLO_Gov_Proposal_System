@@ -162,7 +162,7 @@ def main(verbose: bool | None = None) -> None:
                 )
             except TypeError:
                 return proposal_generator.draft(ctx, source_name)
-        except ollama_api.OllamaError as exc:  # pragma: no cover - network dependent
+        except (ollama_api.OllamaError, ValueError) as exc:  # pragma: no cover - network dependent
             print(f"⚠️ Proposal drafting failed: {exc}")
             return ""
 
