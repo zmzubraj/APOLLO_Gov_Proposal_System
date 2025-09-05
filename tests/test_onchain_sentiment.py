@@ -30,7 +30,7 @@ def test_onchain_sentiment_included(monkeypatch, tmp_path):
     monkeypatch.setattr(main, "forecast_outcomes", lambda ctx: {})
     monkeypatch.setattr(main, "compare_predictions", lambda df: {"prediction_eval": []})
     monkeypatch.setattr(main, "evaluate_historical_predictions", lambda: [])
-    monkeypatch.setattr(main.proposal_generator, "draft", lambda ctx: "Proposal")
+    monkeypatch.setattr(main.proposal_generator, "draft", lambda ctx, source_name: "Proposal")
     monkeypatch.setattr(main, "broadcast_proposal", lambda text: None)
     monkeypatch.setattr(
         main, "record_proposal", lambda text, sid, stage=None, **_: None

@@ -149,18 +149,19 @@ def main(verbose: bool | None = None) -> None:
             print(f"⚠️ Sentiment analysis failed: {exc}")
             return {}
 
-    def _draft(ctx: dict[str, Any]):
+    def _draft(ctx: dict[str, Any], source_name: str):
         if not llm_available:
             return ""
         try:
             try:
                 return proposal_generator.draft(
                     ctx,
+                    source_name,
                     temperature=PROPOSAL_TEMPERATURE,
                     max_tokens=PROPOSAL_MAX_TOKENS,
                 )
             except TypeError:
-                return proposal_generator.draft(ctx)
+                return proposal_generator.draft(ctx, source_name)
         except ollama_api.OllamaError as exc:  # pragma: no cover - network dependent
             print(f"⚠️ Proposal drafting failed: {exc}")
             return ""
@@ -316,7 +317,7 @@ def main(verbose: bool | None = None) -> None:
         )
         ctx["source_sentiments"] = source_sentiments
         ctx["comment_turnout_trend"] = comment_turnout_trend
-        draft_text = _draft(ctx)
+        draft_text = _draft(ctx, source)
         t_pred = time.perf_counter()
         forecast = forecast_outcomes(ctx)
         prediction_time = time.perf_counter() - t_pred
@@ -375,7 +376,7 @@ def main(verbose: bool | None = None) -> None:
         )
         ctx_news["source_sentiments"] = source_sentiments
         ctx_news["comment_turnout_trend"] = comment_turnout_trend
-        news_draft = _draft(ctx_news)
+        news_draft = _draft(ctx_news, "news")
         t_pred = time.perf_counter()
         news_forecast = forecast_outcomes(ctx_news)
         prediction_time = time.perf_counter() - t_pred
@@ -486,7 +487,7 @@ def main(verbose: bool | None = None) -> None:
         forecast = forecast_outcomes(context)
         prediction_time = time.perf_counter() - t_pred
         context["forecast"] = forecast
-        proposal_text = _draft(context)
+        proposal_text = _draft(context, "consolidated")
         approval_prob = forecast.get("approval_prob", 0.0)
         final_source = "consolidated"
         final_source_weight = sent_w
