@@ -56,14 +56,13 @@ def test_build_context_structure_dedup_and_summary(monkeypatch):
         "news",
         "chain_kpis",
         "governance_kpis",
-        "trending_topics",
         "kb_snippets",
         "kb_summary",
         "kb_embedded",
     }
+    assert "trending_topics" not in ctx
     assert ctx["kb_snippets"] == ["previous proposal"]
     assert ctx["kb_summary"] == "summary"
-    assert ctx["trending_topics"] == []
     assert v.validate_sentiment(ctx["sentiment"])
     assert v.validate_news(ctx["news"])
     assert v.validate_chain_kpis(ctx["chain_kpis"])
@@ -112,9 +111,9 @@ def test_record_context_persist(tmp_path, monkeypatch):
     assert _strip_meta("news") == news
     assert _strip_meta("chain_kpis") == chain
     assert _strip_meta("governance_kpis") == gov
-    assert stored["trending_topics"] == []
     assert stored["kb_snippets"] == snippets
     assert stored["kb_summary"] == "summary"
+    assert "trending_topics" not in stored
 
 
 def test_component_weighting(monkeypatch):

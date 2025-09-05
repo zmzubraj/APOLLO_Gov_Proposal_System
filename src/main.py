@@ -67,6 +67,11 @@ PROPOSAL_MAX_TOKENS = int(os.getenv("PROPOSAL_MAX_TOKENS", "4096"))
 NEWS_TEMPERATURE = float(os.getenv("NEWS_TEMPERATURE", "0.2"))
 NEWS_MAX_TOKENS = int(os.getenv("NEWS_MAX_TOKENS", "1024"))
 VERBOSE = os.getenv("VERBOSE", "0").lower() in {"1", "true", "yes"}
+INCLUDE_TOPICS = os.getenv("PROPOSAL_INCLUDE_TOPICS", "0").lower() not in {
+    "0",
+    "false",
+    "no",
+}
 
 
 def _json_default(obj: Any) -> str:
@@ -294,16 +299,20 @@ def main(verbose: bool | None = None) -> None:
                 "weight": weights_by_source.get("governance", 1.0),
             },
         }
+        ctx_kwargs = {
+            "kb_query": query,
+            "summarise_snippets": True,
+            "source_weight": sw_map,
+            "old_referenda": old_ref_res,
+        }
+        if INCLUDE_TOPICS:
+            ctx_kwargs["trending_topics"] = trending_topics
         ctx = build_context(
             sentiments_by_source.get(source, {}),
             {},
             chain_kpis,
             gov_kpis,
-            kb_query=query,
-            trending_topics=trending_topics,
-            summarise_snippets=True,
-            source_weight=sw_map,
-            old_referenda=old_ref_res,
+            **ctx_kwargs,
         )
         ctx["source_sentiments"] = source_sentiments
         ctx["comment_turnout_trend"] = comment_turnout_trend
@@ -349,16 +358,20 @@ def main(verbose: bool | None = None) -> None:
                 "weight": weights_by_source.get("governance", 1.0),
             },
         }
+        ctx_kwargs = {
+            "kb_query": query,
+            "summarise_snippets": True,
+            "source_weight": sw_map_news,
+            "old_referenda": old_ref_res,
+        }
+        if INCLUDE_TOPICS:
+            ctx_kwargs["trending_topics"] = trending_topics
         ctx_news = build_context(
             {},
             news,
             chain_kpis,
             gov_kpis,
-            kb_query=query,
-            trending_topics=trending_topics,
-            summarise_snippets=True,
-            source_weight=sw_map_news,
-            old_referenda=old_ref_res,
+            **ctx_kwargs,
         )
         ctx_news["source_sentiments"] = source_sentiments
         ctx_news["comment_turnout_trend"] = comment_turnout_trend
@@ -402,7 +415,7 @@ def main(verbose: bool | None = None) -> None:
             chain_kpis,
             gov_kpis,
             query,
-            trending_topics,
+            trending_topics if INCLUDE_TOPICS else None,
             old_referenda=old_ref_res,
             source_weight=weights_by_source.get("onchain", 1.0),
             source_sentiments=source_sentiments,
@@ -452,16 +465,20 @@ def main(verbose: bool | None = None) -> None:
                 "weight": weights_by_source.get("governance", 1.0),
             },
         }
+        ctx_kwargs = {
+            "kb_query": query,
+            "summarise_snippets": True,
+            "source_weight": sw_map_cons,
+            "old_referenda": old_ref_res,
+        }
+        if INCLUDE_TOPICS:
+            ctx_kwargs["trending_topics"] = trending_topics
         context = build_context(
             sentiment,
             news,
             chain_kpis,
             gov_kpis,
-            kb_query=query,
-            trending_topics=trending_topics,
-            summarise_snippets=True,
-            source_weight=sw_map_cons,
-            old_referenda=old_ref_res,
+            **ctx_kwargs,
         )
         context["source_sentiments"] = source_sentiments
         context["comment_turnout_trend"] = comment_turnout_trend

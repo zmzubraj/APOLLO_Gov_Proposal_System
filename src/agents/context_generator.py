@@ -194,11 +194,13 @@ def build_context(
         "news": _wrap(news, news_src, news_w),
         "chain_kpis": _wrap(chain_kpis, chain_src, chain_w),
         "governance_kpis": _wrap(gov_kpis, gov_src, gov_w),
-        "trending_topics": trending_topics or [],
         "kb_snippets": snippets,
         "kb_summary": summary,
         "kb_embedded": embedded,
     }
+
+    if trending_topics is not None:
+        context["trending_topics"] = trending_topics
 
     if old_referenda:
         context["old_referenda"] = _wrap(old_referenda, old_src, old_w)
@@ -209,7 +211,9 @@ def build_context(
     except Exception:
         pass
     # Retrieve and merge historical proposals based on trending topics
-    historical = proposal_store.retrieve_recent(trending_topics or [])
+    historical = (
+        proposal_store.retrieve_recent(trending_topics) if trending_topics else []
+    )
     if historical:
         context["historical_proposals"] = historical
     return context
