@@ -6,20 +6,20 @@ from src.agents import proposal_generator
 def test_build_prompt_omits_trending_topics_by_default(monkeypatch):
     monkeypatch.delenv("PROPOSAL_INCLUDE_TOPICS", raising=False)
     context = {"trending_topics": ["x"], "foo": "bar"}
-    prompt = proposal_generator.build_prompt(context)
+    prompt = proposal_generator.build_prompt(context, "consolidated")
     assert "Trending Topics:" not in prompt
 
 
 def test_build_prompt_includes_trending_topics_when_enabled(monkeypatch):
     monkeypatch.setenv("PROPOSAL_INCLUDE_TOPICS", "1")
     context = {"trending_topics": ["a", "b"], "foo": "bar"}
-    prompt = proposal_generator.build_prompt(context)
+    prompt = proposal_generator.build_prompt(context, "consolidated")
     assert "Trending Topics:" in prompt
 
 
 def test_draft_uses_build_prompt_and_ollama():
     context = {"foo": "bar"}
-    expected_prompt = proposal_generator.build_prompt(context)
+    expected_prompt = proposal_generator.build_prompt(context, "consolidated")
     sample = (
         "Title: T\n"
         "Rationale: R\n"
@@ -31,7 +31,7 @@ def test_draft_uses_build_prompt_and_ollama():
         "src.agents.proposal_generator.ollama_api.generate_completion",
         return_value=sample,
     ) as mock_gen:
-        result = proposal_generator.draft(context)
+        result = proposal_generator.draft(context, "consolidated")
 
     mock_gen.assert_called_once_with(
         prompt=expected_prompt,
@@ -58,7 +58,7 @@ def test_draft_strips_preamble_and_validates_sections():
         "src.agents.proposal_generator.ollama_api.generate_completion",
         return_value=raw,
     ):
-        result = proposal_generator.draft(context)
+        result = proposal_generator.draft(context, "consolidated")
 
     assert result.splitlines()[0].startswith("Title:")
     for heading in ["Title:", "Rationale:", "Action:", "Expected Impact:"]:
@@ -74,7 +74,7 @@ def test_draft_returns_raw_when_missing_sections():
         "src.agents.proposal_generator.ollama_api.generate_completion",
         return_value=raw,
     ):
-        result = proposal_generator.draft(context)
+        result = proposal_generator.draft(context, "consolidated")
 
     # When headings are missing, the raw text should be returned unchanged
     assert result == raw

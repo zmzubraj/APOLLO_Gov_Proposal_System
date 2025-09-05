@@ -58,7 +58,7 @@ def test_pipeline_skips_empty_source(empty_fetcher, skipped_source, monkeypatch,
     monkeypatch.setattr(main, "update_referenda", lambda max_new: None)
     monkeypatch.setattr(main, "get_governance_insights", lambda as_narrative=True: {})
     monkeypatch.setattr(main, "draft_onchain_proposal", lambda *a, **k: None)
-    monkeypatch.setattr(main.proposal_generator, "draft", lambda ctx, **kw: "draft")
+    monkeypatch.setattr(main.proposal_generator, "draft", lambda ctx, source_name, **kw: "draft")
     monkeypatch.setattr(main, "compare_predictions", lambda df: {"prediction_eval": []})
     monkeypatch.setattr(main, "evaluate_historical_predictions", lambda: [])
     monkeypatch.setattr(main, "broadcast_proposal", lambda text: None)

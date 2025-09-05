@@ -24,7 +24,7 @@ def _json_default(value: Any) -> str:
                     "is not JSON serialisable")
 
 
-def build_prompt(context: Dict[str, Any]) -> str:
+def build_prompt(context: Dict[str, Any], source_name: str) -> str:
     """Compose a single prompt for the LLM with all context JSON."""
     include_topics = os.getenv("PROPOSAL_INCLUDE_TOPICS", "0").lower() not in (
         "0",
@@ -39,10 +39,7 @@ def build_prompt(context: Dict[str, Any]) -> str:
             topics_section = f"Trending Topics:\n{bullet_list}\n\n"
     return (
         "You are an autonomous Polkadot governance agent. "
-        "Using context derived from community chat, forum discussions, news "
-        "reports, on-chain metrics and historical referenda, draft a concise "
-        "OpenGov proposal for the 'Root' track. Reference these sources where "
-        "relevant.\n\n"
+        f"Using context derived from {source_name}. Reference these sources where relevant.\n"
         "Fill out the following template and return only the completed text:\n"
         "Title: <short heading>\n"
         "Rationale: <brief reasoning referencing sentiment, risks and prior votes>\n"
@@ -78,6 +75,7 @@ def postprocess_draft(text: str) -> str:
 
 def draft(
     context_dict: Dict[str, Any],
+    source_name: str,
     temperature: float | None = None,
     max_tokens: int | None = None,
     timeout: float | None = None,
@@ -103,7 +101,7 @@ def draft(
         if timeout is not None
         else float(os.getenv("PROPOSAL_TIMEOUT", os.getenv("OLLAMA_TIMEOUT", "360")))
     )
-    prompt = build_prompt(context_dict)
+    prompt = build_prompt(context_dict, source_name)
     raw = ollama_api.generate_completion(
         prompt=prompt,
         system="You are Polkadot-Gov-Agent v1.",

@@ -571,7 +571,7 @@ def draft_onchain_proposal(
         ctx_chain["source_sentiments"] = dict(source_sentiments)
     if comment_turnout_trend is not None:
         ctx_chain["comment_turnout_trend"] = comment_turnout_trend
-    chain_draft = proposal_generator.draft(ctx_chain)
+    chain_draft = proposal_generator.draft(ctx_chain, "onchain")
     t_pred = time.perf_counter()
     chain_forecast = forecast_outcomes(ctx_chain)
     prediction_time = time.perf_counter() - t_pred
