@@ -1,5 +1,7 @@
 from unittest.mock import patch
 
+import pytest
+
 from src.agents import proposal_generator
 
 
@@ -78,3 +80,27 @@ def test_draft_returns_raw_when_missing_sections():
 
     # When headings are missing, the raw text should be returned unchanged
     assert result == raw
+
+
+@pytest.mark.parametrize("source_name", ["consolidated", "news_feed", "social"])
+def test_build_prompt_includes_sections_and_source_prefix(source_name):
+    context = {}
+    prompt = proposal_generator.build_prompt(context, source_name)
+    # The second sentence should begin with the source name reference
+    after_intro = prompt.split("You are an autonomous Polkadot governance agent. ")[1]
+    assert after_intro.startswith(f"Using context derived from {source_name}")
+    for section in ["Title:", "Rationale:", "Action:", "Expected Impact:"]:
+        assert section in prompt
+
+
+@pytest.mark.parametrize("missing", ["Title:", "Rationale:", "Action:", "Expected Impact:"])
+def test_postprocess_draft_missing_section_raises(missing):
+    lines = [
+        "Title: T",
+        "Rationale: R",
+        "Action: A",
+        "Expected Impact: E",
+    ]
+    text = "\n".join(line for line in lines if not line.startswith(missing))
+    with pytest.raises(ValueError):
+        proposal_generator.postprocess_draft(text)
