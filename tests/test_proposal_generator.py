@@ -68,18 +68,32 @@ def test_draft_strips_preamble_and_validates_sections():
     assert "Here is your proposal" not in result
 
 
-def test_draft_returns_raw_when_missing_sections():
+def test_draft_retries_then_raises_when_unstructured():
     context = {}
     raw = "No structured output provided"
 
     with patch(
         "src.agents.proposal_generator.ollama_api.generate_completion",
         return_value=raw,
-    ):
-        result = proposal_generator.draft(context, "consolidated")
+    ) as mock_gen:
+        with pytest.raises(ValueError):
+            proposal_generator.draft(context, "consolidated", attempts=2)
+    assert mock_gen.call_count == 2
 
-    # When headings are missing, the raw text should be returned unchanged
-    assert result == raw
+
+def test_draft_retries_until_structured_output():
+    context = {}
+    responses = [
+        "No structured output provided",
+        "Title: Fixed\nRationale: R\nAction: A\nExpected Impact: E",
+    ]
+    with patch(
+        "src.agents.proposal_generator.ollama_api.generate_completion",
+        side_effect=responses,
+    ) as mock_gen:
+        result = proposal_generator.draft(context, "consolidated", attempts=2)
+    assert result.startswith("Title: Fixed")
+    assert mock_gen.call_count == 2
 
 
 @pytest.mark.parametrize("source_name", ["consolidated", "news_feed", "social"])

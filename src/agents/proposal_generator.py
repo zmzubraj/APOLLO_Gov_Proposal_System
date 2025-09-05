@@ -79,6 +79,7 @@ def draft(
     temperature: float | None = None,
     max_tokens: int | None = None,
     timeout: float | None = None,
+    attempts: int = 1,
 ) -> str:
     """Return a proposal generated from ``context_dict``.
 
@@ -102,17 +103,18 @@ def draft(
         else float(os.getenv("PROPOSAL_TIMEOUT", os.getenv("OLLAMA_TIMEOUT", "360")))
     )
     prompt = build_prompt(context_dict, source_name)
-    raw = ollama_api.generate_completion(
-        prompt=prompt,
-        system="You are Polkadot-Gov-Agent v1.",
-        model="gemma3:4b",
-        temperature=temperature,
-        max_tokens=max_tokens,
-        timeout=timeout,
-    )
-    try:
-        return postprocess_draft(raw)
-    except ValueError:
-        # If the model returns an unexpected format, fall back to the raw text
-        # rather than raising and terminating the pipeline.
-        return raw.strip()
+    last_error: ValueError | None = None
+    for _ in range(max(1, attempts)):
+        raw = ollama_api.generate_completion(
+            prompt=prompt,
+            system="You are Polkadot-Gov-Agent v1.",
+            model="gemma3:4b",
+            temperature=temperature,
+            max_tokens=max_tokens,
+            timeout=timeout,
+        )
+        try:
+            return postprocess_draft(raw)
+        except ValueError as err:
+            last_error = err
+    raise ValueError("LLM failed to produce structured proposal") from last_error
