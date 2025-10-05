@@ -527,9 +527,13 @@ def main(verbose: bool | None = None) -> None:
                     "predicted": "Approved"
                     if forecast.get("approval_prob", 0.0) >= 0.5
                     else "Rejected",
-                    "confidence": forecast.get("approval_prob", 0.0),
+                    "confidence": forecast.get(
+                        "confidence", forecast.get("approval_prob", 0.0)
+                    ),
                     "prediction_time": dt.datetime.now(dt.UTC).isoformat(),
-                    "margin_of_error": forecast.get("turnout_estimate", 0.0),
+                    "margin_of_error": forecast.get(
+                        "margin_of_error", forecast.get("turnout_estimate", 0.0)
+                    ),
                 }
             ]
         )

@@ -21,9 +21,16 @@ def test_forecast_outcomes_fields_and_ranges(tmp_path, monkeypatch):
         "comment_turnout_trend": 0.05,
     }
     result = forecast_outcomes(context)
-    assert set(result.keys()) == {"approval_prob", "turnout_estimate"}
+    assert set(result.keys()) == {
+        "approval_prob",
+        "turnout_estimate",
+        "margin_of_error",
+        "confidence",
+    }
     assert 0.0 <= result["approval_prob"] <= 1.0
     assert 0.0 <= result["turnout_estimate"] <= 1.0
+    assert 0.0 <= result["confidence"] <= 1.0
+    assert 0.0 < result["margin_of_error"] <= 0.5
 
     model_path = Path(__file__).resolve().parents[1] / "models" / "referendum_model.json"
     with model_path.open() as f:
