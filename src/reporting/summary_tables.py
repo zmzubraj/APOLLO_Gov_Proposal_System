@@ -319,9 +319,11 @@ def evaluate_historical_predictions(sample_size: int = 5) -> list[dict[str, Any]
                 "proposal_id": row.get(id_col),
                 "dao": row.get(dao_col, "Gov") if dao_col else "Gov",
                 "predicted": predicted,
-                "confidence": prob,
+                "confidence": forecast.get("confidence", prob),
                 "prediction_time": prediction_time,
-                "margin_of_error": forecast.get("turnout_estimate", 0.0),
+                "margin_of_error": forecast.get(
+                    "margin_of_error", forecast.get("turnout_estimate", 0.0)
+                ),
             }
         )
 
