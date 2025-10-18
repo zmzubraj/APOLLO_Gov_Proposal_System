@@ -315,13 +315,63 @@ def evaluate_historical_predictions(sample_size: int = 5) -> list[dict[str, Any]
         None,
     )
 
+    # Optional lightweight polarity for variability
+    try:
+        from agents.sentiment_analyser import simple_polarity  # type: ignore
+    except Exception:  # pragma: no cover
+        simple_polarity = None  # type: ignore
+
     predictions: list[dict[str, Any]] = []
     for _, row in sample_df.iterrows():
-        context = {}
-        if title_col:
-            context["title"] = row.get(title_col, "")
-        if summary_col:
-            context["summary"] = row.get(summary_col, "")
+        title = str(row.get(title_col, "")) if title_col else ""
+        summary = str(row.get(summary_col, "")) if summary_col else ""
+        text = (title + "\n" + summary).strip()
+
+        # Engagement proxies from historical data
+        voted_col = col_map.get("voted_percentage")
+        participants_col = col_map.get("participants")
+        eligible_col = col_map.get("eligible_dot")
+        try:
+            voted_pct = float(row.get(voted_col)) / 100.0 if voted_col else None
+        except Exception:
+            voted_pct = None
+        try:
+            participants = float(row.get(participants_col)) if participants_col else None
+            eligible = float(row.get(eligible_col)) if eligible_col else None
+        except Exception:
+            participants = eligible = None
+        ratio = 0.0
+        if (participants and eligible) and eligible > 0:
+            ratio = max(0.0, min(1.0, participants / eligible))
+        elif voted_pct is not None:
+            ratio = max(0.0, min(1.0, voted_pct))
+        engagement_weight = ratio if ratio > 0 else 0.5
+
+        # Simple polarity from text for variability
+        try:
+            sent_score = float(simple_polarity(text)) if simple_polarity else 0.0
+        except Exception:
+            sent_score = 0.0
+        message_size_kb = len(text.encode("utf-8")) / 1024.0 if text else 0.0
+
+        # Trending topics from title keywords
+        words = [w for w in title.replace("/", " ").split() if w.isalpha() and len(w) >= 4]
+        trending_topics = words[:5]
+
+        context = {
+            "title": title,
+            "summary": summary,
+            "proposal_text": text,
+            "kb_snippets": [summary] if summary else [],
+            "trending_topics": trending_topics,
+            # Wrap sentiment to signal primary source and weight for forecaster
+            "sentiment": {
+                "source": "governance",
+                "weight": engagement_weight,
+                "sentiment_score": sent_score,
+                "message_size_kb": message_size_kb,
+            },
+        }
 
         t_pred = time.perf_counter()
         forecast = forecast_outcomes(context)
@@ -333,7 +383,7 @@ def evaluate_historical_predictions(sample_size: int = 5) -> list[dict[str, Any]
         predictions.append(
             {
                 "proposal_id": row.get(id_col),
-                "dao": row.get(dao_col, "Gov") if dao_col else "Gov",
+                "dao": row.get(dao_col, "DOT Gov") if dao_col else "DOT Gov",
                 "predicted": predicted,
                 "confidence": forecast.get("confidence", prob),
                 "prediction_time": prediction_time,
@@ -352,7 +402,7 @@ def evaluate_historical_predictions(sample_size: int = 5) -> list[dict[str, Any]
     if dao_col:
         df_actual = df_actual.rename(columns={dao_col: "dao"})
     else:
-        df_actual["dao"] = "Gov"
+        df_actual["dao"] = "DOT Gov"
     df_actual = df_actual[["proposal_id", "dao", "actual"]]
 
     eval_res = compare_predictions(df_pred, df_actual)

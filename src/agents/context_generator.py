@@ -105,7 +105,7 @@ def _summarise(
     timeout = (
         timeout
         if timeout is not None
-        else float(os.getenv("SUMMARY_TIMEOUT", os.getenv("OLLAMA_TIMEOUT", "240")))
+        else float(os.getenv("SUMMARY_TIMEOUT", os.getenv("OLLAMA_TIMEOUT", "1200")))
     )
     try:
         return ollama_api.generate_completion(

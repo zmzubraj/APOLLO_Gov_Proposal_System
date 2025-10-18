@@ -229,6 +229,7 @@ def forecast_outcomes(context: Dict) -> Dict[str, float]:
         "news": 200.0,
         "chat": 120.0,
         "onchain": 100.0,
+        "governance": 220.0,
         "consolidated": 300.0,
     }
     base_n = base_by_src.get(str(primary_source or "").lower(), 150.0)

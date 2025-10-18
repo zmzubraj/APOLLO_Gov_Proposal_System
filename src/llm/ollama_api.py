@@ -25,7 +25,8 @@ EMBED_URL = f"{OLLAMA_HOST.rstrip('/')}/api/embeddings"
 DEFAULT_MODEL = os.getenv("OLLAMA_MODEL", "gemma3:4b")
 
 # Requests timeout (seconds)
-DEFAULT_TIMEOUT = float(os.getenv("OLLAMA_TIMEOUT", "360"))
+# Use env OLLAMA_TIMEOUT when provided; default to 1200s (20 minutes)
+DEFAULT_TIMEOUT = float(os.getenv("OLLAMA_TIMEOUT", "1200"))
 
 
 # -----------------------------------------------------------------------------
@@ -133,7 +134,7 @@ def embed_text(
 
 def check_server():
     try:
-        requests.get(f"{OLLAMA_HOST.rstrip('/')}/api/health", timeout=5)
+        requests.get(f"{OLLAMA_HOST.rstrip('/')}/api/health", timeout=60)
     except Exception as err:
         raise OllamaError(f"Ollama server not running on {OLLAMA_HOST}: {err}")
 

@@ -151,7 +151,10 @@ def main(verbose: bool | None = None) -> None:
 
     def _draft(ctx: dict[str, Any], source_name: str):
         if not llm_available:
-            return ""
+            try:
+                return proposal_generator.fallback_draft(ctx, source_name)
+            except Exception:
+                return ""
         try:
             try:
                 return proposal_generator.draft(
@@ -162,7 +165,7 @@ def main(verbose: bool | None = None) -> None:
                 )
             except TypeError:
                 return proposal_generator.draft(ctx, source_name)
-        except (ollama_api.OllamaError, ValueError) as exc:  # pragma: no cover - network dependent
+        except Exception as exc:  # pragma: no cover - network dependent
             print(f"⚠️ Proposal drafting failed: {exc}")
             return ""
 

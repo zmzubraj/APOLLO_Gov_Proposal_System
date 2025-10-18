@@ -16,7 +16,7 @@ def _fallback_title(context: Dict[str, Any], source_name: str) -> str:
         lead = ", ".join(str(t) for t in topics[:3])
         return f"Root Track Proposal: {lead}"
     sent = context.get("sentiment", {})
-    label = sent.get("sentiment") if isinstance(sent, dict := sent) else ""
+    label = sent.get("sentiment") if isinstance(sent, dict) else ""
     label = label or "Community Priorities and Ecosystem Support"
     return f"Root Track Proposal: {label}"
 
@@ -169,7 +169,7 @@ def draft(
     timeout = (
         timeout
         if timeout is not None
-        else float(os.getenv("PROPOSAL_TIMEOUT", os.getenv("OLLAMA_TIMEOUT", "360")))
+        else float(os.getenv("PROPOSAL_TIMEOUT", os.getenv("OLLAMA_TIMEOUT", "1200")))
     )
     prompt = build_prompt(context_dict, source_name)
     last_error: ValueError | None = None
