@@ -214,14 +214,33 @@ def main(verbose: bool | None = None) -> None:
             "message_size_kb",
             len(raw_text.encode("utf-8")) / 1024 if raw_text else 0.0,
         )
-        if llm_available:
+        label = str(res.get("sentiment", "")).strip()
+        do_kb_embed = label in {"Positive", "Negative"}
+        embedded = False
+        if do_kb_embed and raw_text:
             try:
-                ollama_api.embed_text(raw_text)
+                # Store into KB (Context sheet) for retrieval
+                from data_processing.proposal_store import record_context
+
+                record_context(
+                    {
+                        "source": source,
+                        "sentiment": label,
+                        "confidence": float(res.get("confidence", 0.0) or 0.0),
+                        "text": raw_text[:4000],
+                        "message_size_kb": float(ctx_size or 0.0),
+                        "batch_id": batch_id,
+                    }
+                )
                 embedded = True
             except Exception:
                 embedded = False
-        else:
-            embedded = False
+            # Optionally prime model embeddings (best-effort)
+            if embedded and llm_available:
+                try:
+                    ollama_api.embed_text(raw_text)
+                except Exception:
+                    pass
         stats["sentiment_batches"].append(
             {
                 "batch_id": batch_id,
@@ -255,14 +274,40 @@ def main(verbose: bool | None = None) -> None:
             chain_embedded = False
     else:
         chain_embedded = False
+    # Record chain metrics into KB only for positive/negative
+    chain_label = str(chain_res.get("sentiment", "")).strip()
+    chain_embed_kb = chain_label in {"Positive", "Negative"}
+    if chain_embed_kb and chain_text:
+        try:
+            from data_processing.proposal_store import record_context
+
+            record_context(
+                {
+                    "source": "onchain",
+                    "sentiment": chain_label,
+                    "confidence": float(chain_res.get("confidence", 0.0) or 0.0),
+                    "text": chain_text[:4000],
+                    "message_size_kb": float(chain_ctx_size or 0.0),
+                    "batch_id": batch_id,
+                }
+            )
+            # treat as embedded in KB even if model embedding call fails
+            chain_embedded = True
+        except Exception:
+            pass
+        if llm_available:
+            try:
+                ollama_api.embed_text(chain_text)
+            except Exception:
+                pass
     stats["sentiment_batches"].append(
         {
             "batch_id": batch_id,
             "source": "onchain",
             "ctx_size_kb": chain_ctx_size,
-            "sentiment": chain_res.get("sentiment", ""),
+            "sentiment": chain_label,
             "confidence": chain_res.get("confidence", 0.0),
-            "embedded": chain_embedded,
+            "embedded": chain_embedded if chain_embed_kb else False,
         }
     )
     batch_id += 1

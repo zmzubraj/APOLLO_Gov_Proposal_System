@@ -52,11 +52,39 @@ def compare_predictions(
     pred = _normalise_columns(df_predictions)
     actual = _normalise_columns(df_actual)
 
+    # Prefer matching by both proposal_id and dao; if that fails, fall back to
+    # a canonicalised DAO key, and finally to proposal_id only. This helps when
+    # historical sheets use slightly different DAO labels (e.g. "DOT Gov").
+    def _canon(v: Any) -> str:
+        s = str(v or "").strip().lower().replace(" ", "")
+        return s or "gov"
+
     merged = pred.merge(
         actual[["proposal_id", "dao", "actual"]],
         on=["proposal_id", "dao"],
         how="left",
     )
+    if merged["actual"].isna().all():
+        pred_key = pred.copy()
+        act_key = actual.copy()
+        pred_key["dao_key"] = pred_key.get("dao", "").map(_canon) if "dao" in pred_key else "gov"
+        act_key["dao_key"] = act_key.get("dao", "").map(_canon) if "dao" in act_key else "gov"
+        merged = pred_key.merge(
+            act_key[["proposal_id", "dao_key", "actual"]],
+            on=["proposal_id", "dao_key"],
+            how="left",
+        )
+        # restore expected columns for downstream rename
+        if "dao" not in merged and "dao_key" in merged:
+            merged["dao"] = merged["dao_key"]
+    if merged["actual"].isna().all():
+        merged = pred.merge(
+            actual[["proposal_id", "actual"]],
+            on=["proposal_id"],
+            how="left",
+        )
+        if "dao" not in merged:
+            merged["dao"] = pred.get("dao", "Gov")
 
     # Ensure required columns exist
     for col in [
