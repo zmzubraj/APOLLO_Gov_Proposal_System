@@ -6,12 +6,20 @@ from typing import Dict, Optional
 
 import json
 import numpy as np
+import os
 
 try:  # Prefer absolute import so tests can patch via ``src.data_processing``
     from src.data_processing import referenda_updater
 except Exception:  # pragma: no cover
     from data_processing import referenda_updater
 
+try:  # calibration utilities (optional)
+    from src.analysis.calibration import apply_calibration  # type: ignore
+except Exception:  # pragma: no cover
+    try:
+        from analysis.calibration import apply_calibration  # type: ignore
+    except Exception:
+        apply_calibration = None  # type: ignore
 
 MODEL_PATH = Path(__file__).resolve().parents[2] / "models" / "referendum_model.json"
 
@@ -163,6 +171,19 @@ def forecast_outcomes(context: Dict) -> Dict[str, float]:
 
     approval_prob = float(max(0.0, min(1.0, approval_prob)))
 
+    # Optional calibration
+    if os.getenv("CALIBRATION_ENABLED", "1").lower() in {"1", "true", "yes"}:
+        if apply_calibration is not None:
+            try:
+                # Detect primary source for per-source overrides
+                primary_source = None
+                sent_wrap = context.get("sentiment")
+                if isinstance(sent_wrap, dict):
+                    primary_source = sent_wrap.get("source")
+                approval_prob = float(max(0.0, min(1.0, apply_calibration(approval_prob, source=primary_source))))  # type: ignore
+            except Exception:
+                pass
+
     # Draft-specific uncertainty estimates use turnout volatility, sentiment
     # dispersion and engagement weight to modulate the margin of error.  Higher
     # volatility and disagreement inflate the margin, while stronger engagement
@@ -180,11 +201,52 @@ def forecast_outcomes(context: Dict) -> Dict[str, float]:
 
     base_margin = 0.08 + 0.22 * turnout_volatility + 0.12 * sentiment_spread
     base_margin *= 1.0 - 0.35 * engagement_factor
-    margin_of_error = float(max(0.02, min(0.45, base_margin)))
+    margin_heuristic = float(max(0.02, min(0.45, base_margin)))
+
+    # Simple N-effective based MoE to differentiate by source coverage
+    primary_source = None
+    sent_wrap = context.get("sentiment")
+    if isinstance(sent_wrap, dict):
+        primary_source = sent_wrap.get("source")
+        try:
+            ctx_kb = float(sent_wrap.get("message_size_kb") or 0.0)
+        except Exception:
+            ctx_kb = 0.0
+    else:
+        ctx_kb = 0.0
+    topics_n = 0
+    try:
+        topics_n = len(context.get("trending_topics", []) or [])
+    except Exception:
+        topics_n = 0
+    snippets_n = 0
+    try:
+        snippets_n = len(context.get("kb_snippets", []) or [])
+    except Exception:
+        snippets_n = 0
+    base_by_src = {
+        "forum": 250.0,
+        "news": 200.0,
+        "chat": 120.0,
+        "onchain": 100.0,
+        "consolidated": 300.0,
+    }
+    base_n = base_by_src.get(str(primary_source or "").lower(), 150.0)
+    N = base_n + 10.0 * ctx_kb + 20.0 * float(topics_n) + 15.0 * float(snippets_n)
+    try:
+        N *= (1.0 + 0.5 * float(engagement_weight))
+    except Exception:
+        pass
+    N_eff = float(max(30.0, min(5000.0, N)))
+    p = float(max(1e-6, min(1 - 1e-6, approval_prob)))
+    moe_stat = float(1.96 * (p * (1.0 - p)) ** 0.5 / (N_eff ** 0.5))
+
+    # Combine heuristic and statistical margins (balanced)
+    margin_of_error = float(max(0.01, min(0.45, 0.5 * margin_heuristic + 0.5 * moe_stat)))
 
     confidence = 1.0 - margin_of_error
-    confidence += 0.1 * abs(features["sentiment"]) + 0.05 * abs(features["source_sentiment_avg"])
-    confidence = float(max(0.05, min(0.95, confidence)))
+    confidence += 0.05 * abs(features["sentiment"]) + 0.02 * abs(features["source_sentiment_avg"])
+    confidence = float(max(0.05, min(0.99, confidence)))
 
     return {
         "approval_prob": approval_prob,

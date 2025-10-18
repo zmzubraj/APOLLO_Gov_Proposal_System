@@ -10,6 +10,75 @@ from typing import Any, Dict
 from llm import ollama_api
 
 
+def _fallback_title(context: Dict[str, Any], source_name: str) -> str:
+    topics = context.get("trending_topics") or []
+    if topics:
+        lead = ", ".join(str(t) for t in topics[:3])
+        return f"Root Track Proposal: {lead}"
+    sent = context.get("sentiment", {})
+    label = sent.get("sentiment") if isinstance(sent, dict := sent) else ""
+    label = label or "Community Priorities and Ecosystem Support"
+    return f"Root Track Proposal: {label}"
+
+
+def _fallback_section(text: str, default: str) -> str:
+    text = str(text or "").strip()
+    return text if text else default
+
+
+def fallback_draft(context: Dict[str, Any], source_name: str) -> str:
+    """Return a minimal, well-structured proposal when LLM drafting fails.
+
+    The fallback composes sections from available context so the CLI always
+    displays a usable proposal. Sections follow the same format enforced by
+    postprocess_draft().
+    """
+
+    title = _fallback_title(context, source_name)
+
+    sent = context.get("sentiment", {}) if isinstance(context.get("sentiment"), dict) else {}
+    kb_summary = str(context.get("kb_summary") or "")
+    gov = context.get("governance_kpis", {}) if isinstance(context.get("governance_kpis"), dict) else {}
+    chain = context.get("chain_kpis", {}) if isinstance(context.get("chain_kpis"), dict) else {}
+
+    sent_label = sent.get("sentiment") or "Mixed"
+    sent_score = sent.get("sentiment_score")
+    if isinstance(sent_score, (int, float)):
+        sent_phrase = f"(score {sent_score:+.2f})"
+    else:
+        sent_phrase = ""
+
+    rationale_default = (
+        "Community sentiment is "
+        f"{sent_label} {sent_phrase}. "
+        "This proposal consolidates recent discussions, forum insights, and "
+        "on-chain KPIs to improve participation and ecosystem outcomes. "
+        + ("\n" + kb_summary[:450] if kb_summary else "")
+    ).strip()
+    rationale = _fallback_section(kb_summary, rationale_default)
+
+    action_parts = []
+    if chain:
+        action_parts.append("Track relevant on-chain metrics and publish weekly updates.")
+    if gov:
+        action_parts.append("Coordinate with OpenGov tracks to align milestones and reporting.")
+    action_parts.append("Define clear deliverables, timelines, and accountability.")
+    action = " ".join(action_parts)
+
+    impact = (
+        "Higher voter turnout and transparency; better alignment of funding with "
+        "community priorities; clearer progress visibility for stakeholders."
+    )
+
+    text = (
+        f"Title: {title}\n"
+        f"Rationale: {rationale}\n"
+        f"Action: {action}\n"
+        f"Expected Impact: {impact}"
+    )
+    return text
+
+
 def _json_default(value: Any) -> str:
     """Return a JSON-serialisable representation for ``value``.
 
@@ -117,4 +186,6 @@ def draft(
             return postprocess_draft(raw)
         except ValueError as err:
             last_error = err
-    raise ValueError("LLM failed to produce structured proposal") from last_error
+    # Fallback: always return a minimally structured draft so the CLI displays
+    # a proposal even when parsing fails.
+    return fallback_draft(context_dict, source_name)

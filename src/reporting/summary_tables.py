@@ -83,6 +83,22 @@ def _format_table(headers: Iterable[str], rows: Iterable[Iterable[Any]]) -> str:
     return "\n".join(lines)
 
 
+def _symbols() -> tuple[str, str, str]:
+    """Return (plusminus, tick, cross) respecting ASCII fallback.
+
+    Set ASCII_SYMBOLS=1 to force ASCII. Default uses Unicode symbols.
+    """
+    # Default to ASCII to avoid Windows console glyph issues. Users can set
+    # ASCII_SYMBOLS=0 to use Unicode symbols instead.
+    ascii_mode = os.getenv("ASCII_SYMBOLS", "1").lower() in {"1", "true", "yes"}
+    pm = "+/-" if ascii_mode else "\u00B1"
+    tick = "Y" if ascii_mode else "\u2713"
+    cross = "N" if ascii_mode else "\u2717"
+    return pm, tick, cross
+
+
+
+
 def print_data_sources_table(stats: Mapping[str, Mapping[str, Any]]) -> None:
     """Print a table summarising the collected data sources.
 
@@ -360,7 +376,7 @@ def print_prediction_accuracy_table(stats: Iterable[Mapping[str, Any]]) -> None:
         "Predicted",
         "Actual",
         "Confidence (%)",
-        "Prediction Time (s)",
+        "Prediction Time (ms)",
         "Margin of Error",
     ]
 
@@ -615,7 +631,11 @@ def summarise_draft_predictions(
         forecast = draft.get("forecast", {})
         approval_prob = forecast.get("approval_prob", 0.0)
         predicted = "Pass" if approval_prob >= threshold else "Fail"
-        confidence = approval_prob if predicted == "Pass" else 1 - approval_prob
+        # Prefer model-provided confidence; fallback preserves previous behaviour for tests
+        if "confidence" in forecast and isinstance(forecast.get("confidence"), (int, float)):
+            confidence = float(forecast.get("confidence") or 0.0)
+        else:
+            confidence = approval_prob if predicted == "Pass" else 1 - approval_prob
         text = draft.get("text", "")
         seen_texts.add(text)
         records.append(
@@ -685,3 +705,129 @@ def summarise_draft_predictions(
             pass
 
     return records
+
+
+def print_draft_forecast_table_v2(
+    stats: Iterable[Mapping[str, Any]], threshold: float
+) -> None:
+    """Print a table of proposal draft outcome forecasts (filtered Pass only).
+
+    Differences from the original:
+    - Confidence and Margin of Error shown with 2 decimals
+    - Prediction Time shown in milliseconds
+    - Only rows meeting Pass and >= threshold are displayed
+    - Uses ASCII symbols by default for compatibility
+    """
+
+    headers = [
+        "Source Type",
+        "Title",
+        "Predicted",
+        "Confidence (%)",
+        "Prediction Time (ms)",
+        "Margin of Error",
+    ]
+
+    pm, _, _ = _symbols()
+    source_map = {
+        "forum": "Forum",
+        "chat": "Chat",
+        "news": "News",
+        "onchain": "Onchain",
+    }
+
+    rows: list[list[str]] = []
+    for info in stats:
+        confidence = float(info.get("confidence", 0.0) or 0.0)
+        predicted = str(info.get("predicted", "")).strip()
+        if predicted.lower() != "pass" or confidence < float(threshold):
+            continue
+        prediction_time = float(info.get("prediction_time", 0.0) or 0.0)
+        margin = float(info.get("margin_of_error", 0.0) or 0.0)
+        source_key = str(info.get("source", "-"))
+        source = source_map.get(source_key.lower(), source_key)
+        title = str(info.get("title", "-"))
+        if title != "-":
+            width = MAX_TITLE_WIDTH
+            placeholder = "..."
+            if width <= len(placeholder):
+                width = len(placeholder) + 1
+            title = textwrap.shorten(title, width=width, placeholder=placeholder)
+        rows.append([
+            source,
+            title,
+            "Pass",
+            f"{confidence * 100:.2f}%",
+            f"{int(round(prediction_time * 1000))}",
+            f"{pm}{margin * 100:.2f}%",
+        ])
+
+    if not rows:
+        print("No draft predictions available")
+        return
+
+    print(
+        "\nTable: Drafted proposal success prediction and forecast "
+        f"(Pass confidence threshold >{threshold * 100:.0f}%)"
+    )
+    table = _format_table(headers, rows)
+    print(table)
+def print_prediction_accuracy_table_v2(stats: Iterable[Mapping[str, Any]]) -> None:
+    """Print voting prediction vs. actual outcomes with improved formatting."""
+
+    pm, tick, cross = _symbols()
+    headers = [
+        "Proposal ID (Referenda ID)",
+        "DAO",
+        "Predicted",
+        "Actual",
+        "Confidence (%)",
+        "Prediction Time (ms)",
+        "Margin of Error",
+    ]
+
+    rows: list[list[str]] = []
+    has_actual = False
+    for info in stats:
+        pid = info.get("Proposal ID", "-")
+        dao = info.get("DAO", "-")
+        pred_val = str(info.get("Predicted", "-")).strip().lower()
+        act_val = str(info.get("Actual", "-")).strip().lower()
+        approved_vals = {"approved", "executed", "pass", "passed", "success"}
+        rejected_vals = {"rejected", "failed", "fail", "timeout", "cancelled", "killed"}
+        predicted = tick if pred_val in approved_vals else cross if pred_val in rejected_vals else "-"
+        actual = tick if act_val in approved_vals else cross if act_val in rejected_vals else "-"
+        if actual not in (None, "", "-", "nan", "NaN"):
+            has_actual = True
+        confidence = info.get("Confidence")
+        if isinstance(confidence, (int, float)):
+            confidence_str = f"{confidence * 100:.2f}%"
+        else:
+            confidence_str = "-"
+        pred_time_val = info.get("Prediction Time")
+        if isinstance(pred_time_val, (int, float)):
+            pred_time = f"{int(round(pred_time_val * 1000))}"
+        else:
+            pred_time = str(pred_time_val or "-")
+        moe = info.get("Margin of Error")
+        if isinstance(moe, (int, float)):
+            moe_str = f"{pm}{moe * 100:.2f}%"
+        else:
+            moe_str = "-"
+        rows.append([pid, dao, predicted, actual, confidence_str, pred_time, moe_str])
+
+    if not rows:
+        print("No prediction evaluations available")
+        return
+
+    title = "Table: Voting Result Prediction vs. Actual Outcomes"
+    if has_actual:
+        title += " (historical referenda data)"
+    else:
+        title += " (current data)"
+    print(f"\n{title}")
+    table = _format_table(headers, rows)
+    print(table)
+
+
+

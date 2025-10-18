@@ -21,8 +21,8 @@ from data_processing.social_media_scraper import (
 from reporting.summary_tables import (
     print_data_sources_table,
     print_sentiment_embedding_table,
-    print_draft_forecast_table,
-    print_prediction_accuracy_table,
+    print_draft_forecast_table_v2,
+    print_prediction_accuracy_table_v2,
     print_timing_benchmarks_table,
     evaluate_historical_predictions,
     draft_onchain_proposal,
@@ -318,6 +318,11 @@ def main(verbose: bool | None = None) -> None:
         ctx["source_sentiments"] = source_sentiments
         ctx["comment_turnout_trend"] = comment_turnout_trend
         draft_text = _draft(ctx, source)
+        if not draft_text:
+            try:
+                draft_text = proposal_generator.fallback_draft(ctx, source)
+            except Exception:
+                draft_text = ""
         t_pred = time.perf_counter()
         forecast = forecast_outcomes(ctx)
         prediction_time = time.perf_counter() - t_pred
@@ -377,6 +382,11 @@ def main(verbose: bool | None = None) -> None:
         ctx_news["source_sentiments"] = source_sentiments
         ctx_news["comment_turnout_trend"] = comment_turnout_trend
         news_draft = _draft(ctx_news, "news")
+        if not news_draft:
+            try:
+                news_draft = proposal_generator.fallback_draft(ctx_news, "news")
+            except Exception:
+                news_draft = ""
         t_pred = time.perf_counter()
         news_forecast = forecast_outcomes(ctx_news)
         prediction_time = time.perf_counter() - t_pred
@@ -488,6 +498,11 @@ def main(verbose: bool | None = None) -> None:
         prediction_time = time.perf_counter() - t_pred
         context["forecast"] = forecast
         proposal_text = _draft(context, "consolidated")
+        if not proposal_text:
+            try:
+                proposal_text = proposal_generator.fallback_draft(context, "consolidated")
+            except Exception:
+                proposal_text = ""
         approval_prob = forecast.get("approval_prob", 0.0)
         final_source = "consolidated"
         final_source_weight = sent_w
@@ -530,7 +545,7 @@ def main(verbose: bool | None = None) -> None:
                     "confidence": forecast.get(
                         "confidence", forecast.get("approval_prob", 0.0)
                     ),
-                    "prediction_time": dt.datetime.now(dt.UTC).isoformat(),
+                    "prediction_time": float(prediction_time),
                     "margin_of_error": forecast.get(
                         "margin_of_error", forecast.get("turnout_estimate", 0.0)
                     ),
@@ -698,10 +713,10 @@ def main(verbose: bool | None = None) -> None:
     # Display summary tables (Tables 2-5)
     print_data_sources_table(stats.get("data_sources", {}))
     print_sentiment_embedding_table(stats.get("sentiment_batches", []))
-    print_draft_forecast_table(
+    print_draft_forecast_table_v2(
         stats.get("draft_predictions", []), MIN_PASS_CONFIDENCE
     )
-    print_prediction_accuracy_table(stats["prediction_eval"])
+    print_prediction_accuracy_table_v2(stats["prediction_eval"])
     print_timing_benchmarks_table(stats.get("timings", []))
 
 if __name__ == "__main__":

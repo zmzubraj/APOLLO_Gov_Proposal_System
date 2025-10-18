@@ -2,7 +2,7 @@ import importlib
 
 from src import main
 from src.reporting.summary_tables import (
-    print_draft_forecast_table,
+    print_draft_forecast_table_v2 as print_draft_forecast_table,
     summarise_draft_predictions,
 )
 
@@ -53,13 +53,13 @@ def test_print_draft_forecast_table_output(capsys):
     print_draft_forecast_table(stats, 0.8)
     out = capsys.readouterr().out
     assert "Drafted proposal success prediction and forecast" in out
-    assert "Pass confidence threshold <80%" in out
-    assert "Forum" in out and "Onchain" in out and "Chat" in out
-    assert "79%" in out
-    assert "±3%" in out
+    assert "Pass confidence threshold >80%" in out
+    assert "Forum" in out and "Onchain" not in out and "Chat" in out
+    assert "79.00%" in out
+    assert "+/-3.00%" in out
 
 
-def test_print_draft_forecast_table_includes_fail_high_confidence(capsys):
+def test_print_draft_forecast_table_filters_fail_rows(capsys):
     stats = [
         {
             "source": "forum",
@@ -72,8 +72,7 @@ def test_print_draft_forecast_table_includes_fail_high_confidence(capsys):
     ]
     print_draft_forecast_table(stats, 0.8)
     out = capsys.readouterr().out
-    assert "forum".capitalize() in out  # source is shown
-    assert "95%" in out
+    assert "forum".capitalize() not in out
 
 
 def test_summarise_uses_stored_proposals(monkeypatch):
