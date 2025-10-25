@@ -13,6 +13,10 @@ import json, pathlib, datetime as dt, os, time
 from typing import Any
 import pandas as pd
 from dotenv import load_dotenv
+
+# Load environment variables early so downstream imports (which read env) see them
+load_dotenv()
+
 from agents.data_collector import DataCollector
 from data_processing.social_media_scraper import (
     collect_recent_messages,
@@ -58,8 +62,21 @@ from data_processing.proposal_store import record_proposal, record_execution_res
 PROJECT_ROOT = pathlib.Path(__file__).resolve().parents[1]  # src/..
 OUT_DIR = PROJECT_ROOT / "data" / "output" / "generated_proposals"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
-load_dotenv()
-MIN_PASS_CONFIDENCE = float(os.getenv("MIN_PASS_CONFIDENCE", "0.50"))
+# Minimum confidence required to DISPLAY a draft in tables (not the
+# classification threshold). Keep backward compat with MIN_PASS_CONFIDENCE.
+MIN_CONFIDENCE_DISPLAY = float(
+    os.getenv("MIN_CONFIDENCE_DISPLAY", os.getenv("MIN_PASS_CONFIDENCE", "0.50"))
+)
+MIN_PASS_CONFIDENCE = MIN_CONFIDENCE_DISPLAY  # backward-compat public alias
+
+# Probability threshold to classify predictions as Approved/Rejected (Pass/Fail).
+# Allows override via either PASS_PROB_THRESHOLD or legacy MIN_PASS_PROBABILITY.
+try:
+    _prob_env = os.getenv("PASS_PROB_THRESHOLD") or os.getenv("MIN_PASS_PROBABILITY") or os.getenv("MIN_CONFIDENCE_DISPLAY") or os.getenv("MIN_PASS_CONFIDENCE") or "0.50"
+    PASS_PROB_THRESHOLD = float(_prob_env)
+except ValueError:
+    PASS_PROB_THRESHOLD = 0.50
+print (f"PASS_PROB_THRESHOLD={PASS_PROB_THRESHOLD}")
 SENTIMENT_TEMPERATURE = float(os.getenv("SENTIMENT_TEMPERATURE", "0.2"))
 SENTIMENT_MAX_TOKENS = int(os.getenv("SENTIMENT_MAX_TOKENS", "2048"))
 PROPOSAL_TEMPERATURE = float(os.getenv("PROPOSAL_TEMPERATURE", "0.3"))
@@ -72,6 +89,12 @@ INCLUDE_TOPICS = os.getenv("PROPOSAL_INCLUDE_TOPICS", "0").lower() not in {
     "false",
     "no",
 }
+
+if VERBOSE:
+    print(
+        f"Config thresholds: PASS_PROB_THRESHOLD={PASS_PROB_THRESHOLD}, "
+        f"MIN_CONFIDENCE_DISPLAY={MIN_CONFIDENCE_DISPLAY}"
+    )
 
 
 def _json_default(obj: Any) -> str:
@@ -485,7 +508,7 @@ def main(verbose: bool | None = None) -> None:
 
     stats["drafts"] = proposal_drafts
     stats["draft_predictions"] = summarise_draft_predictions(
-        proposal_drafts, MIN_PASS_CONFIDENCE
+        proposal_drafts, MIN_CONFIDENCE_DISPLAY
     )
 
     if verbose:
@@ -498,10 +521,20 @@ def main(verbose: bool | None = None) -> None:
             )
 
     # Select best draft (fallback to consolidated context if none qualify)
+    # Gate by forecast confidence vs PASS_PROB_THRESHOLD (not weighted score).
+    def _draft_conf(d: dict[str, Any]) -> float:
+        f = d.get("forecast", {}) if isinstance(d, dict) else {}
+        v = f.get("confidence") if isinstance(f.get("confidence"), (int, float)) else f.get("approval_prob", 0.0)
+        try:
+            return float(v or 0.0)
+        except Exception:
+            return 0.0
+
     eligible_drafts = [
-        d for d in proposal_drafts if d.get("score", 0.0) >= MIN_PASS_CONFIDENCE
+        d for d in proposal_drafts if _draft_conf(d) >= PASS_PROB_THRESHOLD and d.get("text")
     ]
     if eligible_drafts:
+        # Rank among eligible by existing score (approval_prob * source weight)
         best_draft = max(eligible_drafts, key=lambda d: d.get("score", 0.0))
         context = best_draft["context"]
         forecast = best_draft["forecast"]
@@ -587,9 +620,11 @@ def main(verbose: bool | None = None) -> None:
                 {
                     "proposal_id": 0,
                     "dao": "Gov",
-                    "predicted": "Approved"
-                    if forecast.get("approval_prob", 0.0) >= 0.5
-                    else "Rejected",
+                    "predicted": (
+                        "Approved"
+                        if forecast.get("approval_prob", 0.0) >= PASS_PROB_THRESHOLD
+                        else "Rejected"
+                    ),
                     "confidence": forecast.get(
                         "confidence", forecast.get("approval_prob", 0.0)
                     ),
@@ -761,8 +796,10 @@ def main(verbose: bool | None = None) -> None:
     # Display summary tables (Tables 2-5)
     print_data_sources_table(stats.get("data_sources", {}))
     print_sentiment_embedding_table(stats.get("sentiment_batches", []))
+    # Use PASS_PROB_THRESHOLD as the display filter for draft table to match
+    # the user's expectation: show rows with confidence >= PASS_PROB_THRESHOLD.
     print_draft_forecast_table_v2(
-        stats.get("draft_predictions", []), MIN_PASS_CONFIDENCE
+        stats.get("draft_predictions", []), PASS_PROB_THRESHOLD
     )
     print_prediction_accuracy_table_v2(stats["prediction_eval"])
     print_timing_benchmarks_table(stats.get("timings", []))

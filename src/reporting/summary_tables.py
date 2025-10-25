@@ -23,6 +23,21 @@ try:
 except ValueError:
     MAX_TITLE_WIDTH = 80
 
+# Threshold used to classify a draft prediction as Pass/Fail based on approval
+# probability alone. Distinct from the display threshold in table functions.
+# Fallbacks support legacy env vars and confidence thresholds for convenience.
+try:
+    _prob_env = (
+        os.getenv("PASS_PROB_THRESHOLD")
+        or os.getenv("MIN_PASS_PROBABILITY")
+        or os.getenv("MIN_CONFIDENCE_DISPLAY")
+        or os.getenv("MIN_PASS_CONFIDENCE")
+        or "0.50"
+    )
+    PASS_PROB_THRESHOLD = float(_prob_env)
+except ValueError:
+    PASS_PROB_THRESHOLD = 0.50
+
 
 def _format_table(headers: Iterable[str], rows: Iterable[Iterable[Any]]) -> str:
     """Return a simple ASCII table string.
@@ -371,13 +386,22 @@ def evaluate_historical_predictions(sample_size: int = 5) -> list[dict[str, Any]
                 "sentiment_score": sent_score,
                 "message_size_kb": message_size_kb,
             },
+            # Provide per-source sentiment so the forecaster can use
+            # source_sentiment_avg and dispersion features.
+            "source_sentiments": {"governance": float(sent_score)},
         }
 
         t_pred = time.perf_counter()
         forecast = forecast_outcomes(context)
         prediction_time = time.perf_counter() - t_pred
-        prob = forecast.get("approval_prob", 0.0)
-        predicted = "Approved" if prob >= 0.5 else "Rejected"
+        prob = float(forecast.get("approval_prob", 0.0) or 0.0)
+        conf = (
+            float(forecast.get("confidence") or 0.0)
+            if isinstance(forecast.get("confidence"), (int, float))
+            else prob
+        )
+        # Confidence-first classification for consistency with draft tables
+        predicted = "Approved" if conf >= float(PASS_PROB_THRESHOLD) else "Rejected"
 
         dao_col = col_map.get("dao")
         predictions.append(
@@ -447,7 +471,8 @@ def print_prediction_accuracy_table(stats: Iterable[Mapping[str, Any]]) -> None:
 
         pred_time_val = info.get("Prediction Time")
         if isinstance(pred_time_val, (int, float)):
-            pred_time = f"{pred_time_val:.2f}"
+            # Stored value is seconds; header is ms. Convert for display.
+            pred_time = f"{int(round(float(pred_time_val) * 1000))}"
         else:
             pred_time = str(pred_time_val or "-")
 
@@ -679,13 +704,13 @@ def summarise_draft_predictions(
 
     for draft in drafts:
         forecast = draft.get("forecast", {})
-        approval_prob = forecast.get("approval_prob", 0.0)
-        predicted = "Pass" if approval_prob >= threshold else "Fail"
-        # Prefer model-provided confidence; fallback preserves previous behaviour for tests
-        if "confidence" in forecast and isinstance(forecast.get("confidence"), (int, float)):
+        # Confidence-first logic: classify Pass/Fail by confidence threshold.
+        # Fallback to approval_prob only if confidence missing.
+        if isinstance(forecast.get("confidence"), (int, float)):
             confidence = float(forecast.get("confidence") or 0.0)
         else:
-            confidence = approval_prob if predicted == "Pass" else 1 - approval_prob
+            confidence = float(forecast.get("approval_prob", 0.0) or 0.0)
+        predicted = "Pass" if float(confidence) >= float(PASS_PROB_THRESHOLD) else "Fail"
         text = draft.get("text", "")
         seen_texts.add(text)
         records.append(
@@ -731,12 +756,13 @@ def summarise_draft_predictions(
                         t_pred = time.perf_counter()
                         forecast = forecast_outcomes({})
                         prediction_time = time.perf_counter() - t_pred
-                        approval_prob = forecast.get("approval_prob", 0.0)
+                        # Confidence-first classification
+                        if isinstance(forecast.get("confidence"), (int, float)):
+                            confidence = float(forecast.get("confidence") or 0.0)
+                        else:
+                            confidence = float(forecast.get("approval_prob", 0.0) or 0.0)
                         predicted = (
-                            "Pass" if approval_prob >= threshold else "Fail"
-                        )
-                        confidence = (
-                            approval_prob if predicted == "Pass" else 1 - approval_prob
+                            "Pass" if float(confidence) >= float(PASS_PROB_THRESHOLD) else "Fail"
                         )
                         records.append(
                             {

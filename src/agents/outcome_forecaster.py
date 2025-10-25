@@ -185,9 +185,11 @@ def forecast_outcomes(context: Dict) -> Dict[str, float]:
                 pass
 
     # Draft-specific uncertainty estimates use turnout volatility, sentiment
-    # dispersion and engagement weight to modulate the margin of error.  Higher
+    # dispersion and engagement weight to modulate the margin of error. Higher
     # volatility and disagreement inflate the margin, while stronger engagement
-    # reduces it.
+    # reduces it. We keep this as a heuristic component and blend it with a
+    # statistically grounded interval whose weight increases with the
+    # effective sample size.
     sentiment_spread = 0.0
     if len(source_sentiment_values) > 1:
         sentiment_spread = float(np.std(source_sentiment_values))
@@ -199,7 +201,8 @@ def forecast_outcomes(context: Dict) -> Dict[str, float]:
     turnout_volatility = abs(features["turnout_trend"]) + abs(features["comment_turnout_trend"])
     engagement_factor = float(max(0.0, min(1.0, features["engagement_weight"])) if not np.isnan(features["engagement_weight"]) else 0.0)
 
-    base_margin = 0.08 + 0.22 * turnout_volatility + 0.12 * sentiment_spread
+    # Slightly soften heuristic sensitivity to reduce over-conservatism
+    base_margin = 0.06 + 0.18 * turnout_volatility + 0.10 * sentiment_spread
     base_margin *= 1.0 - 0.35 * engagement_factor
     margin_heuristic = float(max(0.02, min(0.45, base_margin)))
 
@@ -240,10 +243,33 @@ def forecast_outcomes(context: Dict) -> Dict[str, float]:
         pass
     N_eff = float(max(30.0, min(5000.0, N)))
     p = float(max(1e-6, min(1 - 1e-6, approval_prob)))
-    moe_stat = float(1.96 * (p * (1.0 - p)) ** 0.5 / (N_eff ** 0.5))
 
-    # Combine heuristic and statistical margins (balanced)
-    margin_of_error = float(max(0.01, min(0.45, 0.5 * margin_heuristic + 0.5 * moe_stat)))
+    # Prefer Wilson score interval half-width (better near extremes and for
+    # moderate N) over the simple normal approximation.
+    z = 1.96  # 95% two-sided confidence level
+    denom = 1.0 + (z * z) / N_eff
+    center = (p + (z * z) / (2.0 * N_eff)) / denom
+    radius = (z / denom) * float(
+        (p * (1.0 - p) / N_eff + (z * z) / (4.0 * (N_eff ** 2))) ** 0.5
+    )
+    wilson_low = max(0.0, center - radius)
+    wilson_high = min(1.0, center + radius)
+    moe_wilson = float(0.5 * (wilson_high - wilson_low))
+
+    # Fallback to normal approximation only if Wilson becomes degenerate
+    if not np.isfinite(moe_wilson) or moe_wilson <= 0.0:
+        moe_wilson = float(z * (p * (1.0 - p)) ** 0.5 / (N_eff ** 0.5))
+
+    # Blend heuristic with statistical margin: as N grows, trust statistics.
+    # Around N~400, heuristic weight is ~0.5 (decay half-life).
+    # Weight decays roughly by half around N≈400 and is very small beyond that.
+    decay_scale = 400.0
+    w_heuristic = float(1.0 / (1.0 + (N_eff / decay_scale)))
+    w_stat = 1.0 - w_heuristic
+
+    margin_of_error = float(
+        max(0.01, min(0.45, w_heuristic * margin_heuristic + w_stat * moe_wilson))
+    )
 
     confidence = 1.0 - margin_of_error
     confidence += 0.05 * abs(features["sentiment"]) + 0.02 * abs(features["source_sentiment_avg"])
