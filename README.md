@@ -423,7 +423,7 @@ apollo-governance/
 
 ## 7. Contributing
 
-We welcome contributions! To get started:
+We welcome contributions. Start with the guide in [CONTRIBUTING.md](CONTRIBUTING.md), then follow the basic flow below:
 
 1. **Fork** the repository and create a new branch.
 2. **Develop** your feature or improvement.
